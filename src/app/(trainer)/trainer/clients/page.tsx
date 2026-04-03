@@ -1,13 +1,14 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useAuth } from "@/contexts/AuthContext";
 import { getItems } from "@/lib/storage";
 import type { User } from "@/lib/auth";
-import type { Assessment, Payment, Plan, Session } from "@/lib/mockData";
-import { Users, ClipboardList, Calendar, CreditCard, Phone, Mail, CheckCircle } from "lucide-react";
+import type { Assessment, Payment, Plan, Program, Session } from "@/lib/mockData";
+import { Users, ClipboardList, Calendar, CreditCard, Phone, Mail, CheckCircle, Target, Dumbbell, ArrowRight } from "lucide-react";
 
 function formatDate(date: string) {
   return new Date(date + "T00:00:00").toLocaleDateString("en-US", {
@@ -25,6 +26,7 @@ export default function TrainerClientsPage() {
   const [assessments, setAssessments] = useState<Assessment[]>([]);
   const [plans, setPlans] = useState<Plan[]>([]);
   const [sessions, setSessions] = useState<Session[]>([]);
+  const [programs, setPrograms] = useState<Program[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
 
   useEffect(() => {
@@ -43,6 +45,7 @@ export default function TrainerClientsPage() {
       setAssessments(getItems<Assessment>("ishow_assessments"));
       setPlans(getItems<Plan>("ishow_plans"));
       setSessions(getItems<Session>("ishow_sessions"));
+      setPrograms(getItems<Program>("ishow_programs"));
       setPayments(getItems<Payment>("ishow_payments"));
     }
   }, [loading, router, user]);
@@ -63,6 +66,8 @@ export default function TrainerClientsPage() {
           {customers.map((customer) => {
             const assessment = assessments.find((item) => item.userId === customer.id);
             const plan = plans.find((item) => item.userId === customer.id && item.status === "active");
+            const customerPrograms = programs.filter((item) => item.userId === customer.id);
+            const customerSessions = sessions.filter((item) => item.userId === customer.id);
             const nextSession = sessions
               .filter((item) => item.userId === customer.id && item.status === "scheduled" && item.date >= today)
               .sort((left, right) => (left.date + left.time).localeCompare(right.date + right.time))[0];
@@ -90,7 +95,7 @@ export default function TrainerClientsPage() {
                   </span>
                 </div>
 
-                <div className="grid gap-3 sm:grid-cols-2 mb-5">
+                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 mb-5">
                   <div className="rounded-2xl bg-gray-50 border border-gray-100 p-4">
                     <div className="flex items-center gap-2 text-sm font-semibold text-gray-900 mb-2">
                       <ClipboardList className="w-4 h-4 text-orange-500" />
@@ -132,6 +137,26 @@ export default function TrainerClientsPage() {
                       {plan ? `${plan.name} · ${plan.duration}` : "Awaiting plan assignment."}
                     </p>
                   </div>
+
+                  <div className="rounded-2xl bg-gray-50 border border-gray-100 p-4">
+                    <div className="flex items-center gap-2 text-sm font-semibold text-gray-900 mb-2">
+                      <Target className="w-4 h-4 text-blue-700" />
+                      Program weeks
+                    </div>
+                    <p className="text-sm text-gray-600">
+                      {customerPrograms.length > 0 ? `${customerPrograms.length} assigned week${customerPrograms.length === 1 ? "" : "s"}` : "No customer program assigned yet."}
+                    </p>
+                  </div>
+
+                  <div className="rounded-2xl bg-gray-50 border border-gray-100 p-4">
+                    <div className="flex items-center gap-2 text-sm font-semibold text-gray-900 mb-2">
+                      <Dumbbell className="w-4 h-4 text-orange-500" />
+                      Custom sessions
+                    </div>
+                    <p className="text-sm text-gray-600">
+                      {customerSessions.length > 0 ? `${customerSessions.length} total session${customerSessions.length === 1 ? "" : "s"}` : "No custom sessions scheduled yet."}
+                    </p>
+                  </div>
                 </div>
 
                 <div className="flex flex-wrap gap-4 text-sm text-gray-500 border-t border-gray-100 pt-4">
@@ -145,6 +170,23 @@ export default function TrainerClientsPage() {
                       {customer.phone}
                     </span>
                   )}
+                </div>
+
+                <div className="mt-4 flex flex-wrap gap-3">
+                  <Link
+                    href={`/trainer/programs?client=${encodeURIComponent(customer.id)}`}
+                    className="inline-flex items-center gap-2 rounded-2xl bg-blue-700 px-4 py-2 text-sm font-semibold text-white transition-all hover:-translate-y-0.5 hover:bg-blue-800"
+                  >
+                    Manage Programs
+                    <ArrowRight className="w-4 h-4" />
+                  </Link>
+                  <Link
+                    href={`/trainer/sessions?client=${encodeURIComponent(customer.id)}`}
+                    className="inline-flex items-center gap-2 rounded-2xl border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-100"
+                  >
+                    Manage Sessions
+                    <ArrowRight className="w-4 h-4" />
+                  </Link>
                 </div>
               </div>
             );

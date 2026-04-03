@@ -68,6 +68,26 @@ export default function TrainerDashboardPage() {
     .filter((session) => session.status === "scheduled" && session.date >= today)
     .sort((left, right) => (left.date + left.time).localeCompare(right.date + right.time))
     .slice(0, 4);
+  const clientSummaries = customers.map((customer) => {
+    const clientPrograms = programs.filter((program) => program.userId === customer.id);
+    const clientSessions = sessions.filter((session) => session.userId === customer.id);
+    const nextSession = clientSessions
+      .filter((session) => session.status === "scheduled" && session.date >= today)
+      .sort((left, right) => (left.date + left.time).localeCompare(right.date + right.time))[0];
+    const activePlan = plans.find((plan) => plan.userId === customer.id && plan.status === "active");
+    const pendingAssessment = assessments.find(
+      (assessment) => assessment.userId === customer.id && assessment.status === "pending"
+    );
+
+    return {
+      customer,
+      clientPrograms,
+      clientSessions,
+      nextSession,
+      activePlan,
+      pendingAssessment,
+    };
+  });
 
   return (
     <DashboardLayout role="TRAINER">
@@ -180,6 +200,71 @@ export default function TrainerDashboardPage() {
                 })
               )}
             </div>
+          </div>
+        </div>
+
+        <div className="mb-6 rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
+          <div className="mb-5 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <p className="mb-2 text-xs font-semibold uppercase tracking-[0.24em] text-orange-500">Client Management</p>
+              <h2 className="text-xl font-black text-gray-900">Programs and custom sessions by client</h2>
+            </div>
+            <p className="text-sm text-gray-500">Open a client row to manage their program weeks and session schedule.</p>
+          </div>
+
+          <div className="space-y-4">
+            {clientSummaries.map((summary) => (
+              <div key={summary.customer.id} className="rounded-3xl border border-gray-100 bg-gray-50 p-5">
+                <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2 mb-2">
+                      <h3 className="text-lg font-black text-gray-900">{summary.customer.name}</h3>
+                      <span className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-bold ${
+                        summary.pendingAssessment ? "bg-orange-100 text-orange-700" : "bg-green-100 text-green-700"
+                      }`}>
+                        {summary.pendingAssessment ? <AlertCircle className="w-3.5 h-3.5" /> : null}
+                        {summary.pendingAssessment ? "Assessment pending" : "Assessment reviewed"}
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-500">{summary.activePlan?.name ?? "No active plan yet"}</p>
+                  </div>
+
+                  <div className="grid gap-3 sm:grid-cols-3 xl:min-w-[520px]">
+                    <div className="rounded-2xl border border-white bg-white px-4 py-3">
+                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-gray-400">Program Weeks</p>
+                      <p className="mt-2 text-sm font-black text-gray-900">{summary.clientPrograms.length}</p>
+                    </div>
+                    <div className="rounded-2xl border border-white bg-white px-4 py-3">
+                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-gray-400">Custom Sessions</p>
+                      <p className="mt-2 text-sm font-black text-gray-900">{summary.clientSessions.length}</p>
+                    </div>
+                    <div className="rounded-2xl border border-white bg-white px-4 py-3">
+                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-gray-400">Next Session</p>
+                      <p className="mt-2 text-sm font-black text-gray-900">
+                        {summary.nextSession ? `${summary.nextSession.date} ${summary.nextSession.time}` : "Not scheduled"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-4 flex flex-wrap gap-3">
+                  <Link
+                    href={`/trainer/programs?client=${encodeURIComponent(summary.customer.id)}`}
+                    className="inline-flex items-center gap-2 rounded-2xl bg-blue-700 px-4 py-2 text-sm font-semibold text-white transition-all hover:-translate-y-0.5 hover:bg-blue-800"
+                  >
+                    Manage Programs
+                    <ArrowRight className="w-4 h-4" />
+                  </Link>
+                  <Link
+                    href={`/trainer/sessions?client=${encodeURIComponent(summary.customer.id)}`}
+                    className="inline-flex items-center gap-2 rounded-2xl border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-100"
+                  >
+                    Manage Sessions
+                    <ArrowRight className="w-4 h-4" />
+                  </Link>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 

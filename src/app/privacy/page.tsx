@@ -4,7 +4,7 @@ import Link from "next/link";
 const privacySections = [
   {
     title: "Information We Collect",
-    body: "iShowTransformatio may collect account details such as your name, email address, phone number, fitness assessment responses, coaching notes, training progress, payment status metadata, and messages shared through the platform or approved support channels.",
+    body: "iShowTransformation may collect account details such as your name, email address, phone number, fitness assessment responses, coaching notes, training progress, payment status metadata, and messages shared through the platform or approved support channels.",
   },
   {
     title: "How We Use Your Information",
@@ -20,13 +20,13 @@ const privacySections = [
   },
   {
     title: "Your Choices",
-    body: "You may request access, correction, or deletion of your information, subject to legal and operational requirements. Privacy-related requests can be submitted through your account contact channel or by reaching out to the official iShowTransformatio coach contact listed on the site.",
+    body: "You may request access, correction, or deletion of your information, subject to legal and operational requirements. Privacy-related requests can be submitted through your account contact channel or by reaching out to the official iShowTransformation coach contact listed on the site.",
   },
 ];
 
 export const metadata: Metadata = {
-  title: "Privacy Policy | iShowTransformatio",
-  description: "How iShowTransformatio collects, uses, and protects customer and coaching data.",
+  title: "Privacy Policy | iShowTransformation",
+  description: "How iShowTransformation collects, uses, and protects customer and coaching data.",
 };
 
 export default function PrivacyPage() {
@@ -41,7 +41,7 @@ export default function PrivacyPage() {
           <p className="text-xs font-semibold uppercase tracking-[0.26em] text-blue-200/70 mb-4">Effective Date: April 3, 2026</p>
           <h1 className="text-4xl sm:text-5xl font-black tracking-tight">Privacy Policy</h1>
           <p className="mt-5 text-lg leading-relaxed text-white/72 max-w-3xl">
-            This Privacy Policy explains how iShowTransformatio handles information collected through its website,
+            This Privacy Policy explains how iShowTransformation handles information collected through its website,
             coaching workflows, assessments, and account features. By using the platform, you acknowledge the
             collection and use of information as described below.
           </p>
@@ -60,7 +60,7 @@ export default function PrivacyPage() {
           <h2 className="text-2xl font-black text-white mb-3">Questions About Privacy</h2>
           <p className="text-base leading-relaxed text-white/78">
             If you need help with a privacy request, account correction, or data deletion inquiry, contact the
-            iShowTransformatio coaching team through your account support channel or the official Instagram profile.
+            iShowTransformation coaching team through your account support channel or the official Instagram profile.
           </p>
         </div>
       </div>

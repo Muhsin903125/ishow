@@ -1,4 +1,5 @@
-﻿import Link from "next/link";
+﻿import Image from "next/image";
+import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import {
   Dumbbell,
@@ -18,6 +19,7 @@ import {
   ChevronDown,
   ClipboardList,
   ExternalLink,
+  PlayCircle,
 } from "lucide-react";
 
 // --- DATA ---
@@ -26,6 +28,21 @@ const marqueeItems = [
   "STRENGTH", "ENDURANCE", "CONDITIONING", "NUTRITION",
   "PERFORMANCE", "RECOVERY", "MINDSET", "DISCIPLINE",
 ];
+
+const photoLibrary = {
+  heroBackdrop: "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&w=2200&q=80",
+  heroFeature: "https://images.unsplash.com/photo-1605296867304-46d5465a13f1?auto=format&fit=crop&w=1400&q=80",
+  programming: "https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?auto=format&fit=crop&w=1200&q=80",
+  nutrition: "https://images.unsplash.com/photo-1543353071-c953d88f7033?auto=format&fit=crop&w=1200&q=80",
+  progress: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?auto=format&fit=crop&w=1200&q=80",
+  accountability: "https://images.unsplash.com/photo-1534258936925-c58bed479fcb?auto=format&fit=crop&w=1200&q=80",
+  process: "https://images.unsplash.com/photo-1590646299178-1b26ab821e34?auto=format&fit=crop&w=1600&q=80",
+  videoBackdrop: "https://images.unsplash.com/photo-1576678927484-cc907957088c?auto=format&fit=crop&w=2200&q=80",
+  trainerBackdrop: "https://images.unsplash.com/photo-1648542036561-e1d66a5ae2b1?auto=format&fit=crop&w=2200&q=80",
+  trainerFeature: "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?auto=format&fit=crop&w=1400&q=80",
+  ctaBackdrop: "https://images.unsplash.com/photo-1649134296132-56606326c566?auto=format&fit=crop&w=2200&q=80",
+  ctaFeature: "https://images.unsplash.com/photo-1773681823208-7f3657c0688f?auto=format&fit=crop&w=1400&q=80",
+};
 
 const services = [
   {
@@ -36,6 +53,7 @@ const services = [
     detail: "Split design, exercise selection, progression",
     accent: "from-orange-500/20 via-orange-500/5 to-transparent",
     marker: "01",
+    art: photoLibrary.programming,
   },
   {
     icon: Heart,
@@ -45,6 +63,7 @@ const services = [
     detail: "Targets, adjustments, sustainability",
     accent: "from-emerald-500/20 via-emerald-500/5 to-transparent",
     marker: "02",
+    art: photoLibrary.nutrition,
   },
   {
     icon: TrendingUp,
@@ -54,6 +73,7 @@ const services = [
     detail: "Weekly review, dashboard visibility, momentum",
     accent: "from-blue-500/20 via-blue-500/5 to-transparent",
     marker: "03",
+    art: photoLibrary.progress,
   },
   {
     icon: Users,
@@ -63,6 +83,7 @@ const services = [
     detail: "Direct follow-up, clearer standards, consistency",
     accent: "from-orange-400/20 via-blue-500/5 to-transparent",
     marker: "04",
+    art: photoLibrary.accountability,
   },
 ];
 
@@ -122,72 +143,37 @@ const journeyHighlights = [
   { value: "Live", label: "progress tracking" },
 ];
 
-const programs = [
+const trainingVideos = [
   {
-    name: "Foundation",
-    price: 99,
-    tag: "Start Here" as string | null,
-    sessions: "3-day plan + assessment",
-    summary: "A clear starting point for building routine, improving form, and creating early momentum.",
-    bestFor: "Beginners and restart clients",
-    featured: false,
-    features: [
-      "Fitness assessment and goal mapping",
-      "3-day structured workout split",
-      "Habit targets with dashboard tracking",
-      "Weekly progress check-in",
-    ],
-    marker: "01",
-    paceLabel: "Build routine first",
-    surface: "from-orange-500/18 via-orange-500/8 to-transparent",
-    barAccent: "from-orange-500 via-yellow-400",
-    bars: [36, 58, 78],
-    cta: "Build My Foundation",
+    title: "Strength Block",
+    tag: "Strength",
+    focus: "Loaded lifts and clean execution",
+    description: "A direct look at the kind of strength work that sits inside structured weekly programming.",
+    videoSrc: "https://videos.pexels.com/video-files/4945157/4945157-sd_960_506_24fps.mp4",
+    poster: photoLibrary.programming,
   },
   {
-    name: "Transformation",
-    price: 199,
-    tag: "Most Popular" as string | null,
-    sessions: "4-day plan + weekly coaching",
-    summary: "The core iShowTransformatio package for fat loss, muscle gain, and consistent weekly progress.",
-    bestFor: "Clients who want structure and accountability",
-    featured: true,
-    features: [
-      "Everything in Foundation",
-      "Custom nutrition targets",
-      "Weekly trainer plan updates",
-      "Video form analysis",
-      "WhatsApp support",
-    ],
-    marker: "02",
-    paceLabel: "Drive visible change",
-    surface: "from-blue-500/18 via-orange-500/10 to-transparent",
-    barAccent: "from-blue-500 via-orange-400",
-    bars: [52, 76, 94],
-    cta: "Choose Transformation",
+    title: "Conditioning Push",
+    tag: "Conditioning",
+    focus: "Pace, output, repeatability",
+    description: "Cardio and conditioning work stays targeted so effort builds capacity instead of random fatigue.",
+    videoSrc: "https://videos.pexels.com/video-files/6891854/6891854-sd_640_360_25fps.mp4",
+    poster: photoLibrary.process,
   },
   {
-    name: "Elite Accountability",
-    price: 299,
-    tag: "Highest Support" as string | null,
-    sessions: "5-day plan + priority access",
-    summary: "Closer coaching, faster adjustments, and tighter accountability for ambitious transformation goals.",
-    bestFor: "Busy clients chasing faster progress",
-    featured: false,
-    features: [
-      "Everything in Transformation",
-      "Priority trainer responses",
-      "Advanced progression programming",
-      "Recovery and lifestyle coaching",
-      "Monthly strategy review",
-    ],
-    marker: "03",
-    paceLabel: "Highest support level",
-    surface: "from-orange-500/18 via-yellow-500/10 to-transparent",
-    barAccent: "from-orange-500 via-yellow-400",
-    bars: [68, 88, 100],
-    cta: "Go Elite",
+    title: "Coach-Led Session",
+    tag: "Coach-led",
+    focus: "Feedback, form, accountability",
+    description: "Training footage is part of the feedback loop, making form review and execution standards easier to keep high.",
+    videoSrc: "https://videos.pexels.com/video-files/8027708/8027708-sd_960_506_25fps.mp4",
+    poster: photoLibrary.accountability,
   },
+];
+
+const heroSignals = [
+  { label: "Coach sync", value: "Weekly" },
+  { label: "Plan state", value: "Adaptive" },
+  { label: "Progress feed", value: "Live" },
 ];
 
 const trainerSnapshot = [
@@ -230,6 +216,64 @@ const trainerPromises = [
   "Direct Instagram access for closer communication and follow-through.",
 ];
 
+const trainerPanelStats = [
+  { label: "Programming", value: "Custom" },
+  { label: "Check-ins", value: "Weekly" },
+  { label: "Access", value: "Direct" },
+];
+
+const ctaSequence = [
+  { label: "Assessment", value: "01" },
+  { label: "Plan mapped", value: "02" },
+  { label: "Coach follow-up", value: "03" },
+];
+
+const landingArt = {
+  texture: "/landing/mesh-lines.svg",
+  heroBackdrop: photoLibrary.heroBackdrop,
+  hero: photoLibrary.heroFeature,
+  journey: photoLibrary.process,
+  videosBackdrop: photoLibrary.videoBackdrop,
+  trainerBackdrop: photoLibrary.trainerBackdrop,
+  trainer: photoLibrary.trainerFeature,
+  ctaBackdrop: photoLibrary.ctaBackdrop,
+  cta: photoLibrary.ctaFeature,
+};
+
+function SectionTexture({ className = "opacity-20 mix-blend-screen" }: { className?: string }) {
+  return (
+    <Image
+      src={landingArt.texture}
+      alt=""
+      fill
+      sizes="100vw"
+      className={`pointer-events-none object-cover ${className}`}
+    />
+  );
+}
+
+function SectionBackdropImage({ src, alt = "", className = "opacity-25" }: { src: string; alt?: string; className?: string }) {
+  return (
+    <Image
+      src={src}
+      alt={alt}
+      fill
+      sizes="100vw"
+      className={`pointer-events-none object-cover ${className}`}
+    />
+  );
+}
+
+function LoaderBars({ tone = "light" }: { tone?: "light" | "dark" }) {
+  return (
+    <div aria-hidden="true" className={`landing-loader ${tone === "dark" ? "landing-loader-dark" : ""}`}>
+      <span />
+      <span />
+      <span />
+    </div>
+  );
+}
+
 // --- PAGE ---
 
 export default function LandingPage() {
@@ -239,98 +283,108 @@ export default function LandingPage() {
 
       {/* 1. HERO */}
       <section className="landing-section relative flex min-h-screen items-center overflow-hidden">
+        <SectionBackdropImage src={landingArt.heroBackdrop} className="opacity-[0.3]" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(249,115,22,0.24),transparent_26%),radial-gradient(circle_at_top_right,rgba(59,130,246,0.18),transparent_32%),linear-gradient(135deg,#020617_0%,#0f172a_46%,#020617_100%)]" />
         <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[size:72px_72px] opacity-[0.12]" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(2,6,23,0.16)_55%,rgba(2,6,23,0.84)_100%)]" />
         <div className="absolute top-1/4 right-1/3 w-[600px] h-[600px] rounded-full bg-blue-600/10 blur-[120px] pointer-events-none" />
         <div className="absolute bottom-1/3 right-1/4 w-[400px] h-[400px] rounded-full bg-orange-500/10 blur-[100px] pointer-events-none" />
-        <div className="pointer-events-none absolute right-[-12rem] top-24 hidden h-[34rem] w-[34rem] rounded-full border border-white/10 bg-white/5 blur-[2px] xl:block" />
-        <div className="pointer-events-none absolute right-20 top-1/2 hidden h-72 w-72 -translate-y-1/2 rounded-[3rem] border border-white/10 bg-white/5 backdrop-blur-md xl:block" />
+        <SectionTexture className="opacity-[0.2] mix-blend-screen" />
 
-        <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-36">
-          <div className="max-w-3xl landing-reveal landing-delay-1">
-            <div className="inline-flex items-center gap-2 bg-orange-500/20 border border-orange-500/40 backdrop-blur-sm rounded-full px-5 py-2.5 mb-8">
-              <Flame className="w-4 h-4 text-orange-400" />
-              <span className="text-orange-300 text-sm font-semibold tracking-widest uppercase">Coach-Led Transformation</span>
-            </div>
+        <div className="relative z-10 mx-auto w-full max-w-7xl px-4 pt-24 pb-28 sm:px-6 lg:px-8">
+          <div className="grid items-center gap-14 xl:grid-cols-[minmax(0,1fr)_30rem]">
+            <div className="max-w-3xl landing-reveal landing-delay-1">
+              <div className="inline-flex items-center gap-2 rounded-full border border-orange-500/40 bg-orange-500/20 px-5 py-2.5 backdrop-blur-sm mb-8">
+                <Flame className="w-4 h-4 text-orange-400" />
+                <span className="text-orange-300 text-sm font-semibold tracking-widest uppercase">Coach-Led Transformation</span>
+              </div>
 
-            <h1 className="text-7xl sm:text-8xl lg:text-[108px] font-black leading-[0.88] tracking-tighter text-white mb-7">
-              FORGE
-              <span className="block text-transparent bg-clip-text bg-gradient-to-r from-orange-400 via-orange-500 to-yellow-400">
-                YOUR BEST
-              </span>
-              SELF.
-            </h1>
+              <h1 className="text-7xl sm:text-8xl lg:text-[108px] font-black leading-[0.88] tracking-tighter text-white mb-7">
+                FORGE
+                <span className="block text-transparent bg-clip-text bg-gradient-to-r from-orange-400 via-orange-500 to-yellow-400">
+                  YOUR BEST
+                </span>
+                SELF.
+              </h1>
 
-            <p className="text-xl lg:text-2xl text-white/60 max-w-2xl mb-10 leading-relaxed font-light">
-              iShowTransformatio gives you structured coaching from Mohammed Sufiyan, a clear plan,
-              and the accountability needed to turn effort into visible progress.
-            </p>
+              <p className="max-w-2xl text-xl leading-relaxed font-light text-white/60 mb-10 lg:text-2xl">
+                iShowTransformation gives you structured coaching from Mohammed Sufiyan, a clear plan,
+                and the accountability needed to turn effort into visible progress.
+              </p>
 
-            <div className="flex flex-col sm:flex-row gap-4 mb-16">
-              <Link
-                href="/register"
-                className="inline-flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-400 text-white px-8 py-4 rounded-full font-bold text-lg transition-all shadow-2xl shadow-orange-500/30 hover:shadow-orange-500/50 hover:-translate-y-1 group"
-              >
-                Start Free Assessment
-                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-              </Link>
-              <Link
-                href="/#programs"
-                className="inline-flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 border border-white/30 hover:border-white/50 text-white px-8 py-4 rounded-full font-bold text-lg transition-all backdrop-blur-sm"
-              >
-                Explore Programs
-                <ChevronRight className="w-5 h-5" />
-              </Link>
-            </div>
+              <div className="flex flex-col sm:flex-row gap-4 mb-16">
+                <Link
+                  href="/register"
+                  className="inline-flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-400 text-white px-8 py-4 rounded-full font-bold text-lg transition-all shadow-2xl shadow-orange-500/30 hover:shadow-orange-500/50 hover:-translate-y-1 group"
+                >
+                  Start Free Assessment
+                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                </Link>
+                <Link
+                  href="/#videos"
+                  className="inline-flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 border border-white/30 hover:border-white/50 text-white px-8 py-4 rounded-full font-bold text-lg transition-all backdrop-blur-sm"
+                >
+                  Watch Training Videos
+                  <ChevronRight className="w-5 h-5" />
+                </Link>
+              </div>
 
-            <div className="flex flex-wrap gap-8 pt-8 border-t border-white/10">
-              {heroHighlights.map((item) => (
-                <div key={item.title} className="max-w-[220px]">
-                  <p className="text-base font-black uppercase tracking-[0.18em] text-white">{item.title}</p>
-                  <p className="text-white/45 text-sm mt-2 leading-relaxed">{item.description}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="landing-reveal landing-delay-3 hidden xl:flex flex-col gap-4 absolute right-8 top-1/2 -translate-y-1/2">
-            {[
-              { icon: ClipboardList, bg: "bg-orange-500/25", ic: "text-orange-400", title: "Assessment-Led Start", sub: "Goals, baseline, and constraints first" },
-              { icon: Target,        bg: "bg-green-500/25",  ic: "text-green-400",  title: "Custom Programming",   sub: "Weekly structure built around your routine" },
-              { icon: Users,         bg: "bg-blue-500/25",   ic: "text-blue-400",   title: "Coach Accountability", sub: "Direct follow-up from Mohammed Sufiyan" },
-            ].map((card, ci) => {
-              const Icon = card.icon;
-              return (
-                <div key={ci} className="landing-panel animate-float bg-black/40 backdrop-blur-xl border border-white/10 rounded-2xl p-5 flex items-center gap-4 w-64 shadow-2xl">
-                  <div className={`w-12 h-12 rounded-xl ${card.bg} flex items-center justify-center shrink-0`}>
-                    <Icon className={`w-6 h-6 ${card.ic}`} />
+              <div className="flex flex-wrap gap-8 border-t border-white/10 pt-8">
+                {heroHighlights.map((item) => (
+                  <div key={item.title} className="max-w-[220px]">
+                    <p className="text-base font-black uppercase tracking-[0.18em] text-white">{item.title}</p>
+                    <p className="text-sm leading-relaxed text-white/45 mt-2">{item.description}</p>
                   </div>
-                  <div>
-                    <p className="text-white font-bold text-sm">{card.title}</p>
-                    <p className="text-white/50 text-xs">{card.sub}</p>
+                ))}
+              </div>
+            </div>
+
+            <div className="landing-reveal landing-delay-2 mx-auto w-full max-w-[30rem] xl:max-w-none">
+              <div className="landing-panel landing-scanline relative overflow-hidden rounded-[2.35rem] border border-white/10 bg-white/6 p-3 shadow-[0_40px_120px_rgba(0,0,0,0.45)] backdrop-blur-sm">
+                <div className="absolute inset-0 bg-gradient-to-br from-orange-500/16 via-transparent to-blue-500/16" />
+                <div className="relative aspect-[4/5] overflow-hidden rounded-[1.85rem]">
+                  <Image
+                    src={landingArt.hero}
+                    alt="Athlete training intensely in a gym environment"
+                    fill
+                    priority
+                    sizes="(max-width: 1280px) 100vw, 30rem"
+                    className="object-cover"
+                  />
+                </div>
+
+                <div className="absolute left-8 top-8 inline-flex items-center gap-2 rounded-full border border-white/15 bg-slate-950/70 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.26em] text-white/70 backdrop-blur-sm">
+                  <span className="h-2.5 w-2.5 rounded-full bg-green-400" />
+                  Live coaching dashboard
+                </div>
+
+                <div className="absolute right-8 top-8 hidden w-36 rounded-[1.4rem] border border-white/10 bg-slate-950/72 p-4 backdrop-blur-md sm:block">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-orange-200/70">Loadout</p>
+                  <p className="mt-2 text-sm font-semibold text-white">Plan is syncing</p>
+                  <div className="mt-4">
+                    <LoaderBars />
                   </div>
                 </div>
-              );
-            })}
-          </div>
 
-          <div className="landing-reveal landing-delay-2 absolute bottom-14 right-8 hidden xl:block">
-            <div className="landing-panel relative w-80 rounded-[2rem] border border-white/10 bg-black/35 p-6 backdrop-blur-xl shadow-2xl">
-              <div className="absolute inset-0 rounded-[2rem] bg-gradient-to-br from-orange-500/10 via-transparent to-blue-500/10" />
-              <div className="relative">
-                <p className="text-xs font-semibold uppercase tracking-[0.26em] text-orange-300/80 mb-4">Coaching Flow</p>
-                <div className="space-y-3">
-                  {[
-                    { label: "Assessment", value: "01" },
-                    { label: "Programming", value: "02" },
-                    { label: "Accountability", value: "03" },
-                  ].map((item) => (
-                    <div key={item.label} className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
-                      <span className="text-sm font-medium text-white/80">{item.label}</span>
-                      <span className="text-xl font-black text-white/30">{item.value}</span>
+                <div className="absolute inset-x-8 bottom-8 grid gap-3 sm:grid-cols-[1.1fr_0.9fr]">
+                  <div className="rounded-[1.5rem] border border-white/10 bg-slate-950/78 p-5 backdrop-blur-md">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-orange-200/70">Momentum check</p>
+                    <p className="mt-2 max-w-[15rem] text-sm leading-relaxed text-white/78">
+                      Assessment, plan updates, and coach follow-up all stay visible in one trackable flow.
+                    </p>
+                    <div className="mt-4">
+                      <LoaderBars />
                     </div>
-                  ))}
+                  </div>
+
+                  <div className="grid gap-3">
+                    {heroSignals.map((item) => (
+                      <div key={item.label} className="rounded-[1.35rem] border border-white/10 bg-slate-950/72 px-4 py-3 backdrop-blur-md">
+                        <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-white/45">{item.label}</p>
+                        <p className="mt-1 text-lg font-black text-white">{item.value}</p>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
@@ -355,8 +409,10 @@ export default function LandingPage() {
       </div>
 
       {/* 3. SERVICES */}
-      <section id="services" className="landing-section py-28 bg-gray-950 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section id="services" className="landing-section relative overflow-hidden py-28 bg-gray-950 text-white">
+        <SectionTexture className="opacity-[0.16] mix-blend-screen" />
+
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16 landing-reveal landing-delay-1">
             <div className="inline-flex items-center gap-2 bg-orange-500/20 border border-orange-500/30 rounded-full px-4 py-2 mb-4">
               <Trophy className="w-4 h-4 text-orange-400" />
@@ -379,7 +435,7 @@ export default function LandingPage() {
               return (
                 <div
                   key={svc.title}
-                  className="landing-panel landing-reveal group relative overflow-hidden rounded-3xl aspect-[3/4] border border-white/10 bg-[#0b1220]"
+                  className="landing-panel landing-reveal group relative overflow-hidden rounded-3xl border border-white/10 bg-[#0b1220]"
                   style={{ animationDelay: `${0.12 + index * 0.08}s` }}
                 >
                   <div className={`absolute inset-0 bg-gradient-to-br ${svc.accent}`} />
@@ -387,18 +443,34 @@ export default function LandingPage() {
                   <div className="absolute -right-5 top-6 opacity-[0.08]">
                     <Icon className="h-28 w-28 text-white" />
                   </div>
-                  <div className="relative flex h-full flex-col justify-between p-6">
-                    <div className="flex items-start justify-between gap-4">
-                      <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-white/65">
+                  <div className="relative flex h-full flex-col p-6">
+                    <div className="landing-scanline relative mb-6 overflow-hidden rounded-[1.75rem] border border-white/10 bg-slate-950/70">
+                      <div className="absolute inset-0 bg-gradient-to-br from-slate-950/10 via-transparent to-slate-950/55" />
+                      <Image
+                        src={svc.art}
+                        alt=""
+                        width={720}
+                        height={720}
+                        className="h-44 w-full object-cover"
+                      />
+
+                      <div className="absolute left-4 top-4 rounded-full border border-white/15 bg-slate-950/75 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-white/70 backdrop-blur-sm">
                         {svc.eyebrow}
-                      </span>
-                      <span className="text-6xl font-black leading-none text-white/10">{svc.marker}</span>
+                      </div>
+
+                      <div className="absolute right-4 top-4 w-16 rounded-[1rem] border border-white/10 bg-black/45 p-3 backdrop-blur-sm">
+                        <LoaderBars />
+                      </div>
+
+                      <div className="absolute inset-x-4 bottom-4 flex items-center justify-between gap-4">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-orange-500/30 bg-orange-500/20 backdrop-blur-sm">
+                          <Icon className="w-6 h-6 text-orange-300" />
+                        </div>
+                        <span className="text-5xl font-black leading-none text-white/20">{svc.marker}</span>
+                      </div>
                     </div>
 
-                    <div>
-                      <div className="w-12 h-12 rounded-xl bg-orange-500/20 backdrop-blur-sm border border-orange-500/30 flex items-center justify-center mb-4">
-                        <Icon className="w-6 h-6 text-orange-300" />
-                      </div>
+                    <div className="mt-auto">
                       <h3 className="font-black text-white text-xl mb-2">{svc.title}</h3>
                       <p className="text-gray-300 text-sm leading-relaxed max-w-xs mb-4">
                         {svc.description}
@@ -417,8 +489,10 @@ export default function LandingPage() {
 
       {/* 4. HOW IT WORKS */}
       <section id="how-it-works" className="landing-section relative overflow-hidden bg-neutral-950 py-28 text-white">
+        <SectionBackdropImage src={landingArt.journey} className="opacity-[0.24]" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(249,115,22,0.22),transparent_32%),radial-gradient(circle_at_bottom_right,rgba(37,99,235,0.24),transparent_36%)]" />
         <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.04)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.04)_1px,transparent_1px)] bg-[size:88px_88px] opacity-[0.08]" />
+        <SectionTexture className="opacity-[0.14] mix-blend-screen" />
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid gap-14 lg:grid-cols-[0.9fr_1.1fr] lg:gap-16">
@@ -439,6 +513,30 @@ export default function LandingPage() {
                 This is built to feel clear from day one: understand your baseline, get a plan that fits your life,
                 train with structure, and watch momentum stack into visible results.
               </p>
+
+              <div className="landing-panel landing-scanline relative mb-8 overflow-hidden rounded-[2rem] border border-white/10 bg-white/5 p-3 backdrop-blur-sm shadow-[0_24px_80px_rgba(0,0,0,0.24)]">
+                <div className="absolute inset-0 bg-gradient-to-br from-orange-500/14 via-transparent to-blue-500/14" />
+                <div className="relative aspect-[1.08/1] overflow-hidden rounded-[1.5rem]">
+                  <Image
+                    src={landingArt.journey}
+                    alt="Runner building momentum outdoors during a conditioning session"
+                    fill
+                    sizes="(max-width: 1024px) 100vw, 42rem"
+                    className="object-cover"
+                  />
+                </div>
+
+                <div className="absolute left-6 top-6 rounded-full border border-white/15 bg-slate-950/72 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-white/70 backdrop-blur-sm">
+                  4-stage roadmap
+                </div>
+
+                <div className="absolute right-6 top-6 hidden w-36 rounded-[1rem] border border-white/10 bg-slate-950/72 p-4 backdrop-blur-sm sm:block">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-orange-200/70">Route load</p>
+                  <div className="mt-3">
+                    <LoaderBars />
+                  </div>
+                </div>
+              </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-8">
                 {journeyHighlights.map((highlight, index) => (
@@ -478,10 +576,10 @@ export default function LandingPage() {
                   <ArrowRight className="w-5 h-5" />
                 </Link>
                 <Link
-                  href="/#programs"
+                  href="/#videos"
                   className="inline-flex items-center justify-center gap-2 rounded-full border border-white/15 bg-white/5 px-8 py-4 text-lg font-bold text-white transition-all hover:bg-white/10"
                 >
-                  Explore Programs
+                  View Training Videos
                   <ChevronRight className="w-5 h-5" />
                 </Link>
               </div>
@@ -548,128 +646,104 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* 5. PROGRAMS */}
-      <section id="programs" className="landing-section py-28 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16 landing-reveal landing-delay-1">
-            <div className="inline-flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-full px-4 py-2 mb-4">
-              <Dumbbell className="w-4 h-4 text-blue-700" />
-              <span className="text-blue-700 text-sm font-semibold tracking-widest uppercase">Coaching Plans</span>
-            </div>
-            <h2 className="text-5xl lg:text-6xl font-black text-gray-900 mb-4">
-              Choose Your <span className="text-orange-500">Coaching Plan</span>
-            </h2>
-            <p className="text-gray-600 text-lg max-w-2xl mx-auto">
-              Pick the level of structure and accountability that matches your current stage. Every option starts with assessment, programming, and coach-led direction.
-            </p>
-          </div>
+      {/* 5. VIDEOS */}
+      <section id="videos" className="landing-section relative overflow-hidden bg-neutral-950 py-28 text-white">
+        <SectionBackdropImage src={landingArt.videosBackdrop} className="opacity-[0.24]" />
+        <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(2,6,23,0.92)_0%,rgba(2,6,23,0.68)_48%,rgba(15,23,42,0.94)_100%)]" />
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.04)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.04)_1px,transparent_1px)] bg-[size:88px_88px] opacity-[0.08]" />
+        <SectionTexture className="opacity-[0.14] mix-blend-screen" />
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-start">
-            {programs.map((prog, index) => (
-              <div
-                key={prog.name}
-                className={`landing-panel landing-reveal relative rounded-3xl overflow-hidden shadow-xl ${
-                  prog.featured ? "ring-2 ring-orange-500 shadow-orange-500/20 md:scale-105 z-10" : ""
-                }`}
-                style={{ animationDelay: `${0.12 + index * 0.08}s` }}
-              >
-                <div className={`p-8 ${prog.featured ? "bg-gray-900 text-white" : "bg-white"}`}>
-                  {prog.tag && (
-                    <div className={`mb-6 inline-flex text-white text-xs font-black px-4 py-2 rounded-full tracking-wider ${
-                      prog.featured ? "bg-orange-500" : "bg-blue-700"
-                    }`}>
-                      {prog.tag}
-                    </div>
-                  )}
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid gap-12 lg:grid-cols-[0.9fr_1.1fr] lg:items-start lg:gap-14">
+            <div className="landing-reveal landing-delay-1 lg:sticky lg:top-28 self-start">
+              <div className="inline-flex items-center gap-2 rounded-full border border-orange-400/30 bg-orange-500/10 px-4 py-2 mb-6 backdrop-blur-sm">
+                <PlayCircle className="w-4 h-4 text-orange-300" />
+                <span className="text-orange-200 text-sm font-semibold tracking-[0.24em] uppercase">Training Videos</span>
+              </div>
 
-                  <div className={`relative mb-8 overflow-hidden rounded-[2rem] border p-6 ${
-                    prog.featured ? "border-white/10 bg-white/5" : "border-gray-200 bg-gray-50"
-                  }`}>
-                    <div className={`absolute inset-0 bg-gradient-to-br ${prog.surface}`} />
-                    <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[size:52px_52px] opacity-[0.08]" />
+              <h2 className="text-5xl lg:text-7xl font-black leading-[0.94] tracking-tight mb-6">
+                Real Sessions.
+                <span className="block text-transparent bg-clip-text bg-gradient-to-r from-orange-400 via-orange-300 to-blue-400">
+                  Real Training.
+                </span>
+              </h2>
 
-                    <div className="relative flex items-start justify-between gap-4">
-                      <div>
-                        <p className={`text-xs font-bold uppercase tracking-[0.24em] ${prog.featured ? "text-orange-300" : "text-gray-500"}`}>
-                          {prog.sessions}
-                        </p>
-                        <p className={`mt-3 text-lg font-semibold ${prog.featured ? "text-white/85" : "text-gray-800"}`}>
-                          {prog.paceLabel}
-                        </p>
-                      </div>
-                      <span className={`text-6xl font-black leading-none ${prog.featured ? "text-white/10" : "text-gray-900/10"}`}>
-                        {prog.marker}
-                      </span>
-                    </div>
+              <p className="max-w-xl text-lg leading-relaxed text-white/70 mb-8">
+                The platform can carry actual training footage alongside the rest of the coaching flow, giving sessions,
+                movement quality, and execution a more visual layer instead of leaving everything as text only.
+              </p>
 
-                    <div className="relative mt-8 space-y-3">
-                      {prog.bars.map((bar, barIndex) => (
-                        <div
-                          key={`${prog.name}-${barIndex}`}
-                          className={`h-3 rounded-full overflow-hidden ${prog.featured ? "bg-white/10" : "bg-gray-200"}`}
-                        >
-                          <div
-                            className={`h-full rounded-full bg-gradient-to-r ${prog.barAccent}`}
-                            style={{ width: `${bar}%` }}
-                          />
-                        </div>
-                      ))}
-                    </div>
+              <div className="landing-panel landing-scanline relative overflow-hidden rounded-[2rem] border border-white/10 bg-white/5 p-3 backdrop-blur-sm shadow-[0_24px_80px_rgba(0,0,0,0.24)]">
+                <div className="absolute inset-0 bg-gradient-to-br from-orange-500/14 via-transparent to-blue-500/14" />
+                <div className="relative aspect-[4/3] overflow-hidden rounded-[1.5rem]">
+                  <Image
+                    src={landingArt.videosBackdrop}
+                    alt="Dumbbells and training equipment arranged in a gym"
+                    fill
+                    sizes="(max-width: 1024px) 100vw, 40rem"
+                    className="object-cover"
+                  />
+                </div>
+
+                <div className="absolute left-6 top-6 rounded-full border border-white/15 bg-slate-950/72 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-white/70 backdrop-blur-sm">
+                  HD media backgrounds
+                </div>
+
+                <div className="absolute right-6 top-6 hidden w-36 rounded-[1rem] border border-white/10 bg-slate-950/72 p-4 backdrop-blur-sm sm:block">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-orange-200/70">Media load</p>
+                  <div className="mt-3">
+                    <LoaderBars />
                   </div>
-
-                  <p className={`text-xs font-bold uppercase tracking-widest mb-1 ${prog.featured ? "text-orange-400" : "text-gray-400"}`}>
-                    {prog.sessions}
-                  </p>
-                  <h3 className={`text-2xl font-black mb-3 ${prog.featured ? "text-white" : "text-gray-900"}`}>
-                    {prog.name}
-                  </h3>
-                  <p className={`text-sm leading-relaxed mb-5 ${prog.featured ? "text-gray-300" : "text-gray-600"}`}>
-                    {prog.summary}
-                  </p>
-                  <div className={`inline-flex items-center rounded-full px-4 py-2 text-xs font-semibold mb-6 ${
-                    prog.featured
-                      ? "bg-white/10 text-orange-200 border border-white/10"
-                      : "bg-blue-50 text-blue-700 border border-blue-100"
-                  }`}>
-                    Best for: {prog.bestFor}
-                  </div>
-                  <div className="flex items-end gap-1 mb-6">
-                    <span className={`text-5xl font-black leading-none ${prog.featured ? "text-white" : "text-gray-900"}`}>
-                      ${prog.price}
-                    </span>
-                    <span className={`text-base pb-1 ${prog.featured ? "text-gray-400" : "text-gray-500"}`}>/mo</span>
-                  </div>
-
-                  <ul className="space-y-3 mb-8">
-                    {prog.features.map((f) => (
-                      <li key={f} className="flex items-center gap-3 text-sm">
-                        <CheckCircle className={`w-4 h-4 shrink-0 ${prog.featured ? "text-orange-400" : "text-blue-600"}`} />
-                        <span className={prog.featured ? "text-gray-300" : "text-gray-600"}>{f}</span>
-                      </li>
-                    ))}
-                  </ul>
-
-                  <Link
-                    href="/register"
-                    className={`flex items-center justify-center gap-2 w-full py-4 rounded-2xl font-bold text-base transition-all hover:-translate-y-0.5 ${
-                      prog.featured
-                        ? "bg-orange-500 hover:bg-orange-400 text-white shadow-lg shadow-orange-500/30"
-                        : "bg-gray-900 hover:bg-blue-900 text-white"
-                    }`}
-                  >
-                    {prog.cta}
-                    <ArrowRight className="w-4 h-4" />
-                  </Link>
                 </div>
               </div>
-            ))}
+            </div>
+
+            <div className="grid gap-6">
+              {trainingVideos.map((video, index) => (
+                <article
+                  key={video.title}
+                  className="landing-panel landing-reveal rounded-[2rem] border border-white/10 bg-white/5 p-4 backdrop-blur-sm"
+                  style={{ animationDelay: `${0.14 + index * 0.08}s` }}
+                >
+                  <div className="landing-scanline relative overflow-hidden rounded-[1.6rem] border border-white/10 bg-slate-950/70">
+                    <video
+                      className="h-64 w-full object-cover"
+                      autoPlay
+                      loop
+                      muted
+                      playsInline
+                      preload="none"
+                      poster={video.poster}
+                    >
+                      <source src={video.videoSrc} type="video/mp4" />
+                    </video>
+
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/18 to-transparent" />
+                    <div className="absolute left-4 top-4 rounded-full border border-white/15 bg-slate-950/75 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-white/70 backdrop-blur-sm">
+                      {video.tag}
+                    </div>
+                    <div className="absolute right-4 top-4 w-16 rounded-[1rem] border border-white/10 bg-black/45 p-3 backdrop-blur-sm">
+                      <LoaderBars />
+                    </div>
+                    <div className="absolute inset-x-5 bottom-5">
+                      <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-orange-200/75">{video.focus}</p>
+                      <h3 className="mt-2 text-2xl font-black text-white">{video.title}</h3>
+                    </div>
+                  </div>
+
+                  <p className="mt-4 text-sm leading-relaxed text-white/72">{video.description}</p>
+                </article>
+              ))}
+            </div>
           </div>
         </div>
       </section>
 
       {/* 6. TRAINER */}
       <section id="trainer" className="landing-section relative overflow-hidden bg-slate-950 py-28 text-white">
+        <SectionBackdropImage src={landingArt.trainerBackdrop} className="opacity-[0.24]" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(249,115,22,0.16),transparent_30%),radial-gradient(circle_at_bottom_left,rgba(59,130,246,0.18),transparent_34%)]" />
+        <SectionTexture className="opacity-[0.16] mix-blend-screen" />
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid gap-10 lg:grid-cols-[0.92fr_1.08fr] lg:gap-14">
@@ -687,7 +761,7 @@ export default function LandingPage() {
               </h2>
 
               <p className="max-w-2xl text-lg leading-relaxed text-white/72 mb-8">
-                Mohammed leads the iShowTransformatio coaching experience with practical programming,
+                Mohammed leads the iShowTransformation coaching experience with practical programming,
                 weekly accountability, and a clear focus on sustainable body transformation. The goal is not
                 random intensity. The goal is structure you can repeat and progress you can measure.
               </p>
@@ -726,6 +800,39 @@ export default function LandingPage() {
             </div>
 
             <div className="grid gap-4">
+              <div className="landing-panel landing-reveal landing-delay-2 landing-scanline relative overflow-hidden rounded-[2rem] border border-white/10 bg-white/5 p-3 backdrop-blur-sm">
+                <div className="absolute inset-0 bg-gradient-to-br from-orange-500/14 via-transparent to-blue-500/14" />
+                <div className="relative aspect-[5/6] overflow-hidden rounded-[1.6rem]">
+                  <Image
+                    src={landingArt.trainer}
+                    alt="Coach assisting a client during a gym session"
+                    fill
+                    sizes="(max-width: 1024px) 100vw, 40rem"
+                    className="object-cover"
+                  />
+                </div>
+
+                <div className="absolute left-6 top-6 rounded-full border border-white/15 bg-slate-950/72 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-white/70 backdrop-blur-sm">
+                  Coach signal
+                </div>
+
+                <div className="absolute right-6 top-6 hidden w-36 rounded-[1rem] border border-white/10 bg-slate-950/72 p-4 backdrop-blur-sm sm:block">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-orange-200/70">Support load</p>
+                  <div className="mt-3">
+                    <LoaderBars />
+                  </div>
+                </div>
+
+                <div className="absolute inset-x-6 bottom-6 grid gap-3 sm:grid-cols-3">
+                  {trainerPanelStats.map((item) => (
+                    <div key={item.label} className="rounded-[1.35rem] border border-white/10 bg-slate-950/78 px-4 py-3 backdrop-blur-md">
+                      <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-white/45">{item.label}</p>
+                      <p className="mt-1 text-lg font-black text-white">{item.value}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
               {trainerPillars.map((pillar, index) => {
                 const Icon = pillar.icon;
 
@@ -779,10 +886,12 @@ export default function LandingPage() {
 
       {/* 7. CTA */}
       <section className="landing-section relative py-36 overflow-hidden">
+        <SectionBackdropImage src={landingArt.ctaBackdrop} className="opacity-[0.26]" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(249,115,22,0.22),transparent_28%),radial-gradient(circle_at_bottom_left,rgba(59,130,246,0.18),transparent_34%),linear-gradient(135deg,#020617_0%,#111827_50%,#020617_100%)]" />
         <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[size:64px_64px] opacity-[0.08]" />
         <div className="absolute left-[-8rem] bottom-[-10rem] h-72 w-72 rounded-full bg-orange-500/10 blur-[110px]" />
         <div className="absolute right-[-4rem] top-10 h-64 w-64 rounded-full bg-blue-500/10 blur-[100px]" />
+        <SectionTexture className="opacity-[0.16] mix-blend-screen" />
 
         <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center landing-reveal landing-delay-1">
           <div className="inline-flex items-center gap-2 bg-orange-500/20 border border-orange-500/40 rounded-full px-5 py-2.5 mb-8">
@@ -812,6 +921,40 @@ export default function LandingPage() {
               Already a Member?
             </Link>
           </div>
+
+          <div className="landing-panel landing-scanline relative mx-auto mb-10 max-w-3xl overflow-hidden rounded-[2rem] border border-white/10 bg-white/5 p-3 backdrop-blur-sm">
+            <div className="absolute inset-0 bg-gradient-to-br from-orange-500/14 via-transparent to-blue-500/14" />
+            <div className="relative aspect-[5/3] overflow-hidden rounded-[1.5rem]">
+              <Image
+                src={landingArt.cta}
+                alt="Athlete running outdoors at sunrise"
+                fill
+                sizes="(max-width: 1024px) 100vw, 48rem"
+                className="object-cover"
+              />
+            </div>
+
+            <div className="absolute left-6 top-6 rounded-full border border-white/15 bg-slate-950/72 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-white/70 backdrop-blur-sm">
+              Start sequence
+            </div>
+
+            <div className="absolute right-6 top-6 hidden w-36 rounded-[1rem] border border-white/10 bg-slate-950/72 p-4 backdrop-blur-sm sm:block">
+              <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-orange-200/70">Launch load</p>
+              <div className="mt-3">
+                <LoaderBars />
+              </div>
+            </div>
+
+            <div className="absolute inset-x-6 bottom-6 grid gap-3 sm:grid-cols-3">
+              {ctaSequence.map((item) => (
+                <div key={item.label} className="rounded-[1.35rem] border border-white/10 bg-slate-950/78 px-4 py-3 text-left backdrop-blur-md">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-white/45">{item.label}</p>
+                  <p className="mt-1 text-lg font-black text-white">{item.value}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
           <div className="flex flex-wrap justify-center gap-6 text-gray-400 text-sm">
             {["Assessment first", "Trainer-led programming", "Clear weekly follow-up"].map((item) => (
               <div key={item} className="flex items-center gap-2">
@@ -830,7 +973,7 @@ export default function LandingPage() {
             <div className="md:col-span-2">
               <div className="mb-4 whitespace-nowrap leading-none">
                 <span className="font-black text-xl text-white tracking-tight sm:text-2xl">iShow</span>
-                <span className="font-black text-xl text-orange-400 tracking-tight sm:text-2xl">Transformatio</span>
+                <span className="font-black text-xl text-orange-400 tracking-tight sm:text-2xl">Transformation</span>
               </div>
               <p className="text-gray-500 max-w-xs leading-relaxed mb-6 text-sm">
                 Coach-led transformation built around clear structure, accountability, and steady progress.
@@ -901,7 +1044,7 @@ export default function LandingPage() {
           </div>
 
           <div className="border-t border-gray-800 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-gray-600">
-            <p>© 2026 iShowTransformatio. All rights reserved.</p>
+            <p>© 2026 iShowTransformation. All rights reserved.</p>
             <div className="flex flex-wrap items-center justify-center gap-6">
               <Link href="/privacy" className="hover:text-gray-400 transition-colors">Privacy Policy</Link>
               <Link href="/terms" className="hover:text-gray-400 transition-colors">Terms of Service</Link>

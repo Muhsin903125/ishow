@@ -116,7 +116,7 @@ export default function RegisterPage() {
             <div className="mb-6 text-center lg:hidden">
               <Link href="/" className="inline-flex whitespace-nowrap leading-none">
                 <span className="font-black text-2xl text-white tracking-tight">iShow</span>
-                <span className="font-black text-2xl text-orange-400 tracking-tight">Transformatio</span>
+                <span className="font-black text-2xl text-orange-400 tracking-tight">Transformation</span>
               </Link>
             </div>
 
@@ -279,7 +279,7 @@ export default function RegisterPage() {
           <div>
             <Link href="/" className="inline-flex whitespace-nowrap leading-none">
               <span className="font-black text-2xl text-white tracking-tight">iShow</span>
-              <span className="font-black text-2xl text-orange-400 tracking-tight">Transformatio</span>
+              <span className="font-black text-2xl text-orange-400 tracking-tight">Transformation</span>
             </Link>
 
             <div className="inline-flex items-center gap-2 rounded-full border border-orange-400/25 bg-orange-500/10 px-4 py-2 mt-10 mb-6">
@@ -291,10 +291,10 @@ export default function RegisterPage() {
               Build the profile your training plan can actually use.
             </h2>
 
-            <p className="max-w-xl text-lg xl:text-xl text-white/60 mt-6 leading-relaxed">
+            {/* <p className="max-w-xl text-lg xl:text-xl text-white/60 mt-6 leading-relaxed">
               Registration is just the first step. The real value starts when your assessment, coaching direction,
               and weekly structure line up.
-            </p>
+            </p> */}
           </div>
 
           <div className="grid gap-4 sm:grid-cols-3 max-w-2xl">
@@ -326,7 +326,7 @@ export default function RegisterPage() {
               </div>
             </div>
 
-            <div className="rounded-3xl border border-white/10 bg-white/5 p-5 backdrop-blur-sm">
+            {/* <div className="rounded-3xl border border-white/10 bg-white/5 p-5 backdrop-blur-sm">
               <p className="text-xs font-semibold uppercase tracking-[0.28em] text-orange-300 mb-4">Why it works</p>
               <div className="space-y-3">
                 {benefits.slice(0, 2).map((item) => (
@@ -336,9 +336,9 @@ export default function RegisterPage() {
                   </div>
                 ))}
               </div>
-            </div>
+            </div> */}
 
-            <div className="rounded-3xl border border-white/10 bg-white/5 p-5 backdrop-blur-sm">
+            {/* <div className="rounded-3xl border border-white/10 bg-white/5 p-5 backdrop-blur-sm">
               <p className="text-xs font-semibold uppercase tracking-[0.28em] text-orange-300 mb-4">What follows</p>
               <div className="space-y-3">
                 {benefits.slice(2).map((item) => (
@@ -348,7 +348,7 @@ export default function RegisterPage() {
                   </div>
                 ))}
               </div>
-            </div>
+            </div> */}
           </div>
         </section>
       </div>

@@ -22,7 +22,7 @@ export default function Navbar() {
   const navLinks = [
     { href: "/#services", label: "Services" },
     { href: "/#how-it-works", label: "How It Works" },
-    { href: "/#programs", label: "Programs" },
+    { href: "/#videos", label: "Videos" },
     { href: "/#trainer", label: "Coach" },
   ];
 
@@ -41,7 +41,7 @@ export default function Navbar() {
           <Link href="/" className="group whitespace-nowrap">
             <div className="leading-none">
               <span className="font-black text-base text-white tracking-tight sm:text-lg">iShow</span>
-              <span className="font-black text-base text-orange-400 tracking-tight sm:text-lg">Transformatio</span>
+              <span className="font-black text-base text-orange-400 tracking-tight sm:text-lg">Transformation</span>
             </div>
             <div className="mt-1 h-px w-0 bg-orange-400 transition-all duration-300 group-hover:w-full" />
           </Link>

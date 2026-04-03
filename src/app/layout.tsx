@@ -9,7 +9,7 @@ const geistSans = Geist({
 });
 
 export const metadata: Metadata = {
-  title: "iShowTransformatio - Personal Training",
+  title: "iShowTransformation - Personal Training",
   description: "Transform your fitness journey with focused coaching, structured plans, and trainer-led accountability.",
 };
 

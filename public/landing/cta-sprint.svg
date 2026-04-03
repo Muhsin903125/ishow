@@ -1,0 +1,28 @@
+<svg width="1200" height="720" viewBox="0 0 1200 720" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="cta-bg" x1="92" y1="48" x2="1094" y2="664" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#071221" />
+      <stop offset="1" stop-color="#14253A" />
+    </linearGradient>
+    <linearGradient id="cta-lane" x1="164" y1="198" x2="1042" y2="548" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F97316" />
+      <stop offset="1" stop-color="#3B82F6" />
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="720" rx="40" fill="url(#cta-bg)" />
+  <circle cx="264" cy="144" r="160" fill="#F97316" fill-opacity="0.16" />
+  <circle cx="934" cy="582" r="184" fill="#3B82F6" fill-opacity="0.14" />
+  <path d="M114 484C278 402 430 368 604 372C772 376 930 432 1098 522" stroke="url(#cta-lane)" stroke-width="24" stroke-linecap="round" />
+  <path d="M164 388C332 310 470 280 618 286C788 294 918 348 1044 434" stroke="white" stroke-opacity="0.12" stroke-width="12" stroke-linecap="round" />
+  <rect x="164" y="122" width="322" height="138" rx="32" fill="white" fill-opacity="0.06" stroke="white" stroke-opacity="0.12" />
+  <rect x="704" y="170" width="314" height="150" rx="32" fill="white" fill-opacity="0.06" stroke="white" stroke-opacity="0.12" />
+  <rect x="206" y="170" width="194" height="18" rx="9" fill="white" fill-opacity="0.18" />
+  <rect x="206" y="204" width="148" height="14" rx="7" fill="#F97316" fill-opacity="0.74" />
+  <rect x="748" y="220" width="178" height="18" rx="9" fill="white" fill-opacity="0.18" />
+  <rect x="748" y="254" width="132" height="14" rx="7" fill="#3B82F6" fill-opacity="0.68" />
+  <rect x="340" y="472" width="520" height="122" rx="36" fill="#07111F" fill-opacity="0.7" stroke="white" stroke-opacity="0.12" />
+  <rect x="392" y="520" width="180" height="18" rx="9" fill="white" fill-opacity="0.18" />
+  <rect x="392" y="556" width="132" height="14" rx="7" fill="#F97316" fill-opacity="0.76" />
+  <rect x="642" y="520" width="158" height="18" rx="9" fill="white" fill-opacity="0.18" />
+  <rect x="642" y="556" width="116" height="14" rx="7" fill="#3B82F6" fill-opacity="0.7" />
+</svg>

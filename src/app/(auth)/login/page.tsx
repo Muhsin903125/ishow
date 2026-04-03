@@ -104,7 +104,7 @@ export default function LoginPage() {
           <div>
             <Link href="/" className="inline-flex whitespace-nowrap leading-none">
               <span className="font-black text-2xl text-white tracking-tight">iShow</span>
-              <span className="font-black text-2xl text-orange-400 tracking-tight">Transformatio</span>
+              <span className="font-black text-2xl text-orange-400 tracking-tight">Transformation</span>
             </Link>
 
             <div className="inline-flex items-center gap-2 rounded-full border border-orange-400/25 bg-orange-500/10 px-4 py-2 mt-10 mb-6">
@@ -174,7 +174,7 @@ export default function LoginPage() {
             <div className="mb-6 text-center lg:hidden">
               <Link href="/" className="inline-flex whitespace-nowrap leading-none">
                 <span className="font-black text-2xl text-white tracking-tight">iShow</span>
-                <span className="font-black text-2xl text-orange-400 tracking-tight">Transformatio</span>
+                <span className="font-black text-2xl text-orange-400 tracking-tight">Transformation</span>
               </Link>
             </div>
 

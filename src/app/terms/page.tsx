@@ -29,8 +29,8 @@ const termsSections = [
 ];
 
 export const metadata: Metadata = {
-  title: "Terms of Service | iShowTransformatio",
-  description: "Terms governing access to the iShowTransformatio platform and coaching services.",
+  title: "Terms of Service | iShowTransformation",
+  description: "Terms governing access to the iShowTransformation platform and coaching services.",
 };
 
 export default function TermsPage() {
@@ -45,7 +45,7 @@ export default function TermsPage() {
           <p className="text-xs font-semibold uppercase tracking-[0.26em] text-blue-200/70 mb-4">Effective Date: April 3, 2026</p>
           <h1 className="text-4xl sm:text-5xl font-black tracking-tight">Terms of Service</h1>
           <p className="mt-5 text-lg leading-relaxed text-white/72 max-w-3xl">
-            These Terms of Service govern your access to the iShowTransformatio website, customer dashboard,
+            These Terms of Service govern your access to the iShowTransformation website, customer dashboard,
             coaching plans, assessments, and related communication channels. By using the platform, you agree to
             these terms.
           </p>
@@ -64,7 +64,7 @@ export default function TermsPage() {
           <h2 className="text-2xl font-black text-white mb-3">Need Clarification?</h2>
           <p className="text-base leading-relaxed text-white/78">
             Questions about billing, plan scope, or platform use should be raised before purchasing a coaching plan.
-            You can contact the iShowTransformatio coaching team through the official account contact channel listed on the site.
+            You can contact the iShowTransformation coaching team through the official account contact channel listed on the site.
           </p>
         </div>
       </div>
