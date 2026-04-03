@@ -746,60 +746,8 @@ export default function LandingPage() {
         <SectionTexture className="opacity-[0.16] mix-blend-screen" />
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid gap-10 lg:grid-cols-[0.92fr_1.08fr] lg:gap-14">
-            <div className="landing-reveal landing-delay-1">
-              <div className="inline-flex items-center gap-2 rounded-full border border-blue-400/20 bg-blue-500/10 px-4 py-2 mb-6 backdrop-blur-sm">
-                <Shield className="w-4 h-4 text-blue-300" />
-                <span className="text-blue-200 text-sm font-semibold tracking-[0.24em] uppercase">Trainer Details</span>
-              </div>
-
-              <h2 className="text-5xl lg:text-7xl font-black leading-[0.95] tracking-tight mb-5">
-                Train Directly With
-                <span className="block text-transparent bg-clip-text bg-gradient-to-r from-white via-orange-200 to-orange-400">
-                  Mohammed Sufiyan
-                </span>
-              </h2>
-
-              <p className="max-w-2xl text-lg leading-relaxed text-white/72 mb-8">
-                Mohammed leads the iShowTransformation coaching experience with practical programming,
-                weekly accountability, and a clear focus on sustainable body transformation. The goal is not
-                random intensity. The goal is structure you can repeat and progress you can measure.
-              </p>
-
-              <div className="space-y-3">
-                {trainerSnapshot.map((item, index) => (
-                  <div
-                    key={item.label}
-                    className="landing-panel landing-reveal rounded-2xl border border-white/10 bg-white/5 px-5 py-4 backdrop-blur-sm"
-                    style={{ animationDelay: `${0.14 + index * 0.08}s` }}
-                  >
-                    <p className="text-xs font-semibold uppercase tracking-[0.24em] text-orange-200/70 mb-2">{item.label}</p>
-                    <p className="text-base font-medium text-white/90 leading-relaxed">{item.value}</p>
-                  </div>
-                ))}
-              </div>
-
-              <div className="mt-8 flex flex-col sm:flex-row gap-4">
-                <Link
-                  href="/register"
-                  className="inline-flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-400 text-white px-8 py-4 rounded-full font-bold text-lg shadow-lg shadow-orange-500/30 hover:-translate-y-0.5"
-                >
-                  Start With Mohammed
-                  <ArrowRight className="w-5 h-5" />
-                </Link>
-                <Link
-                  href="https://www.instagram.com/sufiyan_mohd26/"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center justify-center gap-2 rounded-full border border-white/15 bg-white/5 px-8 py-4 text-lg font-bold text-white hover:bg-white/10"
-                >
-                  Instagram @sufiyan_mohd26
-                  <ExternalLink className="w-5 h-5" />
-                </Link>
-              </div>
-            </div>
-
-            <div className="grid gap-4">
+          <div className="grid gap-10 lg:grid-cols-[1.02fr_0.98fr] lg:items-start lg:gap-14">
+            <div className="grid gap-4 lg:sticky lg:top-28 self-start">
               <div className="landing-panel landing-reveal landing-delay-2 landing-scanline relative overflow-hidden rounded-[2rem] border border-white/10 bg-white/5 p-3 backdrop-blur-sm">
                 <div className="absolute inset-0 bg-gradient-to-br from-orange-500/14 via-transparent to-blue-500/14" />
                 <div className="relative aspect-[5/6] overflow-hidden rounded-[1.6rem]">
@@ -833,34 +781,63 @@ export default function LandingPage() {
                 </div>
               </div>
 
-              {trainerPillars.map((pillar, index) => {
-                const Icon = pillar.icon;
-
-                return (
-                  <article
-                    key={pillar.title}
-                    className="landing-panel landing-reveal rounded-[2rem] border border-white/10 bg-white/5 p-6 sm:p-8 backdrop-blur-sm"
-                    style={{ animationDelay: `${0.18 + index * 0.08}s` }}
+              <div className="grid gap-3 sm:grid-cols-3">
+                {trainerSnapshot.map((item, index) => (
+                  <div
+                    key={item.label}
+                    className="landing-panel landing-reveal rounded-[1.6rem] border border-white/10 bg-white/5 px-5 py-5 backdrop-blur-sm"
+                    style={{ animationDelay: `${0.14 + index * 0.06}s` }}
                   >
-                    <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
-                      <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-500 to-orange-600 shadow-lg shadow-orange-500/25">
-                        <Icon className="h-6 w-6 text-white" />
-                      </div>
-                      <div>
-                        <p className="text-xs font-semibold uppercase tracking-[0.26em] text-orange-200/70 mb-3">
-                          Coaching Standard {String(index + 1).padStart(2, "0")}
-                        </p>
-                        <h3 className="text-2xl font-black text-white mb-3">{pillar.title}</h3>
-                        <p className="text-base leading-relaxed text-white/72">{pillar.description}</p>
-                      </div>
-                    </div>
-                  </article>
-                );
-              })}
+                    <p className="text-xs font-semibold uppercase tracking-[0.24em] text-orange-200/70">{item.label}</p>
+                    <p className="mt-2 text-sm leading-relaxed font-medium text-white/90 sm:text-base">{item.value}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="grid gap-4">
+              <div className="landing-panel landing-reveal landing-delay-1 rounded-[2rem] border border-white/10 bg-white/5 p-6 sm:p-8 backdrop-blur-sm">
+                <div className="inline-flex items-center gap-2 rounded-full border border-blue-400/20 bg-blue-500/10 px-4 py-2 mb-6 backdrop-blur-sm">
+                  <Shield className="w-4 h-4 text-blue-300" />
+                  <span className="text-blue-200 text-sm font-semibold tracking-[0.24em] uppercase">Trainer Details</span>
+                </div>
+
+                <h2 className="text-5xl lg:text-7xl font-black leading-[0.95] tracking-tight mb-5">
+                  Train Directly With
+                  <span className="block text-transparent bg-clip-text bg-gradient-to-r from-white via-orange-200 to-orange-400">
+                    Mohammed Sufiyan
+                  </span>
+                </h2>
+
+                <p className="max-w-2xl text-lg leading-relaxed text-white/72 mb-8">
+                  Mohammed leads the iShowTransformation coaching experience with practical programming,
+                  weekly accountability, and a clear focus on sustainable body transformation. The goal is not
+                  random intensity. The goal is structure you can repeat and progress you can measure.
+                </p>
+
+                <div className="flex flex-col gap-4 sm:flex-row">
+                  <Link
+                    href="/register"
+                    className="inline-flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-400 text-white px-8 py-4 rounded-full font-bold text-lg shadow-lg shadow-orange-500/30 hover:-translate-y-0.5"
+                  >
+                    Start With Mohammed
+                    <ArrowRight className="w-5 h-5" />
+                  </Link>
+                  <Link
+                    href="https://www.instagram.com/sufiyan_mohd26/"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center justify-center gap-2 rounded-full border border-white/15 bg-white/5 px-8 py-4 text-lg font-bold text-white hover:bg-white/10"
+                  >
+                    Instagram @sufiyan_mohd26
+                    <ExternalLink className="w-5 h-5" />
+                  </Link>
+                </div>
+              </div>
 
               <div
                 className="landing-panel landing-reveal rounded-[2rem] border border-white/10 bg-gradient-to-br from-white/8 to-white/4 p-6 sm:p-8"
-                style={{ animationDelay: "0.42s" }}
+                style={{ animationDelay: "0.18s" }}
               >
                 <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
                   <div>
@@ -868,6 +845,10 @@ export default function LandingPage() {
                     <h3 className="text-3xl font-black text-white leading-tight">
                       High accountability, clear direction, and progress that stays repeatable.
                     </h3>
+                    <p className="mt-4 text-sm leading-relaxed text-white/64">
+                      The coaching layer is designed to keep momentum high even when the week changes,
+                      so standards, feedback, and follow-through stay visible.
+                    </p>
                   </div>
                   <div className="grid gap-3">
                     {trainerPromises.map((item) => (
@@ -878,6 +859,35 @@ export default function LandingPage() {
                     ))}
                   </div>
                 </div>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                {trainerPillars.map((pillar, index) => {
+                  const Icon = pillar.icon;
+
+                  return (
+                    <article
+                      key={pillar.title}
+                      className={`landing-panel landing-reveal rounded-[2rem] border border-white/10 bg-white/5 p-6 sm:p-8 backdrop-blur-sm ${
+                        index === trainerPillars.length - 1 ? "md:col-span-2" : ""
+                      }`}
+                      style={{ animationDelay: `${0.22 + index * 0.08}s` }}
+                    >
+                      <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
+                        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-500 to-orange-600 shadow-lg shadow-orange-500/25">
+                          <Icon className="h-6 w-6 text-white" />
+                        </div>
+                        <div>
+                          <p className="text-xs font-semibold uppercase tracking-[0.26em] text-orange-200/70 mb-3">
+                            Coaching Standard {String(index + 1).padStart(2, "0")}
+                          </p>
+                          <h3 className="text-2xl font-black text-white mb-3">{pillar.title}</h3>
+                          <p className="text-base leading-relaxed text-white/72">{pillar.description}</p>
+                        </div>
+                      </div>
+                    </article>
+                  );
+                })}
               </div>
             </div>
           </div>
