@@ -86,7 +86,7 @@ export default function PaymentsPage() {
 
   return (
     <DashboardLayout role="CUSTOMER">
-      <div className="p-6 lg:p-8 max-w-5xl mx-auto">
+      <div className="w-full max-w-5xl p-6 lg:p-8">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-2xl font-black text-gray-900">Payments</h1>

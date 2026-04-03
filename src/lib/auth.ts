@@ -20,12 +20,36 @@ export interface AuthUser {
 const USERS_KEY = 'ishow_users';
 const AUTH_KEY = 'ishow_auth';
 
+const DEMO_ALIASES = [
+  {
+    userId: 'user_trainer_1',
+    emails: ['trainer@ishow.com'],
+    passwords: ['trainer123'],
+  },
+  {
+    userId: 'user_john_1',
+    emails: ['customer@ishow.com', 'john@example.com'],
+    passwords: ['customer123', 'demo123'],
+  },
+];
+
+function findUserByDemoAlias(users: User[], email: string, password: string): User | null {
+  const alias = DEMO_ALIASES.find(
+    (item) => item.emails.includes(email) && item.passwords.includes(password)
+  );
+
+  if (!alias) return null;
+  return users.find((user) => user.id === alias.userId) ?? null;
+}
+
 export function login(email: string, password: string): AuthUser | null {
   if (typeof window === 'undefined') return null;
+  const normalizedEmail = email.trim().toLowerCase();
   const users = getItems<User>(USERS_KEY);
-  const user = users.find(
-    (u) => u.email.toLowerCase() === email.toLowerCase() && u.password === password
-  );
+  const user =
+    users.find(
+      (u) => u.email.toLowerCase() === normalizedEmail && u.password === password
+    ) ?? findUserByDemoAlias(users, normalizedEmail, password);
   if (!user) return null;
   const authUser: AuthUser = {
     id: user.id,
@@ -59,16 +83,19 @@ export function register(data: {
   phone?: string;
 }): AuthUser | null {
   if (typeof window === 'undefined') return null;
+  const normalizedEmail = data.email.trim().toLowerCase();
+  const normalizedName = data.name.trim();
+  const normalizedPhone = data.phone?.trim() || undefined;
   const users = getItems<User>(USERS_KEY);
-  const existing = users.find((u) => u.email.toLowerCase() === data.email.toLowerCase());
+  const existing = users.find((u) => u.email.toLowerCase() === normalizedEmail);
   if (existing) return null;
 
   const newUser: User = {
     id: `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-    name: data.name,
-    email: data.email,
+    name: normalizedName,
+    email: normalizedEmail,
     password: data.password,
-    phone: data.phone,
+    phone: normalizedPhone,
     role: 'customer',
     createdAt: new Date().toISOString(),
   };

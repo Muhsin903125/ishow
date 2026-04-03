@@ -46,7 +46,7 @@ export default function MyPlanPage() {
 
   return (
     <DashboardLayout role="CUSTOMER">
-      <div className="p-6 lg:p-8 max-w-4xl mx-auto">
+      <div className="w-full max-w-4xl p-6 lg:p-8">
         <div className="mb-8">
           <h1 className="text-2xl font-black text-gray-900">My Training Plan</h1>
           <p className="text-gray-500 mt-1">Your personalized fitness program</p>

@@ -1,7 +1,20 @@
 import { getItems, setItems } from './storage';
-import type { User } from './auth';
+import type { AuthUser, User } from './auth';
+
+const USERS_KEY = 'ishow_users';
+const ASSESSMENTS_KEY = 'ishow_assessments';
+const PLANS_KEY = 'ishow_plans';
+const SESSIONS_KEY = 'ishow_sessions';
+const PROGRAMS_KEY = 'ishow_programs';
+const PAYMENTS_KEY = 'ishow_payments';
+const SEEDED_KEY = 'ishow_seeded';
+const AUTH_KEY = 'ishow_auth';
 
 const TRAINER_NAME = 'Mohammed Sufiyan';
+const TRAINER_EMAIL = 'trainer@ishow.com';
+const TRAINER_PASSWORD = 'trainer123';
+const CUSTOMER_EMAIL = 'customer@ishow.com';
+const CUSTOMER_PASSWORD = 'customer123';
 
 export interface Assessment {
   id: string;
@@ -77,48 +90,56 @@ export interface Payment {
   dueDate: string;
 }
 
-function syncTrainerData(): void {
-  const users = getItems<User>('ishow_users');
-  if (users.length > 0) {
-    setItems(
-      'ishow_users',
-      users.map((user) =>
-        user.role === 'trainer' ? { ...user, name: TRAINER_NAME } : user
-      )
-    );
+function ensureRecords<T extends { id: string }>(
+  existing: T[],
+  defaults: T[],
+  merge?: (current: T, fallback: T) => T
+): T[] {
+  const records = new Map(existing.map((item) => [item.id, item]));
+
+  for (const fallback of defaults) {
+    const current = records.get(fallback.id);
+    records.set(fallback.id, current ? (merge ? merge(current, fallback) : current) : fallback);
   }
 
-  const plans = getItems<Plan>('ishow_plans');
-  if (plans.length > 0) {
-    setItems(
-      'ishow_plans',
-      plans.map((plan) => ({ ...plan, trainerName: TRAINER_NAME }))
-    );
-  }
+  return Array.from(records.values());
+}
 
-  const sessions = getItems<Session>('ishow_sessions');
-  if (sessions.length > 0) {
-    setItems(
-      'ishow_sessions',
-      sessions.map((session) => ({ ...session, trainerName: TRAINER_NAME }))
+function syncStoredAuth(users: User[]): void {
+  if (typeof window === 'undefined') return;
+
+  try {
+    const raw = localStorage.getItem(AUTH_KEY);
+    if (!raw) return;
+
+    const current = JSON.parse(raw) as AuthUser;
+    const matchedUser = users.find((user) => user.id === current.id);
+    if (!matchedUser) return;
+
+    localStorage.setItem(
+      AUTH_KEY,
+      JSON.stringify({
+        id: matchedUser.id,
+        name: matchedUser.name,
+        email: matchedUser.email,
+        role: matchedUser.role,
+      })
     );
+  } catch {
+    localStorage.removeItem(AUTH_KEY);
   }
 }
 
 export function seedMockData(): void {
   if (typeof window === 'undefined') return;
-  if (localStorage.getItem('ishow_seeded')) {
-    syncTrainerData();
-    return;
-  }
 
   // Users
-  const users: User[] = [
+  const defaultUsers: User[] = [
     {
       id: 'user_trainer_1',
       name: TRAINER_NAME,
-      email: 'trainer@ishow.com',
-      password: 'trainer123',
+      email: TRAINER_EMAIL,
+      password: TRAINER_PASSWORD,
       phone: '+1 (555) 001-0001',
       role: 'trainer',
       createdAt: '2023-01-01T00:00:00.000Z',
@@ -126,8 +147,8 @@ export function seedMockData(): void {
     {
       id: 'user_john_1',
       name: 'John Smith',
-      email: 'john@example.com',
-      password: 'demo123',
+      email: CUSTOMER_EMAIL,
+      password: CUSTOMER_PASSWORD,
       phone: '+1 (555) 001-0002',
       role: 'customer',
       createdAt: '2024-01-15T00:00:00.000Z',
@@ -141,10 +162,37 @@ export function seedMockData(): void {
       role: 'customer',
       createdAt: '2024-02-20T00:00:00.000Z',
     },
+    {
+      id: 'user_marcus_1',
+      name: 'Marcus Lee',
+      email: 'marcus@example.com',
+      password: 'demo123',
+      phone: '+1 (555) 001-0004',
+      role: 'customer',
+      createdAt: '2024-03-08T00:00:00.000Z',
+    },
+    {
+      id: 'user_priya_1',
+      name: 'Priya Patel',
+      email: 'priya@example.com',
+      password: 'demo123',
+      phone: '+1 (555) 001-0005',
+      role: 'customer',
+      createdAt: '2024-03-24T00:00:00.000Z',
+    },
+    {
+      id: 'user_aisha_1',
+      name: 'Aisha Khan',
+      email: 'aisha@example.com',
+      password: 'demo123',
+      phone: '+1 (555) 001-0006',
+      role: 'customer',
+      createdAt: '2024-04-11T00:00:00.000Z',
+    },
   ];
 
   // Assessments
-  const assessments: Assessment[] = [
+  const defaultAssessments: Assessment[] = [
     {
       id: 'assessment_1',
       userId: 'user_john_1',
@@ -177,12 +225,66 @@ export function seedMockData(): void {
       status: 'pending',
       submittedAt: '2024-02-21T10:00:00.000Z',
     },
+    {
+      id: 'assessment_3',
+      userId: 'user_marcus_1',
+      age: 35,
+      weight: '202 lbs',
+      height: '6\'1"',
+      gender: 'male',
+      goals: ['strength', 'mobility', 'body_recomposition'],
+      experienceLevel: 'intermediate',
+      healthConditions: 'Previous ankle sprain, fully rehabbed',
+      daysPerWeek: 4,
+      preferredTimes: 'morning',
+      status: 'reviewed',
+      submittedAt: '2024-03-09T09:30:00.000Z',
+      reviewedAt: '2024-03-10T13:00:00.000Z',
+      trainerNotes: 'Needs structured strength work with mobility support and controlled lower-body loading.',
+    },
+    {
+      id: 'assessment_4',
+      userId: 'user_priya_1',
+      age: 30,
+      weight: '148 lbs',
+      height: '5\'6"',
+      gender: 'female',
+      goals: ['weight_loss', 'endurance', 'consistency'],
+      experienceLevel: 'beginner',
+      healthConditions: 'No major issues',
+      daysPerWeek: 4,
+      preferredTimes: 'early_morning',
+      status: 'reviewed',
+      submittedAt: '2024-03-25T08:00:00.000Z',
+      reviewedAt: '2024-03-26T11:30:00.000Z',
+      trainerNotes: 'Responds well to simple structure. Keep conditioning progressive and sustainable.',
+    },
+    {
+      id: 'assessment_5',
+      userId: 'user_aisha_1',
+      age: 27,
+      weight: '158 lbs',
+      height: '5\'7"',
+      gender: 'female',
+      goals: ['weight_loss', 'toning', 'strength'],
+      experienceLevel: 'intermediate',
+      healthConditions: 'Tight hips after long work hours',
+      daysPerWeek: 5,
+      preferredTimes: 'evening',
+      status: 'reviewed',
+      submittedAt: '2024-04-12T18:15:00.000Z',
+      reviewedAt: '2024-04-13T10:00:00.000Z',
+      trainerNotes: 'Good consistency potential. Needs balanced conditioning and strength progression.',
+    },
   ];
 
   // Plans
   const now = new Date();
-  const threeMonthsAgo = new Date(now);
-  threeMonthsAgo.setMonth(now.getMonth() - 3);
+  const monthDate = (offset: number) => {
+    const value = new Date(now);
+    value.setMonth(now.getMonth() + offset);
+    return value.toISOString().split('T')[0];
+  };
 
   const plans: Plan[] = [
     {
@@ -193,10 +295,62 @@ export function seedMockData(): void {
       monthlyRate: 299,
       paymentFrequency: 'monthly',
       goals: ['Increase lean muscle mass by 10 lbs', 'Improve compound lift maxes by 20%', 'Enhance cardiovascular endurance', 'Optimize recovery protocols'],
-      startDate: threeMonthsAgo.toISOString().split('T')[0],
+      startDate: monthDate(-3),
       status: 'active',
       trainerName: TRAINER_NAME,
       duration: '6 months',
+    },
+    {
+      id: 'plan_2',
+      userId: 'user_sarah_1',
+      name: 'Starter Reset Plan',
+      description: 'A low-friction entry plan focused on routine, movement quality, and basic nutrition consistency.',
+      monthlyRate: 129,
+      paymentFrequency: 'monthly',
+      goals: ['Train 3 times per week', 'Improve posture and confidence', 'Reduce lower back discomfort'],
+      startDate: monthDate(0),
+      status: 'pending',
+      trainerName: TRAINER_NAME,
+      duration: '8 weeks',
+    },
+    {
+      id: 'plan_3',
+      userId: 'user_marcus_1',
+      name: 'Strength Rebuild Plan',
+      description: 'A structured return-to-strength program with mobility primers, progressive loading, and recovery checkpoints.',
+      monthlyRate: 239,
+      paymentFrequency: 'monthly',
+      goals: ['Rebuild lower body strength', 'Improve hinge mechanics', 'Restore weekly training rhythm'],
+      startDate: monthDate(-2),
+      status: 'active',
+      trainerName: TRAINER_NAME,
+      duration: '4 months',
+    },
+    {
+      id: 'plan_4',
+      userId: 'user_priya_1',
+      name: 'Lifestyle Conditioning Plan',
+      description: 'An accountability-driven conditioning plan designed to improve stamina, tighten nutrition habits, and reduce fatigue.',
+      monthlyRate: 179,
+      paymentFrequency: 'monthly',
+      goals: ['Improve workday energy', 'Build cardio fitness', 'Lose 8 lbs sustainably'],
+      startDate: monthDate(-1),
+      status: 'active',
+      trainerName: TRAINER_NAME,
+      duration: '3 months',
+    },
+    {
+      id: 'plan_5',
+      userId: 'user_aisha_1',
+      name: 'Fat Loss Accelerator',
+      description: 'A higher-frequency transformation plan built around progressive training, conditioning, and simple nutrition discipline.',
+      monthlyRate: 219,
+      paymentFrequency: 'monthly',
+      goals: ['Reduce body fat', 'Increase training consistency', 'Build visible upper-body definition'],
+      startDate: monthDate(-2),
+      status: 'active',
+      trainerName: TRAINER_NAME,
+      duration: '5 months',
     },
   ];
 
@@ -275,6 +429,157 @@ export function seedMockData(): void {
       status: 'scheduled',
       trainerName: TRAINER_NAME,
     },
+    {
+      id: 'session_7',
+      userId: 'user_sarah_1',
+      title: 'Starter Consultation Review',
+      date: d(-3),
+      time: '18:30',
+      duration: 45,
+      status: 'completed',
+      notes: 'Reviewed movement confidence and planned a gradual 3-day split.',
+      trainerName: TRAINER_NAME,
+    },
+    {
+      id: 'session_8',
+      userId: 'user_sarah_1',
+      title: 'Mobility & Technique Session',
+      date: d(2),
+      time: '18:30',
+      duration: 45,
+      status: 'scheduled',
+      notes: 'Focus on hinge pattern, core bracing, and low-back friendly progressions.',
+      trainerName: TRAINER_NAME,
+    },
+    {
+      id: 'session_9',
+      userId: 'user_sarah_1',
+      title: 'Habit Review Check-In',
+      date: d(9),
+      time: '18:00',
+      duration: 30,
+      status: 'scheduled',
+      notes: 'Review step count, meals, and adherence before progressing volume.',
+      trainerName: TRAINER_NAME,
+    },
+    {
+      id: 'session_10',
+      userId: 'user_marcus_1',
+      title: 'Lower Body Rebuild',
+      date: d(-6),
+      time: '06:45',
+      duration: 60,
+      status: 'completed',
+      notes: 'Good tempo control on trap bar deadlift and split squat variations.',
+      trainerName: TRAINER_NAME,
+    },
+    {
+      id: 'session_11',
+      userId: 'user_marcus_1',
+      title: 'Technique Check-In',
+      date: d(1),
+      time: '07:00',
+      duration: 50,
+      status: 'scheduled',
+      notes: 'Video review for hinge mechanics and core tension before heavier work.',
+      trainerName: TRAINER_NAME,
+    },
+    {
+      id: 'session_12',
+      userId: 'user_marcus_1',
+      title: 'Posterior Chain Progression',
+      date: d(5),
+      time: '07:00',
+      duration: 60,
+      status: 'scheduled',
+      trainerName: TRAINER_NAME,
+    },
+    {
+      id: 'session_13',
+      userId: 'user_marcus_1',
+      title: 'Recovery Mobility Reset',
+      date: d(12),
+      time: '07:30',
+      duration: 40,
+      status: 'cancelled',
+      notes: 'Client requested reschedule due to travel.',
+      trainerName: TRAINER_NAME,
+    },
+    {
+      id: 'session_14',
+      userId: 'user_priya_1',
+      title: 'Conditioning Kickoff',
+      date: d(-8),
+      time: '06:30',
+      duration: 50,
+      status: 'completed',
+      notes: 'Introduced treadmill intervals and machine circuit pacing.',
+      trainerName: TRAINER_NAME,
+    },
+    {
+      id: 'session_15',
+      userId: 'user_priya_1',
+      title: 'Interval Conditioning Build',
+      date: d(4),
+      time: '06:30',
+      duration: 45,
+      status: 'scheduled',
+      notes: 'Progress work-to-rest ratio and reinforce post-session meal timing.',
+      trainerName: TRAINER_NAME,
+    },
+    {
+      id: 'session_16',
+      userId: 'user_priya_1',
+      title: 'Nutrition Review Check-In',
+      date: d(10),
+      time: '07:15',
+      duration: 30,
+      status: 'scheduled',
+      trainerName: TRAINER_NAME,
+    },
+    {
+      id: 'session_17',
+      userId: 'user_aisha_1',
+      title: 'Body Recomposition Review',
+      date: d(-12),
+      time: '19:00',
+      duration: 60,
+      status: 'completed',
+      notes: 'Improved work capacity and stronger pressing numbers this week.',
+      trainerName: TRAINER_NAME,
+    },
+    {
+      id: 'session_18',
+      userId: 'user_aisha_1',
+      title: 'Upper Body Density Session',
+      date: d(-2),
+      time: '19:00',
+      duration: 55,
+      status: 'completed',
+      notes: 'Pushed density blocks well. Keep meal prep tight ahead of the next phase.',
+      trainerName: TRAINER_NAME,
+    },
+    {
+      id: 'session_19',
+      userId: 'user_aisha_1',
+      title: 'Metabolic Circuit Block',
+      date: d(3),
+      time: '18:45',
+      duration: 50,
+      status: 'scheduled',
+      trainerName: TRAINER_NAME,
+    },
+    {
+      id: 'session_20',
+      userId: 'user_aisha_1',
+      title: 'Monthly Progress Audit',
+      date: d(11),
+      time: '18:30',
+      duration: 40,
+      status: 'scheduled',
+      notes: 'Review check-in photos, training consistency, and calorie compliance.',
+      trainerName: TRAINER_NAME,
+    },
   ];
 
   // Programs
@@ -330,42 +635,122 @@ export function seedMockData(): void {
       ],
       createdAt: '2024-01-25T00:00:00.000Z',
     },
+    {
+      id: 'program_3',
+      userId: 'user_sarah_1',
+      weekNumber: 1,
+      title: 'Starter Reset Week',
+      description: 'A low-impact entry week focused on movement confidence, core control, and walking consistency.',
+      activities: [
+        { day: 'Monday', exercise: 'Bodyweight Squat', sets: 3, reps: '12' },
+        { day: 'Monday', exercise: 'Incline Push-up', sets: 3, reps: '10' },
+        { day: 'Wednesday', exercise: 'Brisk Walk', duration: '30 min', notes: 'Conversation pace' },
+        { day: 'Wednesday', exercise: 'Mobility Flow', duration: '15 min' },
+        { day: 'Friday', exercise: 'Dumbbell Romanian Deadlift', sets: 3, reps: '12' },
+        { day: 'Friday', exercise: 'Seated Cable Row', sets: 3, reps: '12' },
+        { day: 'Saturday', exercise: 'Recovery Stretch', duration: '20 min' },
+      ],
+      createdAt: '2024-02-24T00:00:00.000Z',
+    },
+    {
+      id: 'program_4',
+      userId: 'user_marcus_1',
+      weekNumber: 1,
+      title: 'Movement Rebuild Week',
+      description: 'Reintroduce heavier patterns with mobility prep, tempo work, and technical consistency.',
+      activities: [
+        { day: 'Monday', exercise: 'Trap Bar Deadlift', sets: 4, reps: '6' },
+        { day: 'Monday', exercise: 'Goblet Split Squat', sets: 3, reps: '10 each leg' },
+        { day: 'Tuesday', exercise: 'Bike Intervals', duration: '24 min', notes: '60s on / 90s off' },
+        { day: 'Thursday', exercise: 'Bench Press', sets: 4, reps: '6-8' },
+        { day: 'Thursday', exercise: 'Chest Supported Row', sets: 4, reps: '10' },
+        { day: 'Saturday', exercise: 'Mobility Circuit', duration: '25 min' },
+      ],
+      createdAt: '2024-03-11T00:00:00.000Z',
+    },
+    {
+      id: 'program_5',
+      userId: 'user_marcus_1',
+      weekNumber: 2,
+      title: 'Strength Rebuild Progression',
+      description: 'Progress lower-body strength while keeping hinge mechanics and ankle mobility under control.',
+      activities: [
+        { day: 'Monday', exercise: 'Trap Bar Deadlift', sets: 5, reps: '5', notes: '+10 lbs from week 1' },
+        { day: 'Monday', exercise: 'Reverse Lunge', sets: 3, reps: '8 each leg' },
+        { day: 'Wednesday', exercise: 'Sled Push', sets: 6, reps: '20 m' },
+        { day: 'Thursday', exercise: 'Incline Bench Press', sets: 4, reps: '8' },
+        { day: 'Thursday', exercise: 'Lat Pulldown', sets: 4, reps: '10' },
+        { day: 'Saturday', exercise: 'Ankle + Hip Mobility', duration: '20 min' },
+      ],
+      createdAt: '2024-03-18T00:00:00.000Z',
+    },
+    {
+      id: 'program_6',
+      userId: 'user_priya_1',
+      weekNumber: 1,
+      title: 'Conditioning & Consistency Block',
+      description: 'Build daily energy and cardio capacity with manageable strength work and sustainable conditioning.',
+      activities: [
+        { day: 'Monday', exercise: 'Incline Walk', duration: '25 min' },
+        { day: 'Tuesday', exercise: 'Dumbbell Squat', sets: 3, reps: '12' },
+        { day: 'Tuesday', exercise: 'Dumbbell Press', sets: 3, reps: '12' },
+        { day: 'Thursday', exercise: 'Rowing Intervals', duration: '18 min', notes: '45s on / 75s off' },
+        { day: 'Friday', exercise: 'Lat Pulldown', sets: 3, reps: '12' },
+        { day: 'Friday', exercise: 'Kettlebell Deadlift', sets: 3, reps: '12' },
+        { day: 'Sunday', exercise: 'Recovery Walk', duration: '35 min' },
+      ],
+      createdAt: '2024-03-28T00:00:00.000Z',
+    },
+    {
+      id: 'program_7',
+      userId: 'user_aisha_1',
+      weekNumber: 1,
+      title: 'Fat Loss Momentum Week',
+      description: 'A higher-output week combining lifting density, conditioning, and recovery structure.',
+      activities: [
+        { day: 'Monday', exercise: 'Barbell Hip Thrust', sets: 4, reps: '10' },
+        { day: 'Monday', exercise: 'Cable Row', sets: 4, reps: '12' },
+        { day: 'Wednesday', exercise: 'Treadmill Intervals', duration: '22 min' },
+        { day: 'Thursday', exercise: 'Dumbbell Shoulder Press', sets: 4, reps: '10' },
+        { day: 'Thursday', exercise: 'Walking Lunge', sets: 3, reps: '12 each leg' },
+        { day: 'Saturday', exercise: 'Full Body Circuit', duration: '30 min' },
+        { day: 'Sunday', exercise: 'Mobility Reset', duration: '20 min' },
+      ],
+      createdAt: '2024-04-15T00:00:00.000Z',
+    },
   ];
 
   // Payments
-  const nextMonth = new Date(today);
-  nextMonth.setMonth(today.getMonth() + 1);
-
   const payments: Payment[] = [
     {
       id: 'payment_1',
       userId: 'user_john_1',
       amount: 299,
-      date: threeMonthsAgo.toISOString().split('T')[0],
+      date: monthDate(-3),
       status: 'paid',
       reference: 'PAY-2024-001',
       description: 'Elite Performance Pack - Month 1',
-      dueDate: threeMonthsAgo.toISOString().split('T')[0],
+      dueDate: monthDate(-3),
     },
     {
       id: 'payment_2',
       userId: 'user_john_1',
       amount: 299,
-      date: (() => { const d = new Date(threeMonthsAgo); d.setMonth(d.getMonth() + 1); return d.toISOString().split('T')[0]; })(),
+      date: monthDate(-2),
       status: 'paid',
       reference: 'PAY-2024-002',
       description: 'Elite Performance Pack - Month 2',
-      dueDate: (() => { const d = new Date(threeMonthsAgo); d.setMonth(d.getMonth() + 1); return d.toISOString().split('T')[0]; })(),
+      dueDate: monthDate(-2),
     },
     {
       id: 'payment_3',
       userId: 'user_john_1',
       amount: 299,
-      date: (() => { const d = new Date(threeMonthsAgo); d.setMonth(d.getMonth() + 2); return d.toISOString().split('T')[0]; })(),
+      date: monthDate(-1),
       status: 'paid',
       reference: 'PAY-2024-003',
       description: 'Elite Performance Pack - Month 3',
-      dueDate: (() => { const d = new Date(threeMonthsAgo); d.setMonth(d.getMonth() + 2); return d.toISOString().split('T')[0]; })(),
+      dueDate: monthDate(-1),
     },
     {
       id: 'payment_4',
@@ -375,16 +760,108 @@ export function seedMockData(): void {
       status: 'pending',
       reference: 'PAY-2024-004',
       description: 'Elite Performance Pack - Month 4',
-      dueDate: nextMonth.toISOString().split('T')[0],
+      dueDate: monthDate(1),
+    },
+    {
+      id: 'payment_5',
+      userId: 'user_sarah_1',
+      amount: 129,
+      date: '',
+      status: 'pending',
+      reference: 'PAY-2024-005',
+      description: 'Starter Reset Plan - Onboarding Invoice',
+      dueDate: d(5),
+    },
+    {
+      id: 'payment_6',
+      userId: 'user_marcus_1',
+      amount: 239,
+      date: monthDate(-2),
+      status: 'paid',
+      reference: 'PAY-2024-006',
+      description: 'Strength Rebuild Plan - Month 1',
+      dueDate: monthDate(-2),
+    },
+    {
+      id: 'payment_7',
+      userId: 'user_marcus_1',
+      amount: 239,
+      date: monthDate(-1),
+      status: 'paid',
+      reference: 'PAY-2024-007',
+      description: 'Strength Rebuild Plan - Month 2',
+      dueDate: monthDate(-1),
+    },
+    {
+      id: 'payment_8',
+      userId: 'user_marcus_1',
+      amount: 239,
+      date: '',
+      status: 'pending',
+      reference: 'PAY-2024-008',
+      description: 'Strength Rebuild Plan - Month 3',
+      dueDate: d(6),
+    },
+    {
+      id: 'payment_9',
+      userId: 'user_priya_1',
+      amount: 179,
+      date: monthDate(-1),
+      status: 'paid',
+      reference: 'PAY-2024-009',
+      description: 'Lifestyle Conditioning Plan - Month 1',
+      dueDate: monthDate(-1),
+    },
+    {
+      id: 'payment_10',
+      userId: 'user_aisha_1',
+      amount: 219,
+      date: monthDate(-2),
+      status: 'paid',
+      reference: 'PAY-2024-010',
+      description: 'Fat Loss Accelerator - Month 1',
+      dueDate: monthDate(-2),
+    },
+    {
+      id: 'payment_11',
+      userId: 'user_aisha_1',
+      amount: 219,
+      date: '',
+      status: 'overdue',
+      reference: 'PAY-2024-011',
+      description: 'Fat Loss Accelerator - Month 2',
+      dueDate: d(-7),
     },
   ];
 
-  setItems('ishow_users', users);
-  setItems('ishow_assessments', assessments);
-  setItems('ishow_plans', plans);
-  setItems('ishow_sessions', sessions);
-  setItems('ishow_programs', programs);
-  setItems('ishow_payments', payments);
-  localStorage.setItem('ishow_seeded', 'true');
-  syncTrainerData();
+  const users = ensureRecords(getItems<User>(USERS_KEY), defaultUsers, (current, fallback) => ({
+    ...current,
+    ...fallback,
+  }));
+
+  const assessments = ensureRecords(getItems<Assessment>(ASSESSMENTS_KEY), defaultAssessments);
+
+  const mergedPlans = ensureRecords(
+    getItems<Plan>(PLANS_KEY).map((plan) => ({ ...plan, trainerName: TRAINER_NAME })),
+    plans,
+    (current) => ({ ...current, trainerName: TRAINER_NAME })
+  );
+
+  const mergedSessions = ensureRecords(
+    getItems<Session>(SESSIONS_KEY).map((session) => ({ ...session, trainerName: TRAINER_NAME })),
+    sessions,
+    (current) => ({ ...current, trainerName: TRAINER_NAME })
+  );
+
+  const mergedPrograms = ensureRecords(getItems<Program>(PROGRAMS_KEY), programs);
+  const mergedPayments = ensureRecords(getItems<Payment>(PAYMENTS_KEY), payments);
+
+  setItems(USERS_KEY, users);
+  setItems(ASSESSMENTS_KEY, assessments);
+  setItems(PLANS_KEY, mergedPlans);
+  setItems(SESSIONS_KEY, mergedSessions);
+  setItems(PROGRAMS_KEY, mergedPrograms);
+  setItems(PAYMENTS_KEY, mergedPayments);
+  localStorage.setItem(SEEDED_KEY, 'true');
+  syncStoredAuth(users);
 }

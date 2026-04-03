@@ -42,7 +42,7 @@ export default function DashboardLayout({ children, role }: Props) {
       )}
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
         {/* Mobile Header */}
         <div className="lg:hidden flex items-center gap-4 px-4 py-3 bg-white border-b border-gray-200 sticky top-0 z-30">
           <button
@@ -57,7 +57,7 @@ export default function DashboardLayout({ children, role }: Props) {
         </div>
 
         {/* Page Content */}
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto min-w-0">
           {children}
         </main>
       </div>

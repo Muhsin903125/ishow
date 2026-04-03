@@ -135,7 +135,7 @@ export default function AssessmentPage() {
 
   return (
     <DashboardLayout role="CUSTOMER">
-      <div className="p-6 lg:p-8 max-w-2xl mx-auto">
+      <div className="w-full max-w-2xl p-6 lg:p-8">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
