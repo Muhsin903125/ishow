@@ -703,144 +703,175 @@ export default function LandingPage() {
       <section id="trainer" className="landing-section relative overflow-hidden bg-slate-950 py-20 text-white sm:py-28">
         <SectionBackdropImage src={landingArt.trainerBackdrop} className="opacity-[0.24]" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(249,115,22,0.16),transparent_30%),radial-gradient(circle_at_bottom_left,rgba(59,130,246,0.18),transparent_34%)]" />
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.04)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.04)_1px,transparent_1px)] bg-[size:88px_88px] opacity-[0.06]" />
         <SectionTexture className="opacity-[0.16] mix-blend-screen" />
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid gap-8 sm:gap-10 lg:grid-cols-[1.02fr_0.98fr] lg:items-start lg:gap-14">
-            <div className="grid gap-4 lg:sticky lg:top-28 self-start">
-              <div className="landing-panel landing-reveal landing-delay-2 relative overflow-hidden rounded-[2rem] border border-white/10 bg-white/5 p-3 backdrop-blur-sm">
-                <div className="absolute inset-0 bg-gradient-to-br from-orange-500/14 via-transparent to-blue-500/14" />
-                <div className="relative aspect-[5/6] overflow-hidden rounded-[1.6rem]">
+          <div className="landing-reveal landing-delay-1 mb-10 max-w-3xl sm:mb-12 lg:mb-14">
+            <div className="mb-5 inline-flex max-w-full items-center gap-2 rounded-full border border-blue-400/20 bg-blue-500/10 px-4 py-2 backdrop-blur-sm sm:mb-6">
+              <Shield className="h-4 w-4 text-blue-300" />
+              <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-blue-200 sm:text-sm sm:tracking-[0.24em]">Trainer Details</span>
+            </div>
+
+            <h2 className="mb-5 text-4xl font-black leading-[0.96] tracking-tight sm:text-5xl lg:text-7xl">
+              Meet The Coach
+              <span className="block text-transparent bg-clip-text bg-gradient-to-r from-white via-orange-200 to-orange-400">
+                Behind The Structure
+              </span>
+            </h2>
+
+            <p className="max-w-2xl text-base leading-relaxed text-white/70 sm:text-lg">
+              Mohammed Sufiyan leads iShowTransformation with practical programming, direct accountability,
+              and a coaching standard that keeps progress measurable instead of motivational only.
+            </p>
+          </div>
+
+          <div className="grid gap-4 xl:grid-cols-[0.88fr_1.12fr] xl:items-start">
+            <div className="grid gap-4 xl:sticky xl:top-28 self-start">
+              <div className="landing-panel landing-reveal landing-delay-2 relative overflow-hidden rounded-[2.4rem] border border-white/10 bg-white/5 p-3 sm:p-4 backdrop-blur-sm shadow-[0_28px_90px_rgba(0,0,0,0.26)]">
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(249,115,22,0.2),transparent_32%),linear-gradient(155deg,rgba(255,255,255,0.08),rgba(255,255,255,0.02))]" />
+                <div className="relative aspect-[4/5] overflow-hidden rounded-[1.8rem]">
                   <Image
                     src={landingArt.trainer}
                     alt="Coach assisting a client during a gym session"
                     fill
-                    sizes="(max-width: 1024px) 100vw, 40rem"
+                    sizes="(max-width: 1280px) 100vw, 34rem"
                     className="object-cover"
                   />
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/10 to-transparent" />
                 </div>
 
-                <div className="absolute left-4 top-4 rounded-full border border-white/15 bg-slate-950/72 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/70 backdrop-blur-sm sm:left-6 sm:top-6 sm:px-4 sm:py-2 sm:text-[11px] sm:tracking-[0.24em]">
-                  Coach signal
+                <div className="absolute left-5 top-5 rounded-full border border-white/15 bg-slate-950/72 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/70 backdrop-blur-sm sm:left-6 sm:top-6 sm:px-4 sm:py-2 sm:text-[11px] sm:tracking-[0.24em]">
+                  Direct coach access
                 </div>
 
-                <div className="absolute inset-x-4 bottom-4 grid grid-cols-3 gap-2 sm:inset-x-6 sm:bottom-6 sm:gap-3">
-                  {trainerPanelStats.map((item) => (
-                    <div key={item.label} className="rounded-[1.2rem] border border-white/10 bg-slate-950/78 px-3 py-2.5 backdrop-blur-md sm:rounded-[1.35rem] sm:px-4 sm:py-3">
-                      <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-white/45">{item.label}</p>
-                      <p className="mt-1 text-sm font-black text-white sm:text-lg">{item.value}</p>
-                    </div>
-                  ))}
+                <div className="absolute inset-x-5 bottom-5 sm:inset-x-6 sm:bottom-6">
+                  <div className="rounded-[1.8rem] border border-white/10 bg-slate-950/72 p-4 backdrop-blur-md sm:p-5">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-orange-200/70">Mohammed Sufiyan</p>
+                    <h3 className="mt-2 text-2xl font-black text-white sm:text-3xl">Coach-led transformation.</h3>
+                    <p className="mt-3 text-sm leading-relaxed text-white/78 sm:text-base">
+                      The goal is not random intensity. The goal is structure you can repeat,
+                      track, and steadily progress.
+                    </p>
+                  </div>
                 </div>
               </div>
 
-              <div className="grid gap-3 sm:grid-cols-3">
+              <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
                 {trainerSnapshot.map((item, index) => (
                   <div
                     key={item.label}
                     className="landing-panel landing-reveal rounded-[1.6rem] border border-white/10 bg-white/5 px-5 py-5 backdrop-blur-sm"
-                    style={{ animationDelay: `${0.14 + index * 0.06}s` }}
+                    style={{ animationDelay: `${0.16 + index * 0.06}s` }}
                   >
-                    <p className="text-xs font-semibold uppercase tracking-[0.24em] text-orange-200/70">{item.label}</p>
-                    <p className="mt-2 text-sm leading-relaxed font-medium text-white/90 sm:text-base">{item.value}</p>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-orange-200/70 sm:text-xs">{item.label}</p>
+                    <p className="mt-2 text-sm font-medium leading-relaxed text-white/90 sm:text-base">{item.value}</p>
                   </div>
                 ))}
               </div>
             </div>
 
             <div className="grid gap-4">
-              <div className="landing-panel landing-reveal landing-delay-1 rounded-[2rem] border border-white/10 bg-white/5 p-6 sm:p-8 backdrop-blur-sm">
-                <div className="mb-5 inline-flex max-w-full items-center gap-2 rounded-full border border-blue-400/20 bg-blue-500/10 px-4 py-2 backdrop-blur-sm sm:mb-6">
-                  <Shield className="w-4 h-4 text-blue-300" />
-                  <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-blue-200 sm:text-sm sm:tracking-[0.24em]">Trainer Details</span>
-                </div>
+              <div className="landing-panel landing-reveal rounded-[2.4rem] border border-white/10 bg-gradient-to-br from-white/9 via-white/5 to-transparent p-6 sm:p-8 backdrop-blur-sm shadow-[0_28px_90px_rgba(0,0,0,0.18)]" style={{ animationDelay: "0.12s" }}>
+                <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_17rem] lg:items-start">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.26em] text-blue-200/70">Meet Your Coach</p>
+                    <h3 className="mt-3 text-3xl font-black leading-[1] text-white sm:text-4xl lg:text-5xl">
+                      Train Directly With
+                      <span className="block text-transparent bg-clip-text bg-gradient-to-r from-white via-orange-200 to-orange-400">
+                        Mohammed Sufiyan
+                      </span>
+                    </h3>
 
-                <h2 className="mb-5 text-4xl font-black leading-[0.98] tracking-tight sm:text-5xl lg:text-7xl">
-                  Train Directly With
-                  <span className="block text-transparent bg-clip-text bg-gradient-to-r from-white via-orange-200 to-orange-400">
-                    Mohammed Sufiyan
-                  </span>
-                </h2>
+                    <p className="mt-5 max-w-2xl text-base leading-relaxed text-white/72 sm:text-lg">
+                      Mohammed leads the iShowTransformation coaching experience with practical programming,
+                      weekly accountability, and a clear focus on sustainable body transformation. Every block is designed
+                      to match your real routine so the system stays usable outside perfect weeks.
+                    </p>
 
-                <p className="mb-8 max-w-2xl text-base leading-relaxed text-white/72 sm:text-lg">
-                  Mohammed leads the iShowTransformation coaching experience with practical programming,
-                  weekly accountability, and a clear focus on sustainable body transformation. The goal is not
-                  random intensity. The goal is structure you can repeat and progress you can measure.
-                </p>
+                    <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:gap-4">
+                      <Link
+                        href="/register"
+                        className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-orange-500 px-6 py-3.5 text-base font-bold text-white shadow-lg shadow-orange-500/30 transition-all hover:-translate-y-0.5 hover:bg-orange-400 sm:w-auto sm:px-8 sm:py-4 sm:text-lg"
+                      >
+                        Start With Mohammed
+                        <ArrowRight className="h-5 w-5" />
+                      </Link>
+                      <Link
+                        href="https://www.instagram.com/sufiyan_mohd26/"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-white/15 bg-white/5 px-6 py-3.5 text-base font-bold text-white transition-all hover:bg-white/10 sm:w-auto sm:px-8 sm:py-4 sm:text-lg"
+                      >
+                        Instagram @sufiyan_mohd26
+                        <ExternalLink className="h-5 w-5" />
+                      </Link>
+                    </div>
+                  </div>
 
-                <div className="flex flex-col gap-3 sm:flex-row sm:gap-4">
-                  <Link
-                    href="/register"
-                    className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-orange-500 px-6 py-3.5 text-base font-bold text-white shadow-lg shadow-orange-500/30 hover:-translate-y-0.5 hover:bg-orange-400 sm:w-auto sm:px-8 sm:py-4 sm:text-lg"
-                  >
-                    Start With Mohammed
-                    <ArrowRight className="w-5 h-5" />
-                  </Link>
-                  <Link
-                    href="https://www.instagram.com/sufiyan_mohd26/"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-white/15 bg-white/5 px-6 py-3.5 text-base font-bold text-white hover:bg-white/10 sm:w-auto sm:px-8 sm:py-4 sm:text-lg"
-                  >
-                    Instagram @sufiyan_mohd26
-                    <ExternalLink className="w-5 h-5" />
-                  </Link>
+                  <div className="rounded-[2rem] border border-white/10 bg-slate-950/58 p-5 backdrop-blur-sm">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-orange-200/70">Coaching rhythm</p>
+                    <div className="mt-4 grid gap-3">
+                      {trainerPanelStats.map((item) => (
+                        <div key={item.label} className="rounded-[1.3rem] border border-white/10 bg-white/5 px-4 py-3">
+                          <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-white/45">{item.label}</p>
+                          <p className="mt-1 text-lg font-black text-white">{item.value}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              <div
-                className="landing-panel landing-reveal rounded-[2rem] border border-white/10 bg-gradient-to-br from-white/8 to-white/4 p-6 sm:p-8"
-                style={{ animationDelay: "0.18s" }}
-              >
-                <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.26em] text-blue-200/70 mb-3">Inside The Coaching Relationship</p>
-                    <h3 className="text-2xl font-black leading-tight text-white sm:text-3xl">
-                      High accountability, clear direction, and progress that stays repeatable.
-                    </h3>
-                    <p className="mt-4 text-sm leading-relaxed text-white/64">
-                      The coaching layer is designed to keep momentum high even when the week changes,
-                      so standards, feedback, and follow-through stay visible.
-                    </p>
-                  </div>
-                  <div className="grid gap-3">
-                    {trainerPromises.map((item) => (
-                      <div key={item} className="flex items-start gap-3 rounded-2xl border border-white/10 bg-black/20 px-4 py-4">
-                        <CheckCircle className="mt-0.5 h-5 w-5 shrink-0 text-green-400" />
+              <div className="grid gap-4 lg:grid-cols-[0.98fr_1.02fr] lg:items-start">
+                <div className="landing-panel landing-reveal rounded-[2rem] border border-white/10 bg-black/20 p-6 sm:p-8 backdrop-blur-sm" style={{ animationDelay: "0.18s" }}>
+                  <p className="text-xs font-semibold uppercase tracking-[0.26em] text-blue-200/70">Inside The Coaching Relationship</p>
+                  <h3 className="mt-3 text-2xl font-black leading-tight text-white sm:text-3xl">
+                    High accountability, clear direction, and progress that stays repeatable.
+                  </h3>
+                  <p className="mt-4 text-sm leading-relaxed text-white/64">
+                    The coaching layer is built to keep feedback, decision-making, and follow-through visible,
+                    so momentum does not disappear the moment the week gets busy.
+                  </p>
+
+                  <div className="mt-6 grid gap-3">
+                    {trainerPromises.map((item, index) => (
+                      <div key={item} className="flex items-start gap-4 rounded-[1.5rem] border border-white/10 bg-white/5 px-4 py-4">
+                        <span className="mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-orange-500/20 text-[11px] font-black text-orange-200">
+                          {String(index + 1).padStart(2, "0")}
+                        </span>
                         <p className="text-sm leading-relaxed text-white/80">{item}</p>
                       </div>
                     ))}
                   </div>
                 </div>
-              </div>
 
-              <div className="grid gap-4 md:grid-cols-2">
-                {trainerPillars.map((pillar, index) => {
-                  const Icon = pillar.icon;
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-1">
+                  {trainerPillars.map((pillar, index) => {
+                    const Icon = pillar.icon;
 
-                  return (
-                    <article
-                      key={pillar.title}
-                      className={`landing-panel landing-reveal rounded-[2rem] border border-white/10 bg-white/5 p-6 sm:p-8 backdrop-blur-sm ${
-                        index === trainerPillars.length - 1 ? "md:col-span-2" : ""
-                      }`}
-                      style={{ animationDelay: `${0.22 + index * 0.08}s` }}
-                    >
-                      <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
-                        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-500 to-orange-600 shadow-lg shadow-orange-500/25">
-                          <Icon className="h-6 w-6 text-white" />
+                    return (
+                      <article
+                        key={pillar.title}
+                        className="landing-panel landing-reveal rounded-[2rem] border border-white/10 bg-white/5 p-6 sm:p-7 backdrop-blur-sm"
+                        style={{ animationDelay: `${0.22 + index * 0.08}s` }}
+                      >
+                        <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
+                          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-500 to-orange-600 shadow-lg shadow-orange-500/25">
+                            <Icon className="h-6 w-6 text-white" />
+                          </div>
+                          <div>
+                            <p className="mb-3 text-xs font-semibold uppercase tracking-[0.26em] text-orange-200/70">
+                              Coaching Standard {String(index + 1).padStart(2, "0")}
+                            </p>
+                            <h3 className="mb-3 text-2xl font-black text-white">{pillar.title}</h3>
+                            <p className="text-base leading-relaxed text-white/72">{pillar.description}</p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-xs font-semibold uppercase tracking-[0.26em] text-orange-200/70 mb-3">
-                            Coaching Standard {String(index + 1).padStart(2, "0")}
-                          </p>
-                          <h3 className="text-2xl font-black text-white mb-3">{pillar.title}</h3>
-                          <p className="text-base leading-relaxed text-white/72">{pillar.description}</p>
-                        </div>
-                      </div>
-                    </article>
-                  );
-                })}
+                      </article>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           </div>
