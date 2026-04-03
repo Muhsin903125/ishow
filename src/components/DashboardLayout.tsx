@@ -51,8 +51,8 @@ export default function DashboardLayout({ children, role }: Props) {
           >
             <Menu className="w-5 h-5" />
           </button>
-          <span className="font-bold text-gray-900">
-            iShow<span className="text-orange-500">Fitness</span>
+          <span className="font-black text-sm text-gray-900 tracking-tight sm:text-base">
+            iShow<span className="text-orange-500">Transformation</span>
           </span>
         </div>
 

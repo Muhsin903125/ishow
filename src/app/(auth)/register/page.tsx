@@ -3,11 +3,12 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { signIn } from "next-auth/react";
-import { Dumbbell, Mail, Lock, User, Phone, AlertCircle, CheckCircle, Loader2 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { Mail, Lock, User, Phone, AlertCircle, CheckCircle, Loader2 } from "lucide-react";
 
 export default function RegisterPage() {
   const router = useRouter();
+  const { register } = useAuth();
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -38,39 +39,21 @@ export default function RegisterPage() {
 
     setLoading(true);
 
-    const response = await fetch("/api/register", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name: formData.name,
-        email: formData.email,
-        phone: formData.phone,
-        password: formData.password,
-      }),
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      setLoading(false);
-      setError(data.error || "Registration failed");
-      return;
-    }
-
-    // Auto login after registration
-    const result = await signIn("credentials", {
+    const user = await register({
+      name: formData.name,
       email: formData.email,
+      phone: formData.phone,
       password: formData.password,
-      redirect: false,
     });
 
     setLoading(false);
 
-    if (result?.error) {
-      router.push("/login");
-    } else {
-      router.push("/assessment");
+    if (!user) {
+      setError("An account with this email already exists.");
+      return;
     }
+
+    router.push("/assessment");
   };
 
   const benefits = [
@@ -85,11 +68,9 @@ export default function RegisterPage() {
       <div className="w-full max-w-4xl grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
         {/* Left side - benefits */}
         <div className="hidden lg:block">
-          <Link href="/" className="inline-flex items-center gap-2 mb-8">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-orange-500 rounded-xl flex items-center justify-center">
-              <Dumbbell className="w-6 h-6 text-white" />
-            </div>
-            <span className="font-bold text-xl text-white">iShow<span className="text-orange-400">Fitness</span></span>
+          <Link href="/" className="inline-flex mb-8 whitespace-nowrap leading-none">
+            <span className="font-black text-xl text-white tracking-tight">iShow</span>
+            <span className="font-black text-xl text-orange-400 tracking-tight">Transformation</span>
           </Link>
           <h2 className="text-4xl font-black text-white mb-4">
             Start Your
@@ -114,10 +95,9 @@ export default function RegisterPage() {
         {/* Registration form */}
         <div>
           <div className="lg:hidden text-center mb-6">
-            <Link href="/" className="inline-flex items-center gap-2 justify-center">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-orange-500 rounded-xl flex items-center justify-center">
-                <Dumbbell className="w-6 h-6 text-white" />
-              </div>
+            <Link href="/" className="inline-flex justify-center whitespace-nowrap leading-none">
+              <span className="font-black text-xl text-white tracking-tight">iShow</span>
+              <span className="font-black text-xl text-orange-400 tracking-tight">Transformation</span>
             </Link>
             <h1 className="text-2xl font-black text-white mt-3">Create Account</h1>
           </div>

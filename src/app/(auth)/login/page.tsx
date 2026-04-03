@@ -3,11 +3,12 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { signIn } from "next-auth/react";
-import { Dumbbell, Mail, Lock, AlertCircle, Loader2 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { Mail, Lock, AlertCircle, Loader2 } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
+  const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -18,21 +19,13 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
 
-    const result = await signIn("credentials", {
-      email,
-      password,
-      redirect: false,
-    });
-
+    const user = await login(email, password);
     setLoading(false);
 
-    if (result?.error) {
+    if (!user) {
       setError("Invalid email or password. Please try again.");
     } else {
-      // Fetch session to get role
-      const response = await fetch("/api/auth/session");
-      const session = await response.json();
-      if (session?.user?.role === "TRAINER") {
+      if (user.role === "trainer") {
         router.push("/trainer/dashboard");
       } else {
         router.push("/dashboard");
@@ -45,10 +38,9 @@ export default function LoginPage() {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <Link href="/" className="inline-flex items-center gap-2 justify-center">
-            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-orange-500 rounded-xl flex items-center justify-center shadow-lg">
-              <Dumbbell className="w-7 h-7 text-white" />
-            </div>
+          <Link href="/" className="inline-flex justify-center whitespace-nowrap leading-none">
+            <span className="font-black text-xl text-white tracking-tight sm:text-2xl">iShow</span>
+            <span className="font-black text-xl text-orange-400 tracking-tight sm:text-2xl">Transformation</span>
           </Link>
           <h1 className="text-3xl font-black text-white mt-4">
             Welcome Back
@@ -133,7 +125,7 @@ export default function LoginPage() {
                 <span className="font-semibold">Trainer:</span> trainer@ishow.com / trainer123
               </div>
               <div className="bg-orange-50 rounded-lg px-3 py-2 text-xs text-orange-700">
-                <span className="font-semibold">Customer:</span> customer@ishow.com / customer123
+                <span className="font-semibold">Customer:</span> john@example.com / demo123
               </div>
             </div>
           </div>

@@ -1,5 +1,7 @@
-import { setItems } from './storage';
+import { getItems, setItems } from './storage';
 import type { User } from './auth';
+
+const TRAINER_NAME = 'Mohammed Sufiyan';
 
 export interface Assessment {
   id: string;
@@ -75,15 +77,46 @@ export interface Payment {
   dueDate: string;
 }
 
+function syncTrainerData(): void {
+  const users = getItems<User>('ishow_users');
+  if (users.length > 0) {
+    setItems(
+      'ishow_users',
+      users.map((user) =>
+        user.role === 'trainer' ? { ...user, name: TRAINER_NAME } : user
+      )
+    );
+  }
+
+  const plans = getItems<Plan>('ishow_plans');
+  if (plans.length > 0) {
+    setItems(
+      'ishow_plans',
+      plans.map((plan) => ({ ...plan, trainerName: TRAINER_NAME }))
+    );
+  }
+
+  const sessions = getItems<Session>('ishow_sessions');
+  if (sessions.length > 0) {
+    setItems(
+      'ishow_sessions',
+      sessions.map((session) => ({ ...session, trainerName: TRAINER_NAME }))
+    );
+  }
+}
+
 export function seedMockData(): void {
   if (typeof window === 'undefined') return;
-  if (localStorage.getItem('ishow_seeded')) return;
+  if (localStorage.getItem('ishow_seeded')) {
+    syncTrainerData();
+    return;
+  }
 
   // Users
   const users: User[] = [
     {
       id: 'user_trainer_1',
-      name: 'Alex Carter',
+      name: TRAINER_NAME,
       email: 'trainer@ishow.com',
       password: 'trainer123',
       phone: '+1 (555) 001-0001',
@@ -162,7 +195,7 @@ export function seedMockData(): void {
       goals: ['Increase lean muscle mass by 10 lbs', 'Improve compound lift maxes by 20%', 'Enhance cardiovascular endurance', 'Optimize recovery protocols'],
       startDate: threeMonthsAgo.toISOString().split('T')[0],
       status: 'active',
-      trainerName: 'Alex Carter',
+      trainerName: TRAINER_NAME,
       duration: '6 months',
     },
   ];
@@ -187,7 +220,7 @@ export function seedMockData(): void {
       duration: 60,
       status: 'completed',
       notes: 'Great session! Hit new PR on bench press. Focus on form next time.',
-      trainerName: 'Alex Carter',
+      trainerName: TRAINER_NAME,
     },
     {
       id: 'session_2',
@@ -198,7 +231,7 @@ export function seedMockData(): void {
       duration: 45,
       status: 'completed',
       notes: 'Excellent endurance improvements. Keep pushing the cardio intervals.',
-      trainerName: 'Alex Carter',
+      trainerName: TRAINER_NAME,
     },
     {
       id: 'session_3',
@@ -209,7 +242,7 @@ export function seedMockData(): void {
       duration: 60,
       status: 'completed',
       notes: 'Solid squat mechanics. Add 10 lbs to deadlift next session.',
-      trainerName: 'Alex Carter',
+      trainerName: TRAINER_NAME,
     },
     {
       id: 'session_4',
@@ -220,7 +253,7 @@ export function seedMockData(): void {
       duration: 60,
       status: 'scheduled',
       notes: 'Focus on compound movements and metabolic conditioning',
-      trainerName: 'Alex Carter',
+      trainerName: TRAINER_NAME,
     },
     {
       id: 'session_5',
@@ -230,7 +263,7 @@ export function seedMockData(): void {
       time: '08:00',
       duration: 60,
       status: 'scheduled',
-      trainerName: 'Alex Carter',
+      trainerName: TRAINER_NAME,
     },
     {
       id: 'session_6',
@@ -240,7 +273,7 @@ export function seedMockData(): void {
       time: '07:30',
       duration: 60,
       status: 'scheduled',
-      trainerName: 'Alex Carter',
+      trainerName: TRAINER_NAME,
     },
   ];
 
@@ -353,4 +386,5 @@ export function seedMockData(): void {
   setItems('ishow_programs', programs);
   setItems('ishow_payments', payments);
   localStorage.setItem('ishow_seeded', 'true');
+  syncTrainerData();
 }

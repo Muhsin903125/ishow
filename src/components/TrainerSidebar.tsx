@@ -2,14 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useSession, signOut } from "next-auth/react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useRouter } from "next/navigation";
 import {
   LayoutDashboard,
   Users,
   Calendar,
   Dumbbell,
   LogOut,
-  Dumbbell as FitnessIcon,
   X,
 } from "lucide-react";
 
@@ -26,17 +26,16 @@ interface Props {
 
 export default function TrainerSidebar({ onClose }: Props) {
   const pathname = usePathname();
-  const { data: session } = useSession();
+  const router = useRouter();
+  const { user, logout } = useAuth();
 
   return (
     <div className="flex flex-col h-full bg-slate-900">
       {/* Header */}
       <div className="flex items-center justify-between p-6 border-b border-slate-700">
-        <Link href="/" className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-orange-500 rounded-lg flex items-center justify-center">
-            <FitnessIcon className="w-5 h-5 text-white" />
-          </div>
-          <span className="font-bold text-lg text-white">iShow<span className="text-orange-400">Fitness</span></span>
+        <Link href="/" className="whitespace-nowrap leading-none">
+          <span className="font-black text-base text-white tracking-tight">iShow</span>
+          <span className="font-black text-base text-orange-400 tracking-tight">Transformation</span>
         </Link>
         {onClose && (
           <button onClick={onClose} className="lg:hidden p-1">
@@ -49,10 +48,10 @@ export default function TrainerSidebar({ onClose }: Props) {
       <div className="px-6 py-4 bg-slate-800/50">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center text-white font-bold">
-            {session?.user?.name?.charAt(0).toUpperCase()}
+            {user?.name?.charAt(0).toUpperCase()}
           </div>
           <div>
-            <p className="font-semibold text-white text-sm">{session?.user?.name}</p>
+            <p className="font-semibold text-white text-sm">{user?.name}</p>
             <p className="text-xs text-orange-400 font-medium">Trainer</p>
           </div>
         </div>
@@ -83,7 +82,7 @@ export default function TrainerSidebar({ onClose }: Props) {
       {/* Sign out */}
       <div className="p-4 border-t border-slate-700">
         <button
-          onClick={() => signOut({ callbackUrl: "/" })}
+          onClick={() => { logout(); router.push("/"); }}
           className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-300 hover:bg-red-900/30 hover:text-red-400 w-full font-medium transition-all"
         >
           <LogOut className="w-5 h-5" />

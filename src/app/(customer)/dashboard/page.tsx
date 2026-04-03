@@ -1,7 +1,10 @@
-import { getServerSession } from "next-auth";
-import { redirect } from "next/navigation";
-import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+"use client";
+
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/contexts/AuthContext";
+import { getItems } from "@/lib/storage";
+import type { Assessment, Plan, Session, Payment } from "@/lib/mockData";
 import DashboardLayout from "@/components/DashboardLayout";
 import Link from "next/link";
 import {
@@ -17,34 +20,47 @@ import {
   TrendingUp,
 } from "lucide-react";
 
-export default async function CustomerDashboard() {
-  const session = await getServerSession(authOptions);
-  if (!session) redirect("/login");
-  if (session.user.role !== "CUSTOMER") redirect("/trainer/dashboard");
+export default function CustomerDashboard() {
+  const { user, loading } = useAuth();
+  const router = useRouter();
+  const [assessment, setAssessment] = useState<Assessment | null>(null);
+  const [plan, setPlan] = useState<Plan | null>(null);
+  const [sessions, setSessions] = useState<Session[]>([]);
+  const [pendingPayments, setPendingPayments] = useState<Payment[]>([]);
 
-  const [assessment, plan, sessions, payments] = await Promise.all([
-    prisma.assessment.findUnique({ where: { userId: session.user.id } }),
-    prisma.plan.findFirst({
-      where: { customerId: session.user.id, status: "ACTIVE" },
-      include: { trainer: { select: { name: true } } },
-    }),
-    prisma.session.findMany({
-      where: {
-        customerId: session.user.id,
-        scheduledDate: { gte: new Date() },
-        status: "SCHEDULED",
-      },
-      orderBy: { scheduledDate: "asc" },
-      take: 3,
-    }),
-    prisma.payment.findMany({
-      where: { customerId: session.user.id },
-      orderBy: { dueDate: "desc" },
-      take: 3,
-    }),
-  ]);
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push("/login");
+      return;
+    }
+    if (!loading && user) {
+      if (user.role !== "customer") {
+        router.push("/trainer/dashboard");
+        return;
+      }
+      const assessments = getItems<Assessment>("ishow_assessments");
+      setAssessment(assessments.find((a) => a.userId === user.id) ?? null);
 
-  const pendingPayments = payments.filter((p) => p.status === "PENDING" || p.status === "OVERDUE");
+      const plans = getItems<Plan>("ishow_plans");
+      setPlan(plans.find((p) => p.userId === user.id && p.status === "active") ?? null);
+
+      const today = new Date().toISOString().split("T")[0];
+      const allSessions = getItems<Session>("ishow_sessions");
+      setSessions(
+        allSessions
+          .filter((s) => s.userId === user.id && s.status === "scheduled" && s.date >= today)
+          .sort((a, b) => a.date.localeCompare(b.date))
+          .slice(0, 3)
+      );
+
+      const payments = getItems<Payment>("ishow_payments");
+      setPendingPayments(
+        payments.filter((p) => p.userId === user.id && (p.status === "pending" || p.status === "overdue"))
+      );
+    }
+  }, [loading, user, router]);
+
+  if (loading || !user) return null;
 
   return (
     <DashboardLayout role="CUSTOMER">
@@ -52,7 +68,7 @@ export default async function CustomerDashboard() {
         {/* Welcome Header */}
         <div className="mb-8">
           <h1 className="text-2xl font-black text-gray-900">
-            Welcome back, {session.user.name?.split(" ")[0]}! 👋
+            Welcome back, {user?.name?.split(" ")[0]}! 👋
           </h1>
           <p className="text-gray-500 mt-1">Here&apos;s your fitness overview</p>
         </div>
@@ -79,7 +95,7 @@ export default async function CustomerDashboard() {
         )}
 
         {/* Alert: Assessment pending */}
-        {assessment && assessment.status === "PENDING" && !plan && (
+        {assessment && assessment.status === "pending" && !plan && (
           <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-5 mb-6 flex items-start gap-4">
             <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
               <Clock className="w-5 h-5 text-blue-600" />
@@ -114,7 +130,7 @@ export default async function CustomerDashboard() {
               <CheckCircle className="w-5 h-5 text-green-600" />
             </div>
             <p className="text-2xl font-black text-gray-900">
-              {assessment ? (assessment.status === "REVIEWED" ? "Done" : "Pending") : "None"}
+              {assessment ? (assessment.status === "reviewed" ? "Done" : "Pending") : "None"}
             </p>
             <p className="text-gray-500 text-sm mt-1">Assessment</p>
           </div>
@@ -144,9 +160,9 @@ export default async function CustomerDashboard() {
                   </div>
                   <div className="flex-1">
                     <p className="font-bold text-gray-900 text-lg">{plan.name}</p>
-                    <p className="text-gray-500 text-sm">Trainer: {plan.trainer.name}</p>
-                    {plan.goals && (
-                      <p className="text-gray-600 text-sm mt-2 leading-relaxed">{plan.goals}</p>
+                    <p className="text-gray-500 text-sm">Trainer: {plan.trainerName}</p>
+                    {plan.goals && plan.goals.length > 0 && (
+                      <p className="text-gray-600 text-sm mt-2 leading-relaxed">{plan.goals.join(", ")}</p>
                     )}
                     <div className="flex items-center gap-4 mt-3">
                       <div className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-semibold">
@@ -178,15 +194,15 @@ export default async function CustomerDashboard() {
             </div>
             {sessions.length > 0 ? (
               <div className="space-y-3">
-                {sessions.map((session) => (
-                  <div key={session.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                {sessions.map((sess) => (
+                  <div key={sess.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
                     <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center flex-shrink-0">
                       <Calendar className="w-4 h-4 text-white" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-gray-900 text-sm truncate">{session.title}</p>
+                      <p className="font-medium text-gray-900 text-sm truncate">{sess.title}</p>
                       <p className="text-gray-500 text-xs">
-                        {new Date(session.scheduledDate).toLocaleDateString()} at {session.scheduledTime}
+                        {new Date(sess.date).toLocaleDateString()} at {sess.time}
                       </p>
                     </div>
                   </div>

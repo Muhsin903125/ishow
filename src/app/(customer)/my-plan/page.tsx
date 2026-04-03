@@ -1,7 +1,10 @@
-import { getServerSession } from "next-auth";
-import { redirect } from "next/navigation";
-import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+"use client";
+
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/contexts/AuthContext";
+import { getItems } from "@/lib/storage";
+import type { Assessment, Plan } from "@/lib/mockData";
 import DashboardLayout from "@/components/DashboardLayout";
 import Link from "next/link";
 import {
@@ -15,21 +18,31 @@ import {
   Zap,
 } from "lucide-react";
 
-export default async function MyPlanPage() {
-  const session = await getServerSession(authOptions);
-  if (!session) redirect("/login");
-  if (session.user.role !== "CUSTOMER") redirect("/trainer/dashboard");
+export default function MyPlanPage() {
+  const { user, loading } = useAuth();
+  const router = useRouter();
+  const [plan, setPlan] = useState<Plan | null>(null);
+  const [assessment, setAssessment] = useState<Assessment | null>(null);
 
-  const plan = await prisma.plan.findFirst({
-    where: { customerId: session.user.id, status: "ACTIVE" },
-    include: {
-      trainer: { select: { name: true, email: true } },
-    },
-  });
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push("/login");
+      return;
+    }
+    if (!loading && user) {
+      if (user.role !== "customer") {
+        router.push("/trainer/dashboard");
+        return;
+      }
+      const plans = getItems<Plan>("ishow_plans");
+      setPlan(plans.find((p) => p.userId === user.id && p.status === "active") ?? null);
 
-  const assessment = await prisma.assessment.findUnique({
-    where: { userId: session.user.id },
-  });
+      const assessments = getItems<Assessment>("ishow_assessments");
+      setAssessment(assessments.find((a) => a.userId === user.id) ?? null);
+    }
+  }, [loading, user, router]);
+
+  if (loading || !user) return null;
 
   return (
     <DashboardLayout role="CUSTOMER">
@@ -57,14 +70,14 @@ export default async function MyPlanPage() {
                 <div className="bg-white/20 rounded-xl p-4 text-center backdrop-blur">
                   <p className="text-blue-200 text-sm">Monthly Rate</p>
                   <p className="text-3xl font-black">${plan.monthlyRate}</p>
-                  <p className="text-blue-300 text-xs capitalize">{plan.paymentFrequency.toLowerCase()} billing</p>
+                  <p className="text-blue-300 text-xs capitalize">{plan.paymentFrequency} billing</p>
                 </div>
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Goals */}
-              {plan.goals && (
+              {plan.goals && plan.goals.length > 0 && (
                 <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
                   <div className="flex items-center gap-3 mb-4">
                     <div className="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center">
@@ -72,7 +85,7 @@ export default async function MyPlanPage() {
                     </div>
                     <h3 className="font-bold text-gray-900">Training Goals</h3>
                   </div>
-                  <p className="text-gray-600 leading-relaxed">{plan.goals}</p>
+                  <p className="text-gray-600 leading-relaxed">{plan.goals.join(", ")}</p>
                 </div>
               )}
 
@@ -86,11 +99,10 @@ export default async function MyPlanPage() {
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center text-white font-bold text-lg">
-                    {plan.trainer.name.charAt(0)}
+                    {plan.trainerName.charAt(0)}
                   </div>
                   <div>
-                    <p className="font-semibold text-gray-900">{plan.trainer.name}</p>
-                    <p className="text-gray-500 text-sm">{plan.trainer.email}</p>
+                    <p className="font-semibold text-gray-900">{plan.trainerName}</p>
                   </div>
                 </div>
               </div>
@@ -117,13 +129,13 @@ export default async function MyPlanPage() {
                   <div className="flex items-center justify-between">
                     <span className="text-gray-500">Status</span>
                     <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded-full text-sm font-semibold">
-                      {plan.status}
+                      {plan.status.charAt(0).toUpperCase() + plan.status.slice(1)}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-gray-500">Billing</span>
                     <span className="font-medium text-gray-900 capitalize">
-                      {plan.paymentFrequency.toLowerCase()}
+                      {plan.paymentFrequency}
                     </span>
                   </div>
                 </div>
@@ -145,10 +157,10 @@ export default async function MyPlanPage() {
                   <div className="flex items-center justify-between">
                     <span className="text-gray-500">Payment Frequency</span>
                     <span className="font-medium text-gray-900 capitalize">
-                      {plan.paymentFrequency.toLowerCase()}
+                      {plan.paymentFrequency}
                     </span>
                   </div>
-                  {plan.paymentFrequency === "WEEKLY" && (
+                  {plan.paymentFrequency === "weekly" && (
                     <div className="flex items-center justify-between">
                       <span className="text-gray-500">Weekly Rate</span>
                       <span className="font-medium text-gray-900">

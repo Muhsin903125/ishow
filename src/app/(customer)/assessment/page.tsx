@@ -2,7 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
+import { useAuth } from "@/contexts/AuthContext";
+import { getItems, addItem } from "@/lib/storage";
+import type { Assessment } from "@/lib/mockData";
 import DashboardLayout from "@/components/DashboardLayout";
 import {
   ChevronRight,
@@ -43,7 +45,7 @@ const availabilityOptions = [
 ];
 
 export default function AssessmentPage() {
-  const { data: session, status } = useSession();
+  const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -60,23 +62,20 @@ export default function AssessmentPage() {
   });
 
   useEffect(() => {
-    if (status === "unauthenticated") {
+    if (!authLoading && !user) {
       router.push("/login");
+      return;
     }
-    if (status === "authenticated") {
-      // Check if assessment already exists
-      fetch("/api/assessment")
-        .then((r) => r.json())
-        .then((data) => {
-          if (data && data.id) {
-            router.push("/dashboard");
-          } else {
-            setCheckingExisting(false);
-          }
-        })
-        .catch(() => setCheckingExisting(false));
+    if (!authLoading && user) {
+      const assessments = getItems<Assessment>("ishow_assessments");
+      const existing = assessments.find((a) => a.userId === user.id);
+      if (existing) {
+        router.push("/dashboard");
+      } else {
+        setCheckingExisting(false);
+      }
     }
-  }, [status, router]);
+  }, [authLoading, user, router]);
 
   const handleChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -100,15 +99,23 @@ export default function AssessmentPage() {
   const handleSubmit = async () => {
     setLoading(true);
     try {
-      const response = await fetch("/api/assessment", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      });
-
-      if (response.ok) {
-        router.push("/dashboard");
-      }
+      const newAssessment: Assessment = {
+        id: `assessment_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        userId: user!.id,
+        age: parseInt(formData.age),
+        weight: formData.weight,
+        height: formData.height,
+        gender: "",
+        goals: [formData.fitnessGoal],
+        experienceLevel: formData.currentFitnessLevel,
+        healthConditions: formData.healthConditions,
+        daysPerWeek: 3,
+        preferredTimes: formData.availability,
+        status: "pending",
+        submittedAt: new Date().toISOString(),
+      };
+      addItem("ishow_assessments", newAssessment);
+      router.push("/dashboard");
     } catch (error) {
       console.error(error);
     } finally {
@@ -116,7 +123,7 @@ export default function AssessmentPage() {
     }
   };
 
-  if (checkingExisting || status === "loading") {
+  if (checkingExisting || authLoading) {
     return (
       <DashboardLayout role="CUSTOMER">
         <div className="flex items-center justify-center h-full">
