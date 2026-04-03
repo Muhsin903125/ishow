@@ -5,7 +5,7 @@ import { Menu } from "lucide-react";
 import CustomerSidebar from "./CustomerSidebar";
 import TrainerSidebar from "./TrainerSidebar";
 
-interface Props {
+interface Props { 
   children: React.ReactNode;
   role: "CUSTOMER" | "TRAINER";
 }
