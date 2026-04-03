@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { Menu, X, LogOut, LayoutDashboard, Flame, ChevronDown } from "lucide-react";
-
+ 
 
 export default function Navbar() {
   const { user, logout } = useAuth();
