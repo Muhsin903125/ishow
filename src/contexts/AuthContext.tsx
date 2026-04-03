@@ -4,7 +4,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { login as authLogin, logout as authLogout, getCurrentUser, register as authRegister, AuthUser } from '@/lib/auth';
 import { seedMockData } from '@/lib/mockData';
 
-interface AuthContextType {
+interface AuthContextType { 
   user: AuthUser | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<AuthUser | null>;
