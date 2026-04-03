@@ -1,5 +1,7 @@
 import { getItems, setItems, addItem } from './storage';
 
+export type CustomerStatus = 'request' | 'client';
+
 export interface User {
   id: string;
   name: string;
@@ -7,6 +9,7 @@ export interface User {
   password: string;
   phone?: string;
   role: 'trainer' | 'customer';
+  customerStatus?: CustomerStatus;
   createdAt: string;
 }
 
@@ -15,6 +18,7 @@ export interface AuthUser {
   name: string;
   email: string;
   role: 'trainer' | 'customer';
+  customerStatus?: CustomerStatus;
 }
 
 const USERS_KEY = 'ishow_users';
@@ -56,6 +60,7 @@ export function login(email: string, password: string): AuthUser | null {
     name: user.name,
     email: user.email,
     role: user.role,
+    customerStatus: user.customerStatus,
   };
   localStorage.setItem(AUTH_KEY, JSON.stringify(authUser));
   return authUser;
@@ -97,6 +102,7 @@ export function register(data: {
     password: data.password,
     phone: normalizedPhone,
     role: 'customer',
+    customerStatus: 'request',
     createdAt: new Date().toISOString(),
   };
 
@@ -107,6 +113,7 @@ export function register(data: {
     name: newUser.name,
     email: newUser.email,
     role: newUser.role,
+    customerStatus: newUser.customerStatus,
   };
   localStorage.setItem(AUTH_KEY, JSON.stringify(authUser));
   return authUser;

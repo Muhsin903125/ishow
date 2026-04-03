@@ -32,6 +32,10 @@ export interface Assessment {
   submittedAt: string;
   reviewedAt?: string;
   trainerNotes?: string;
+  preferredDate?: string;
+  preferredTimeSlot?: string;
+  preferredLocation?: string;
+  convertedToClientAt?: string;
 }
 
 export interface Plan {
@@ -123,6 +127,7 @@ function syncStoredAuth(users: User[]): void {
         name: matchedUser.name,
         email: matchedUser.email,
         role: matchedUser.role,
+        customerStatus: matchedUser.customerStatus,
       })
     );
   } catch {
@@ -151,6 +156,7 @@ export function seedMockData(): void {
       password: CUSTOMER_PASSWORD,
       phone: '+1 (555) 001-0002',
       role: 'customer',
+      customerStatus: 'client',
       createdAt: '2024-01-15T00:00:00.000Z',
     },
     {
@@ -160,6 +166,7 @@ export function seedMockData(): void {
       password: 'demo123',
       phone: '+1 (555) 001-0003',
       role: 'customer',
+      customerStatus: 'request',
       createdAt: '2024-02-20T00:00:00.000Z',
     },
     {
@@ -169,6 +176,7 @@ export function seedMockData(): void {
       password: 'demo123',
       phone: '+1 (555) 001-0004',
       role: 'customer',
+      customerStatus: 'client',
       createdAt: '2024-03-08T00:00:00.000Z',
     },
     {
@@ -178,6 +186,7 @@ export function seedMockData(): void {
       password: 'demo123',
       phone: '+1 (555) 001-0005',
       role: 'customer',
+      customerStatus: 'client',
       createdAt: '2024-03-24T00:00:00.000Z',
     },
     {
@@ -187,6 +196,7 @@ export function seedMockData(): void {
       password: 'demo123',
       phone: '+1 (555) 001-0006',
       role: 'customer',
+      customerStatus: 'client',
       createdAt: '2024-04-11T00:00:00.000Z',
     },
   ];
@@ -209,6 +219,10 @@ export function seedMockData(): void {
       submittedAt: '2024-01-16T09:00:00.000Z',
       reviewedAt: '2024-01-17T14:00:00.000Z',
       trainerNotes: 'Great candidate for the Elite Performance Pack. Strong foundation, ready to push limits.',
+      preferredDate: '2024-01-18',
+      preferredTimeSlot: '08:00-10:00',
+      preferredLocation: 'Downtown Gym Floor',
+      convertedToClientAt: '2024-01-18T08:30:00.000Z',
     },
     {
       id: 'assessment_2',
@@ -224,6 +238,9 @@ export function seedMockData(): void {
       preferredTimes: 'evening',
       status: 'pending',
       submittedAt: '2024-02-21T10:00:00.000Z',
+      preferredDate: '2024-02-23',
+      preferredTimeSlot: '18:00-20:00',
+      preferredLocation: 'Online consultation',
     },
     {
       id: 'assessment_3',
@@ -241,6 +258,10 @@ export function seedMockData(): void {
       submittedAt: '2024-03-09T09:30:00.000Z',
       reviewedAt: '2024-03-10T13:00:00.000Z',
       trainerNotes: 'Needs structured strength work with mobility support and controlled lower-body loading.',
+      preferredDate: '2024-03-11',
+      preferredTimeSlot: '07:00-09:00',
+      preferredLocation: 'Performance Lab Studio',
+      convertedToClientAt: '2024-03-11T09:00:00.000Z',
     },
     {
       id: 'assessment_4',
@@ -258,6 +279,10 @@ export function seedMockData(): void {
       submittedAt: '2024-03-25T08:00:00.000Z',
       reviewedAt: '2024-03-26T11:30:00.000Z',
       trainerNotes: 'Responds well to simple structure. Keep conditioning progressive and sustainable.',
+      preferredDate: '2024-03-27',
+      preferredTimeSlot: '06:00-08:00',
+      preferredLocation: 'Northside Strength Club',
+      convertedToClientAt: '2024-03-28T10:00:00.000Z',
     },
     {
       id: 'assessment_5',
@@ -275,6 +300,10 @@ export function seedMockData(): void {
       submittedAt: '2024-04-12T18:15:00.000Z',
       reviewedAt: '2024-04-13T10:00:00.000Z',
       trainerNotes: 'Good consistency potential. Needs balanced conditioning and strength progression.',
+      preferredDate: '2024-04-15',
+      preferredTimeSlot: '17:00-19:00',
+      preferredLocation: 'Hybrid: gym + remote check-ins',
+      convertedToClientAt: '2024-04-15T17:30:00.000Z',
     },
   ];
 

@@ -107,65 +107,6 @@ body {
   animation: gradient-shift 4s ease infinite;
 }
 
-@keyframes loader-shift {
-  0% {
-    background-position: 100% 50%;
-  }
-
-  100% {
-    background-position: 0% 50%;
-  }
-}
-
-.landing-loader {
-  display: grid;
-  gap: 0.35rem;
-}
-
-.landing-loader span {
-  display: block;
-  height: 0.38rem;
-  border-radius: 999px;
-  background: linear-gradient(90deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.18));
-  background-size: 200% 100%;
-  animation: loader-shift 1.6s linear infinite;
-}
-
-.landing-loader span:nth-child(1) {
-  width: 100%;
-}
-
-.landing-loader span:nth-child(2) {
-  width: 78%;
-}
-
-.landing-loader span:nth-child(3) {
-  width: 56%;
-}
-
-.landing-loader-dark span {
-  background: linear-gradient(90deg, rgba(15, 23, 42, 0.08), rgba(59, 130, 246, 0.3), rgba(249, 115, 22, 0.62), rgba(15, 23, 42, 0.08));
-}
-
-@keyframes scanline {
-  0% {
-    transform: translateY(-130%);
-  }
-
-  100% {
-    transform: translateY(130%);
-  }
-}
-
-.landing-scanline::after {
-  content: "";
-  position: absolute;
-  inset: -35%;
-  background: linear-gradient(180deg, transparent, rgba(255, 255, 255, 0.12), transparent);
-  animation: scanline 9s linear infinite;
-  pointer-events: none;
-}
-
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
@@ -174,9 +115,7 @@ body {
   .animate-marquee,
   .animate-float,
   .animate-gradient,
-  .landing-loader span,
-  .landing-reveal,
-  .landing-scanline::after {
+  .landing-reveal {
     animation: none !important;
     opacity: 1;
   }

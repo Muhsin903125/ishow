@@ -47,7 +47,7 @@ export default function Navbar() {
           </Link>
 
           {/* Desktop nav */}
-          <div className="hidden md:flex items-center gap-1">
+          <div className="hidden lg:flex items-center gap-1">
             {!user ? (
               <>
                 {navLinks.map((link) => (
@@ -105,7 +105,7 @@ export default function Navbar() {
           {/* Mobile menu button */}
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
-            className="md:hidden p-2 rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition-all"
+            className="p-2 rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition-all lg:hidden"
           >
             {mobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
@@ -114,7 +114,7 @@ export default function Navbar() {
 
       {/* Mobile menu */}
       {mobileOpen && (
-        <div className="md:hidden bg-gray-950/98 backdrop-blur-xl border-t border-white/10 px-4 pt-4 pb-6 space-y-1">
+        <div className="bg-gray-950/98 backdrop-blur-xl border-t border-white/10 px-4 pt-4 pb-6 space-y-1 lg:hidden">
           {!user ? (
             <>
               {navLinks.map((link) => (

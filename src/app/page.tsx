@@ -264,16 +264,6 @@ function SectionBackdropImage({ src, alt = "", className = "opacity-25" }: { src
   );
 }
 
-function LoaderBars({ tone = "light" }: { tone?: "light" | "dark" }) {
-  return (
-    <div aria-hidden="true" className={`landing-loader ${tone === "dark" ? "landing-loader-dark" : ""}`}>
-      <span />
-      <span />
-      <span />
-    </div>
-  );
-}
-
 // --- PAGE ---
 
 export default function LandingPage() {
@@ -291,15 +281,15 @@ export default function LandingPage() {
         <div className="absolute bottom-1/3 right-1/4 w-[400px] h-[400px] rounded-full bg-orange-500/10 blur-[100px] pointer-events-none" />
         <SectionTexture className="opacity-[0.2] mix-blend-screen" />
 
-        <div className="relative z-10 mx-auto w-full max-w-7xl px-4 pt-24 pb-28 sm:px-6 lg:px-8">
-          <div className="grid items-center gap-14 xl:grid-cols-[minmax(0,1fr)_30rem]">
+        <div className="relative z-10 mx-auto w-full max-w-7xl px-4 pt-28 pb-20 sm:px-6 sm:pt-24 sm:pb-28 lg:px-8">
+          <div className="grid items-center gap-10 sm:gap-14 xl:grid-cols-[minmax(0,1fr)_30rem]">
             <div className="max-w-3xl landing-reveal landing-delay-1">
-              <div className="inline-flex items-center gap-2 rounded-full border border-orange-500/40 bg-orange-500/20 px-5 py-2.5 backdrop-blur-sm mb-8">
+              <div className="mb-6 inline-flex max-w-full items-center gap-2 rounded-full border border-orange-500/40 bg-orange-500/20 px-4 py-2 backdrop-blur-sm sm:mb-8 sm:px-5 sm:py-2.5">
                 <Flame className="w-4 h-4 text-orange-400" />
-                <span className="text-orange-300 text-sm font-semibold tracking-widest uppercase">Coach-Led Transformation</span>
+                <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-orange-300 sm:text-sm sm:tracking-widest">Coach-Led Transformation</span>
               </div>
 
-              <h1 className="text-7xl sm:text-8xl lg:text-[108px] font-black leading-[0.88] tracking-tighter text-white mb-7">
+              <h1 className="mb-6 text-5xl font-black leading-[0.9] tracking-tighter text-white sm:mb-7 sm:text-7xl lg:text-[108px]">
                 FORGE
                 <span className="block text-transparent bg-clip-text bg-gradient-to-r from-orange-400 via-orange-500 to-yellow-400">
                   YOUR BEST
@@ -307,32 +297,32 @@ export default function LandingPage() {
                 SELF.
               </h1>
 
-              <p className="max-w-2xl text-xl leading-relaxed font-light text-white/60 mb-10 lg:text-2xl">
+              <p className="mb-8 max-w-2xl text-base leading-relaxed font-light text-white/60 sm:mb-10 sm:text-xl lg:text-2xl">
                 iShowTransformation gives you structured coaching from Mohammed Sufiyan, a clear plan,
                 and the accountability needed to turn effort into visible progress.
               </p>
 
-              <div className="flex flex-col sm:flex-row gap-4 mb-16">
+              <div className="mb-12 flex flex-col gap-3 sm:mb-16 sm:flex-row sm:gap-4">
                 <Link
                   href="/register"
-                  className="inline-flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-400 text-white px-8 py-4 rounded-full font-bold text-lg transition-all shadow-2xl shadow-orange-500/30 hover:shadow-orange-500/50 hover:-translate-y-1 group"
+                  className="group inline-flex w-full items-center justify-center gap-2 rounded-full bg-orange-500 px-6 py-3.5 text-base font-bold text-white shadow-2xl shadow-orange-500/30 transition-all hover:-translate-y-1 hover:bg-orange-400 hover:shadow-orange-500/50 sm:w-auto sm:px-8 sm:py-4 sm:text-lg"
                 >
                   Start Free Assessment
                   <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </Link>
                 <Link
                   href="/#videos"
-                  className="inline-flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 border border-white/30 hover:border-white/50 text-white px-8 py-4 rounded-full font-bold text-lg transition-all backdrop-blur-sm"
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-white/30 bg-white/10 px-6 py-3.5 text-base font-bold text-white transition-all backdrop-blur-sm hover:border-white/50 hover:bg-white/20 sm:w-auto sm:px-8 sm:py-4 sm:text-lg"
                 >
                   Watch Training Videos
                   <ChevronRight className="w-5 h-5" />
                 </Link>
               </div>
 
-              <div className="flex flex-wrap gap-8 border-t border-white/10 pt-8">
+              <div className="grid gap-5 border-t border-white/10 pt-6 sm:flex sm:flex-wrap sm:gap-8 sm:pt-8">
                 {heroHighlights.map((item) => (
                   <div key={item.title} className="max-w-[220px]">
-                    <p className="text-base font-black uppercase tracking-[0.18em] text-white">{item.title}</p>
+                    <p className="text-sm font-black uppercase tracking-[0.16em] text-white sm:text-base sm:tracking-[0.18em]">{item.title}</p>
                     <p className="text-sm leading-relaxed text-white/45 mt-2">{item.description}</p>
                   </div>
                 ))}
@@ -340,7 +330,7 @@ export default function LandingPage() {
             </div>
 
             <div className="landing-reveal landing-delay-2 mx-auto w-full max-w-[30rem] xl:max-w-none">
-              <div className="landing-panel landing-scanline relative overflow-hidden rounded-[2.35rem] border border-white/10 bg-white/6 p-3 shadow-[0_40px_120px_rgba(0,0,0,0.45)] backdrop-blur-sm">
+              <div className="landing-panel relative overflow-hidden rounded-[2.35rem] border border-white/10 bg-white/6 p-3 shadow-[0_40px_120px_rgba(0,0,0,0.45)] backdrop-blur-sm">
                 <div className="absolute inset-0 bg-gradient-to-br from-orange-500/16 via-transparent to-blue-500/16" />
                 <div className="relative aspect-[4/5] overflow-hidden rounded-[1.85rem]">
                   <Image
@@ -353,35 +343,24 @@ export default function LandingPage() {
                   />
                 </div>
 
-                <div className="absolute left-8 top-8 inline-flex items-center gap-2 rounded-full border border-white/15 bg-slate-950/70 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.26em] text-white/70 backdrop-blur-sm">
+                <div className="absolute left-4 top-4 inline-flex items-center gap-2 rounded-full border border-white/15 bg-slate-950/70 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.22em] text-white/70 backdrop-blur-sm sm:left-8 sm:top-8 sm:px-4 sm:py-2 sm:text-[11px] sm:tracking-[0.26em]">
                   <span className="h-2.5 w-2.5 rounded-full bg-green-400" />
                   Live coaching dashboard
                 </div>
 
-                <div className="absolute right-8 top-8 hidden w-36 rounded-[1.4rem] border border-white/10 bg-slate-950/72 p-4 backdrop-blur-md sm:block">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-orange-200/70">Loadout</p>
-                  <p className="mt-2 text-sm font-semibold text-white">Plan is syncing</p>
-                  <div className="mt-4">
-                    <LoaderBars />
-                  </div>
-                </div>
-
-                <div className="absolute inset-x-8 bottom-8 grid gap-3 sm:grid-cols-[1.1fr_0.9fr]">
-                  <div className="rounded-[1.5rem] border border-white/10 bg-slate-950/78 p-5 backdrop-blur-md">
+                <div className="absolute inset-x-4 bottom-4 grid gap-3 sm:inset-x-8 sm:bottom-8 sm:grid-cols-[1.1fr_0.9fr]">
+                  <div className="rounded-[1.5rem] border border-white/10 bg-slate-950/78 p-4 backdrop-blur-md sm:p-5">
                     <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-orange-200/70">Momentum check</p>
-                    <p className="mt-2 max-w-[15rem] text-sm leading-relaxed text-white/78">
+                    <p className="mt-2 max-w-[15rem] text-xs leading-relaxed text-white/78 sm:text-sm">
                       Assessment, plan updates, and coach follow-up all stay visible in one trackable flow.
                     </p>
-                    <div className="mt-4">
-                      <LoaderBars />
-                    </div>
                   </div>
 
-                  <div className="grid gap-3">
+                  <div className="grid grid-cols-3 gap-2 sm:grid-cols-1 sm:gap-3">
                     {heroSignals.map((item) => (
-                      <div key={item.label} className="rounded-[1.35rem] border border-white/10 bg-slate-950/72 px-4 py-3 backdrop-blur-md">
+                      <div key={item.label} className="rounded-[1.2rem] border border-white/10 bg-slate-950/72 px-3 py-2.5 backdrop-blur-md sm:rounded-[1.35rem] sm:px-4 sm:py-3">
                         <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-white/45">{item.label}</p>
-                        <p className="mt-1 text-lg font-black text-white">{item.value}</p>
+                        <p className="mt-1 text-sm font-black text-white sm:text-lg">{item.value}</p>
                       </div>
                     ))}
                   </div>
@@ -397,10 +376,10 @@ export default function LandingPage() {
       </section>
 
       {/* 2. MARQUEE */}
-      <div className="bg-orange-500 py-4 overflow-hidden select-none">
+      <div className="overflow-hidden bg-orange-500 py-3 select-none sm:py-4">
         <div className="animate-marquee whitespace-nowrap">
           {[...marqueeItems, ...marqueeItems, ...marqueeItems, ...marqueeItems].map((item, i) => (
-            <span key={i} className="inline-flex items-center gap-4 mx-6 text-white font-black text-lg tracking-[0.2em]">
+            <span key={i} className="mx-4 inline-flex items-center gap-3 text-base font-black tracking-[0.16em] text-white sm:mx-6 sm:gap-4 sm:text-lg sm:tracking-[0.2em]">
               <span className="w-2 h-2 rounded-full bg-white/50 inline-block" />
               {item}
             </span>
@@ -409,22 +388,22 @@ export default function LandingPage() {
       </div>
 
       {/* 3. SERVICES */}
-      <section id="services" className="landing-section relative overflow-hidden py-28 bg-gray-950 text-white">
+      <section id="services" className="landing-section relative overflow-hidden bg-gray-950 py-20 text-white sm:py-28">
         <SectionTexture className="opacity-[0.16] mix-blend-screen" />
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16 landing-reveal landing-delay-1">
-            <div className="inline-flex items-center gap-2 bg-orange-500/20 border border-orange-500/30 rounded-full px-4 py-2 mb-4">
+          <div className="landing-reveal landing-delay-1 mb-12 text-center sm:mb-16">
+            <div className="mb-4 inline-flex max-w-full items-center gap-2 rounded-full border border-orange-500/30 bg-orange-500/20 px-4 py-2">
               <Trophy className="w-4 h-4 text-orange-400" />
-              <span className="text-orange-400 text-sm font-semibold tracking-widest uppercase">Inside The Experience</span>
+              <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-orange-400 sm:text-sm sm:tracking-widest">Inside The Experience</span>
             </div>
-            <h2 className="text-5xl lg:text-6xl font-black mb-4">
+            <h2 className="mb-4 text-4xl font-black sm:text-5xl lg:text-6xl">
               What Coaching
               <span className="block text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-orange-600">
                 Actually Covers
               </span>
             </h2>
-            <p className="text-gray-400 text-lg max-w-2xl mx-auto">
+            <p className="mx-auto max-w-2xl text-base text-gray-400 sm:text-lg">
               Programming, nutrition direction, accountability, and progress tracking built around one clear target: sustainable transformation.
             </p>
           </div>
@@ -444,7 +423,7 @@ export default function LandingPage() {
                     <Icon className="h-28 w-28 text-white" />
                   </div>
                   <div className="relative flex h-full flex-col p-6">
-                    <div className="landing-scanline relative mb-6 overflow-hidden rounded-[1.75rem] border border-white/10 bg-slate-950/70">
+                    <div className="relative mb-6 overflow-hidden rounded-[1.75rem] border border-white/10 bg-slate-950/70">
                       <div className="absolute inset-0 bg-gradient-to-br from-slate-950/10 via-transparent to-slate-950/55" />
                       <Image
                         src={svc.art}
@@ -456,10 +435,6 @@ export default function LandingPage() {
 
                       <div className="absolute left-4 top-4 rounded-full border border-white/15 bg-slate-950/75 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-white/70 backdrop-blur-sm">
                         {svc.eyebrow}
-                      </div>
-
-                      <div className="absolute right-4 top-4 w-16 rounded-[1rem] border border-white/10 bg-black/45 p-3 backdrop-blur-sm">
-                        <LoaderBars />
                       </div>
 
                       <div className="absolute inset-x-4 bottom-4 flex items-center justify-between gap-4">
@@ -488,33 +463,33 @@ export default function LandingPage() {
       </section>
 
       {/* 4. HOW IT WORKS */}
-      <section id="how-it-works" className="landing-section relative overflow-hidden bg-neutral-950 py-28 text-white">
+      <section id="how-it-works" className="landing-section relative overflow-hidden bg-neutral-950 py-20 text-white sm:py-28">
         <SectionBackdropImage src={landingArt.journey} className="opacity-[0.24]" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(249,115,22,0.22),transparent_32%),radial-gradient(circle_at_bottom_right,rgba(37,99,235,0.24),transparent_36%)]" />
         <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.04)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.04)_1px,transparent_1px)] bg-[size:88px_88px] opacity-[0.08]" />
         <SectionTexture className="opacity-[0.14] mix-blend-screen" />
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid gap-14 lg:grid-cols-[0.9fr_1.1fr] lg:gap-16">
+          <div className="grid gap-10 sm:gap-14 lg:grid-cols-[0.9fr_1.1fr] lg:gap-16">
             <div className="landing-reveal landing-delay-1 lg:sticky lg:top-28 self-start">
-              <div className="inline-flex items-center gap-2 rounded-full border border-orange-400/30 bg-orange-500/10 px-4 py-2 mb-6 backdrop-blur-sm">
+              <div className="mb-5 inline-flex max-w-full items-center gap-2 rounded-full border border-orange-400/30 bg-orange-500/10 px-4 py-2 backdrop-blur-sm sm:mb-6">
                 <Calendar className="w-4 h-4 text-orange-300" />
-                <span className="text-orange-200 text-sm font-semibold tracking-[0.24em] uppercase">The Process</span>
+                <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-orange-200 sm:text-sm sm:tracking-[0.24em]">The Process</span>
               </div>
 
-              <h2 className="text-5xl lg:text-7xl font-black leading-[0.92] tracking-tight mb-6">
+              <h2 className="mb-5 text-4xl font-black leading-[0.94] tracking-tight sm:mb-6 sm:text-5xl lg:text-7xl">
                 Simple Path to
                 <span className="block text-transparent bg-clip-text bg-gradient-to-r from-orange-400 via-orange-300 to-blue-400">
                   Transformation
                 </span>
               </h2>
 
-              <p className="max-w-xl text-lg text-white/70 leading-relaxed mb-8">
+              <p className="mb-6 max-w-xl text-base leading-relaxed text-white/70 sm:mb-8 sm:text-lg">
                 This is built to feel clear from day one: understand your baseline, get a plan that fits your life,
                 train with structure, and watch momentum stack into visible results.
               </p>
 
-              <div className="landing-panel landing-scanline relative mb-8 overflow-hidden rounded-[2rem] border border-white/10 bg-white/5 p-3 backdrop-blur-sm shadow-[0_24px_80px_rgba(0,0,0,0.24)]">
+              <div className="landing-panel relative mb-8 overflow-hidden rounded-[2rem] border border-white/10 bg-white/5 p-3 backdrop-blur-sm shadow-[0_24px_80px_rgba(0,0,0,0.24)]">
                 <div className="absolute inset-0 bg-gradient-to-br from-orange-500/14 via-transparent to-blue-500/14" />
                 <div className="relative aspect-[1.08/1] overflow-hidden rounded-[1.5rem]">
                   <Image
@@ -526,16 +501,10 @@ export default function LandingPage() {
                   />
                 </div>
 
-                <div className="absolute left-6 top-6 rounded-full border border-white/15 bg-slate-950/72 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-white/70 backdrop-blur-sm">
+                <div className="absolute left-4 top-4 rounded-full border border-white/15 bg-slate-950/72 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/70 backdrop-blur-sm sm:left-6 sm:top-6 sm:px-4 sm:py-2 sm:text-[11px] sm:tracking-[0.24em]">
                   4-stage roadmap
                 </div>
 
-                <div className="absolute right-6 top-6 hidden w-36 rounded-[1rem] border border-white/10 bg-slate-950/72 p-4 backdrop-blur-sm sm:block">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-orange-200/70">Route load</p>
-                  <div className="mt-3">
-                    <LoaderBars />
-                  </div>
-                </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-8">
@@ -551,7 +520,7 @@ export default function LandingPage() {
                 ))}
               </div>
 
-              <div className="landing-panel rounded-[2rem] border border-white/10 bg-white/5 p-6 backdrop-blur-sm shadow-[0_24px_80px_rgba(0,0,0,0.24)]">
+              <div className="landing-panel rounded-[2rem] border border-white/10 bg-white/5 p-5 backdrop-blur-sm shadow-[0_24px_80px_rgba(0,0,0,0.24)] sm:p-6">
                 <p className="text-xs font-semibold uppercase tracking-[0.26em] text-orange-200/80 mb-4">What Changes</p>
                 <div className="space-y-4">
                   {[
@@ -567,17 +536,17 @@ export default function LandingPage() {
                 </div>
               </div>
 
-              <div className="mt-8 flex flex-col sm:flex-row gap-4">
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:gap-4">
                 <Link
                   href="/register"
-                  className="inline-flex items-center justify-center gap-2 rounded-full bg-orange-500 px-8 py-4 text-lg font-bold text-white transition-all shadow-lg shadow-orange-500/25 hover:-translate-y-0.5 hover:bg-orange-400"
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-orange-500 px-6 py-3.5 text-base font-bold text-white transition-all shadow-lg shadow-orange-500/25 hover:-translate-y-0.5 hover:bg-orange-400 sm:w-auto sm:px-8 sm:py-4 sm:text-lg"
                 >
                   Start Free Assessment
                   <ArrowRight className="w-5 h-5" />
                 </Link>
                 <Link
                   href="/#videos"
-                  className="inline-flex items-center justify-center gap-2 rounded-full border border-white/15 bg-white/5 px-8 py-4 text-lg font-bold text-white transition-all hover:bg-white/10"
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-white/15 bg-white/5 px-6 py-3.5 text-base font-bold text-white transition-all hover:bg-white/10 sm:w-auto sm:px-8 sm:py-4 sm:text-lg"
                 >
                   View Training Videos
                   <ChevronRight className="w-5 h-5" />
@@ -595,7 +564,7 @@ export default function LandingPage() {
                   return (
                     <article
                       key={step.number}
-                      className={`landing-panel landing-reveal relative overflow-hidden rounded-[2rem] border border-white/10 p-6 sm:p-8 ${
+                      className={`landing-panel landing-reveal relative overflow-hidden rounded-[2rem] border border-white/10 p-5 sm:p-8 ${
                         i % 2 === 0 ? "bg-white/5 sm:mr-12" : "bg-white/10 sm:ml-12"
                       }`}
                       style={{ animationDelay: `${0.14 + i * 0.08}s` }}
@@ -647,33 +616,33 @@ export default function LandingPage() {
       </section>
 
       {/* 5. VIDEOS */}
-      <section id="videos" className="landing-section relative overflow-hidden bg-neutral-950 py-28 text-white">
+      <section id="videos" className="landing-section relative overflow-hidden bg-neutral-950 py-20 text-white sm:py-28">
         <SectionBackdropImage src={landingArt.videosBackdrop} className="opacity-[0.24]" />
         <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(2,6,23,0.92)_0%,rgba(2,6,23,0.68)_48%,rgba(15,23,42,0.94)_100%)]" />
         <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.04)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.04)_1px,transparent_1px)] bg-[size:88px_88px] opacity-[0.08]" />
         <SectionTexture className="opacity-[0.14] mix-blend-screen" />
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid gap-12 lg:grid-cols-[0.9fr_1.1fr] lg:items-start lg:gap-14">
+          <div className="grid gap-10 sm:gap-12 lg:grid-cols-[0.9fr_1.1fr] lg:items-start lg:gap-14">
             <div className="landing-reveal landing-delay-1 lg:sticky lg:top-28 self-start">
-              <div className="inline-flex items-center gap-2 rounded-full border border-orange-400/30 bg-orange-500/10 px-4 py-2 mb-6 backdrop-blur-sm">
+              <div className="mb-5 inline-flex max-w-full items-center gap-2 rounded-full border border-orange-400/30 bg-orange-500/10 px-4 py-2 backdrop-blur-sm sm:mb-6">
                 <PlayCircle className="w-4 h-4 text-orange-300" />
-                <span className="text-orange-200 text-sm font-semibold tracking-[0.24em] uppercase">Training Videos</span>
+                <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-orange-200 sm:text-sm sm:tracking-[0.24em]">Training Videos</span>
               </div>
 
-              <h2 className="text-5xl lg:text-7xl font-black leading-[0.94] tracking-tight mb-6">
+              <h2 className="mb-5 text-4xl font-black leading-[0.96] tracking-tight sm:mb-6 sm:text-5xl lg:text-7xl">
                 Real Sessions.
                 <span className="block text-transparent bg-clip-text bg-gradient-to-r from-orange-400 via-orange-300 to-blue-400">
                   Real Training.
                 </span>
               </h2>
 
-              <p className="max-w-xl text-lg leading-relaxed text-white/70 mb-8">
+              <p className="mb-6 max-w-xl text-base leading-relaxed text-white/70 sm:mb-8 sm:text-lg">
                 The platform can carry actual training footage alongside the rest of the coaching flow, giving sessions,
                 movement quality, and execution a more visual layer instead of leaving everything as text only.
               </p>
 
-              <div className="landing-panel landing-scanline relative overflow-hidden rounded-[2rem] border border-white/10 bg-white/5 p-3 backdrop-blur-sm shadow-[0_24px_80px_rgba(0,0,0,0.24)]">
+              <div className="landing-panel relative overflow-hidden rounded-[2rem] border border-white/10 bg-white/5 p-3 backdrop-blur-sm shadow-[0_24px_80px_rgba(0,0,0,0.24)]">
                 <div className="absolute inset-0 bg-gradient-to-br from-orange-500/14 via-transparent to-blue-500/14" />
                 <div className="relative aspect-[4/3] overflow-hidden rounded-[1.5rem]">
                   <Image
@@ -685,16 +654,10 @@ export default function LandingPage() {
                   />
                 </div>
 
-                <div className="absolute left-6 top-6 rounded-full border border-white/15 bg-slate-950/72 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-white/70 backdrop-blur-sm">
+                <div className="absolute left-4 top-4 rounded-full border border-white/15 bg-slate-950/72 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/70 backdrop-blur-sm sm:left-6 sm:top-6 sm:px-4 sm:py-2 sm:text-[11px] sm:tracking-[0.24em]">
                   HD media backgrounds
                 </div>
 
-                <div className="absolute right-6 top-6 hidden w-36 rounded-[1rem] border border-white/10 bg-slate-950/72 p-4 backdrop-blur-sm sm:block">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-orange-200/70">Media load</p>
-                  <div className="mt-3">
-                    <LoaderBars />
-                  </div>
-                </div>
               </div>
             </div>
 
@@ -705,9 +668,9 @@ export default function LandingPage() {
                   className="landing-panel landing-reveal rounded-[2rem] border border-white/10 bg-white/5 p-4 backdrop-blur-sm"
                   style={{ animationDelay: `${0.14 + index * 0.08}s` }}
                 >
-                  <div className="landing-scanline relative overflow-hidden rounded-[1.6rem] border border-white/10 bg-slate-950/70">
+                  <div className="relative overflow-hidden rounded-[1.6rem] border border-white/10 bg-slate-950/70">
                     <video
-                      className="h-64 w-full object-cover"
+                      className="h-56 w-full object-cover sm:h-64"
                       autoPlay
                       loop
                       muted
@@ -722,12 +685,9 @@ export default function LandingPage() {
                     <div className="absolute left-4 top-4 rounded-full border border-white/15 bg-slate-950/75 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-white/70 backdrop-blur-sm">
                       {video.tag}
                     </div>
-                    <div className="absolute right-4 top-4 w-16 rounded-[1rem] border border-white/10 bg-black/45 p-3 backdrop-blur-sm">
-                      <LoaderBars />
-                    </div>
                     <div className="absolute inset-x-5 bottom-5">
                       <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-orange-200/75">{video.focus}</p>
-                      <h3 className="mt-2 text-2xl font-black text-white">{video.title}</h3>
+                      <h3 className="mt-2 text-xl font-black text-white sm:text-2xl">{video.title}</h3>
                     </div>
                   </div>
 
@@ -740,15 +700,15 @@ export default function LandingPage() {
       </section>
 
       {/* 6. TRAINER */}
-      <section id="trainer" className="landing-section relative overflow-hidden bg-slate-950 py-28 text-white">
+      <section id="trainer" className="landing-section relative overflow-hidden bg-slate-950 py-20 text-white sm:py-28">
         <SectionBackdropImage src={landingArt.trainerBackdrop} className="opacity-[0.24]" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(249,115,22,0.16),transparent_30%),radial-gradient(circle_at_bottom_left,rgba(59,130,246,0.18),transparent_34%)]" />
         <SectionTexture className="opacity-[0.16] mix-blend-screen" />
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid gap-10 lg:grid-cols-[1.02fr_0.98fr] lg:items-start lg:gap-14">
+          <div className="grid gap-8 sm:gap-10 lg:grid-cols-[1.02fr_0.98fr] lg:items-start lg:gap-14">
             <div className="grid gap-4 lg:sticky lg:top-28 self-start">
-              <div className="landing-panel landing-reveal landing-delay-2 landing-scanline relative overflow-hidden rounded-[2rem] border border-white/10 bg-white/5 p-3 backdrop-blur-sm">
+              <div className="landing-panel landing-reveal landing-delay-2 relative overflow-hidden rounded-[2rem] border border-white/10 bg-white/5 p-3 backdrop-blur-sm">
                 <div className="absolute inset-0 bg-gradient-to-br from-orange-500/14 via-transparent to-blue-500/14" />
                 <div className="relative aspect-[5/6] overflow-hidden rounded-[1.6rem]">
                   <Image
@@ -760,22 +720,15 @@ export default function LandingPage() {
                   />
                 </div>
 
-                <div className="absolute left-6 top-6 rounded-full border border-white/15 bg-slate-950/72 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-white/70 backdrop-blur-sm">
+                <div className="absolute left-4 top-4 rounded-full border border-white/15 bg-slate-950/72 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/70 backdrop-blur-sm sm:left-6 sm:top-6 sm:px-4 sm:py-2 sm:text-[11px] sm:tracking-[0.24em]">
                   Coach signal
                 </div>
 
-                <div className="absolute right-6 top-6 hidden w-36 rounded-[1rem] border border-white/10 bg-slate-950/72 p-4 backdrop-blur-sm sm:block">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-orange-200/70">Support load</p>
-                  <div className="mt-3">
-                    <LoaderBars />
-                  </div>
-                </div>
-
-                <div className="absolute inset-x-6 bottom-6 grid gap-3 sm:grid-cols-3">
+                <div className="absolute inset-x-4 bottom-4 grid grid-cols-3 gap-2 sm:inset-x-6 sm:bottom-6 sm:gap-3">
                   {trainerPanelStats.map((item) => (
-                    <div key={item.label} className="rounded-[1.35rem] border border-white/10 bg-slate-950/78 px-4 py-3 backdrop-blur-md">
+                    <div key={item.label} className="rounded-[1.2rem] border border-white/10 bg-slate-950/78 px-3 py-2.5 backdrop-blur-md sm:rounded-[1.35rem] sm:px-4 sm:py-3">
                       <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-white/45">{item.label}</p>
-                      <p className="mt-1 text-lg font-black text-white">{item.value}</p>
+                      <p className="mt-1 text-sm font-black text-white sm:text-lg">{item.value}</p>
                     </div>
                   ))}
                 </div>
@@ -797,28 +750,28 @@ export default function LandingPage() {
 
             <div className="grid gap-4">
               <div className="landing-panel landing-reveal landing-delay-1 rounded-[2rem] border border-white/10 bg-white/5 p-6 sm:p-8 backdrop-blur-sm">
-                <div className="inline-flex items-center gap-2 rounded-full border border-blue-400/20 bg-blue-500/10 px-4 py-2 mb-6 backdrop-blur-sm">
+                <div className="mb-5 inline-flex max-w-full items-center gap-2 rounded-full border border-blue-400/20 bg-blue-500/10 px-4 py-2 backdrop-blur-sm sm:mb-6">
                   <Shield className="w-4 h-4 text-blue-300" />
-                  <span className="text-blue-200 text-sm font-semibold tracking-[0.24em] uppercase">Trainer Details</span>
+                  <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-blue-200 sm:text-sm sm:tracking-[0.24em]">Trainer Details</span>
                 </div>
 
-                <h2 className="text-5xl lg:text-7xl font-black leading-[0.95] tracking-tight mb-5">
+                <h2 className="mb-5 text-4xl font-black leading-[0.98] tracking-tight sm:text-5xl lg:text-7xl">
                   Train Directly With
                   <span className="block text-transparent bg-clip-text bg-gradient-to-r from-white via-orange-200 to-orange-400">
                     Mohammed Sufiyan
                   </span>
                 </h2>
 
-                <p className="max-w-2xl text-lg leading-relaxed text-white/72 mb-8">
+                <p className="mb-8 max-w-2xl text-base leading-relaxed text-white/72 sm:text-lg">
                   Mohammed leads the iShowTransformation coaching experience with practical programming,
                   weekly accountability, and a clear focus on sustainable body transformation. The goal is not
                   random intensity. The goal is structure you can repeat and progress you can measure.
                 </p>
 
-                <div className="flex flex-col gap-4 sm:flex-row">
+                <div className="flex flex-col gap-3 sm:flex-row sm:gap-4">
                   <Link
                     href="/register"
-                    className="inline-flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-400 text-white px-8 py-4 rounded-full font-bold text-lg shadow-lg shadow-orange-500/30 hover:-translate-y-0.5"
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-orange-500 px-6 py-3.5 text-base font-bold text-white shadow-lg shadow-orange-500/30 hover:-translate-y-0.5 hover:bg-orange-400 sm:w-auto sm:px-8 sm:py-4 sm:text-lg"
                   >
                     Start With Mohammed
                     <ArrowRight className="w-5 h-5" />
@@ -827,7 +780,7 @@ export default function LandingPage() {
                     href="https://www.instagram.com/sufiyan_mohd26/"
                     target="_blank"
                     rel="noreferrer"
-                    className="inline-flex items-center justify-center gap-2 rounded-full border border-white/15 bg-white/5 px-8 py-4 text-lg font-bold text-white hover:bg-white/10"
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-white/15 bg-white/5 px-6 py-3.5 text-base font-bold text-white hover:bg-white/10 sm:w-auto sm:px-8 sm:py-4 sm:text-lg"
                   >
                     Instagram @sufiyan_mohd26
                     <ExternalLink className="w-5 h-5" />
@@ -842,7 +795,7 @@ export default function LandingPage() {
                 <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-[0.26em] text-blue-200/70 mb-3">Inside The Coaching Relationship</p>
-                    <h3 className="text-3xl font-black text-white leading-tight">
+                    <h3 className="text-2xl font-black leading-tight text-white sm:text-3xl">
                       High accountability, clear direction, and progress that stays repeatable.
                     </h3>
                     <p className="mt-4 text-sm leading-relaxed text-white/64">
@@ -895,7 +848,7 @@ export default function LandingPage() {
       </section>
 
       {/* 7. CTA */}
-      <section className="landing-section relative py-36 overflow-hidden">
+      <section className="landing-section relative overflow-hidden py-24 sm:py-36">
         <SectionBackdropImage src={landingArt.ctaBackdrop} className="opacity-[0.26]" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(249,115,22,0.22),transparent_28%),radial-gradient(circle_at_bottom_left,rgba(59,130,246,0.18),transparent_34%),linear-gradient(135deg,#020617_0%,#111827_50%,#020617_100%)]" />
         <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[size:64px_64px] opacity-[0.08]" />
@@ -904,35 +857,35 @@ export default function LandingPage() {
         <SectionTexture className="opacity-[0.16] mix-blend-screen" />
 
         <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center landing-reveal landing-delay-1">
-          <div className="inline-flex items-center gap-2 bg-orange-500/20 border border-orange-500/40 rounded-full px-5 py-2.5 mb-8">
+          <div className="mb-6 inline-flex max-w-full items-center gap-2 rounded-full border border-orange-500/40 bg-orange-500/20 px-4 py-2 sm:mb-8 sm:px-5 sm:py-2.5">
             <Zap className="w-4 h-4 text-orange-400" />
-            <span className="text-orange-400 text-sm font-semibold tracking-widest uppercase">Ready to Start?</span>
+            <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-orange-400 sm:text-sm sm:tracking-widest">Ready to Start?</span>
           </div>
-          <h2 className="text-6xl lg:text-8xl font-black text-white leading-[0.9] mb-6">
+          <h2 className="mb-5 text-4xl font-black leading-[0.95] text-white sm:mb-6 sm:text-6xl lg:text-8xl">
             Start With
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-yellow-400"> A Clear Plan</span>
             <span className="block">Not Guesswork.</span>
           </h2>
-          <p className="text-xl text-gray-300 mb-10 max-w-2xl mx-auto leading-relaxed">
+          <p className="mx-auto mb-8 max-w-2xl text-base leading-relaxed text-gray-300 sm:mb-10 sm:text-xl">
             Take the free assessment, share your goal, and let Mohammed map the next step with coaching that is built to stay realistic and effective.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-10">
+          <div className="mb-8 flex flex-col justify-center gap-3 sm:mb-10 sm:flex-row sm:gap-4">
             <Link
               href="/register"
-              className="inline-flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-400 text-white px-10 py-5 rounded-full font-black text-xl transition-all shadow-2xl shadow-orange-500/30 hover:shadow-orange-500/60 hover:-translate-y-1 group"
+              className="group inline-flex w-full items-center justify-center gap-2 rounded-full bg-orange-500 px-6 py-4 text-base font-black text-white shadow-2xl shadow-orange-500/30 transition-all hover:-translate-y-1 hover:bg-orange-400 hover:shadow-orange-500/60 sm:w-auto sm:px-10 sm:py-5 sm:text-xl"
             >
               Start For Free
               <ArrowRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
             </Link>
             <Link
               href="/login"
-              className="inline-flex items-center justify-center bg-white/10 hover:bg-white/20 border border-white/30 text-white px-10 py-5 rounded-full font-bold text-xl transition-all backdrop-blur-sm"
+              className="inline-flex w-full items-center justify-center rounded-full border border-white/30 bg-white/10 px-6 py-4 text-base font-bold text-white transition-all backdrop-blur-sm hover:bg-white/20 sm:w-auto sm:px-10 sm:py-5 sm:text-xl"
             >
               Already a Member?
             </Link>
           </div>
 
-          <div className="landing-panel landing-scanline relative mx-auto mb-10 max-w-3xl overflow-hidden rounded-[2rem] border border-white/10 bg-white/5 p-3 backdrop-blur-sm">
+          <div className="landing-panel relative mx-auto mb-10 max-w-3xl overflow-hidden rounded-[2rem] border border-white/10 bg-white/5 p-3 backdrop-blur-sm">
             <div className="absolute inset-0 bg-gradient-to-br from-orange-500/14 via-transparent to-blue-500/14" />
             <div className="relative aspect-[5/3] overflow-hidden rounded-[1.5rem]">
               <Image
@@ -944,28 +897,21 @@ export default function LandingPage() {
               />
             </div>
 
-            <div className="absolute left-6 top-6 rounded-full border border-white/15 bg-slate-950/72 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-white/70 backdrop-blur-sm">
+            <div className="absolute left-4 top-4 rounded-full border border-white/15 bg-slate-950/72 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/70 backdrop-blur-sm sm:left-6 sm:top-6 sm:px-4 sm:py-2 sm:text-[11px] sm:tracking-[0.24em]">
               Start sequence
             </div>
 
-            <div className="absolute right-6 top-6 hidden w-36 rounded-[1rem] border border-white/10 bg-slate-950/72 p-4 backdrop-blur-sm sm:block">
-              <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-orange-200/70">Launch load</p>
-              <div className="mt-3">
-                <LoaderBars />
-              </div>
-            </div>
-
-            <div className="absolute inset-x-6 bottom-6 grid gap-3 sm:grid-cols-3">
+            <div className="absolute inset-x-4 bottom-4 grid grid-cols-3 gap-2 sm:inset-x-6 sm:bottom-6 sm:gap-3">
               {ctaSequence.map((item) => (
-                <div key={item.label} className="rounded-[1.35rem] border border-white/10 bg-slate-950/78 px-4 py-3 text-left backdrop-blur-md">
+                <div key={item.label} className="rounded-[1.2rem] border border-white/10 bg-slate-950/78 px-3 py-2.5 text-left backdrop-blur-md sm:rounded-[1.35rem] sm:px-4 sm:py-3">
                   <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-white/45">{item.label}</p>
-                  <p className="mt-1 text-lg font-black text-white">{item.value}</p>
+                  <p className="mt-1 text-sm font-black text-white sm:text-lg">{item.value}</p>
                 </div>
               ))}
             </div>
           </div>
 
-          <div className="flex flex-wrap justify-center gap-6 text-gray-400 text-sm">
+          <div className="flex flex-wrap justify-center gap-4 text-xs text-gray-400 sm:gap-6 sm:text-sm">
             {["Assessment first", "Trainer-led programming", "Clear weekly follow-up"].map((item) => (
               <div key={item} className="flex items-center gap-2">
                 <CheckCircle className="w-4 h-4 text-green-400" />
