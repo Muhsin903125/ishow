@@ -9,6 +9,7 @@ import {
   Users,
   Calendar,
   Dumbbell,
+  ClipboardList,
   LogOut,
   X,
 } from "lucide-react";
@@ -16,6 +17,7 @@ import {
 const navItems = [
   { href: "/trainer/dashboard", icon: LayoutDashboard, label: "Dashboard" },
   { href: "/trainer/clients", icon: Users, label: "Clients" },
+  { href: "/trainer/assessments", icon: ClipboardList, label: "Assessments" },
   { href: "/trainer/sessions", icon: Calendar, label: "Sessions" },
   { href: "/trainer/programs", icon: Dumbbell, label: "Programs" },
 ];

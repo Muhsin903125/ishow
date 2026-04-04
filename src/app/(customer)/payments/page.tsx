@@ -97,7 +97,7 @@ export default function PaymentsPage() {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <div className="bg-gray-900 text-white rounded-2xl p-5">
             <DollarSign className="w-5 h-5 opacity-75 mb-2" />
-            <p className="text-3xl font-black">${totalPaid}</p>
+            <p className="text-3xl font-black">AED {totalPaid}</p>
             <p className="text-sm opacity-60 font-medium mt-0.5">Total Paid</p>
           </div>
           <div className="bg-green-600 text-white rounded-2xl p-5">
@@ -126,7 +126,7 @@ export default function PaymentsPage() {
             <div>
               <p className="font-bold text-red-800">You have {overdue.length} overdue payment{overdue.length > 1 ? "s" : ""}</p>
               <p className="text-red-600 text-sm mt-0.5">
-                Total outstanding: ${overdue.reduce((s, p) => s + p.amount, 0)} — please contact your trainer to settle.
+                Total outstanding: AED {overdue.reduce((s, p) => s + p.amount, 0)} — please contact your trainer to settle.
               </p>
             </div>
           </div>
@@ -141,7 +141,7 @@ export default function PaymentsPage() {
             <div>
               <p className="font-bold text-yellow-800">Upcoming payment due</p>
               <p className="text-yellow-700 text-sm mt-0.5">
-                ${totalPending} due on {formatDate(pending[0].dueDate)} — {pending[0].description}
+                AED {totalPending} due on {formatDate(pending[0].dueDate)} — {pending[0].description}
               </p>
             </div>
           </div>
@@ -156,7 +156,7 @@ export default function PaymentsPage() {
                 <span className="font-bold text-gray-900">Payment Progress</span>
               </div>
               <span className="text-sm text-gray-500">
-                ${totalPaid} of ${totalPaid + totalPending} paid
+                AED {totalPaid} of AED {totalPaid + totalPending} paid
               </span>
             </div>
             <div className="w-full bg-gray-100 rounded-full h-3">
@@ -235,7 +235,7 @@ export default function PaymentsPage() {
                         </div>
                       </div>
                       <div className="flex items-center gap-3 flex-shrink-0">
-                        <span className="text-2xl font-black text-gray-900">${payment.amount}</span>
+                        <span className="text-2xl font-black text-gray-900">AED {payment.amount}</span>
                         <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${cfg.badge}`}>
                           <Icon className="w-3.5 h-3.5" />
                           {cfg.label}

@@ -1,12 +1,12 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useAuth } from "@/contexts/AuthContext";
 import { addItem, deleteItem, getItems, updateItem } from "@/lib/storage";
 import type { User } from "@/lib/auth";
-import type { DayActivity, Program } from "@/lib/mockData";
+import type { Assessment, DayActivity, Program } from "@/lib/mockData";
 import {
   Calendar,
   Dumbbell,
@@ -96,6 +96,78 @@ function fromActivity(activity: DayActivity): ProgramActivityForm {
   };
 }
 
+function ClientCombobox({
+  value,
+  onChange,
+  customers,
+  includeAll = false,
+  className,
+}: {
+  value: string;
+  onChange: (id: string) => void;
+  customers: User[];
+  includeAll?: boolean;
+  className?: string;
+}) {
+  const [query, setQuery] = useState("");
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function onMouseDown(event: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setOpen(false);
+        setQuery("");
+      }
+    }
+    document.addEventListener("mousedown", onMouseDown);
+    return () => document.removeEventListener("mousedown", onMouseDown);
+  }, []);
+
+  const allOptions = includeAll
+    ? [{ id: "all", name: "All clients" }, ...customers]
+    : customers;
+
+  const filtered = query
+    ? allOptions.filter((o) => o.name.toLowerCase().includes(query.toLowerCase()))
+    : allOptions;
+
+  const displayValue = open
+    ? query
+    : value === "all"
+    ? "All clients"
+    : customers.find((c) => c.id === value)?.name ?? "";
+
+  return (
+    <div ref={containerRef} className={`relative ${className ?? ""}`}>
+      <input
+        type="text"
+        value={displayValue}
+        onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
+        onFocus={() => setOpen(true)}
+        placeholder={includeAll ? "All clients" : "Select client"}
+        className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-gray-900 outline-none transition-colors focus:border-blue-500"
+      />
+      {open && filtered.length > 0 && (
+        <ul className="absolute z-20 mt-1 max-h-48 w-full overflow-y-auto rounded-2xl border border-gray-200 bg-white shadow-lg">
+          {filtered.map((option) => (
+            <li
+              key={option.id}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => { onChange(option.id); setQuery(""); setOpen(false); }}
+              className={`cursor-pointer px-4 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50 ${
+                option.id === value ? "bg-blue-50 text-blue-700" : "text-gray-900"
+              }`}
+            >
+              {option.name}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 function TrainerProgramsContent() {
   const { user, loading } = useAuth();
   const router = useRouter();
@@ -103,6 +175,7 @@ function TrainerProgramsContent() {
   const queryClient = searchParams.get("client") ?? "all";
 
   const [programs, setPrograms] = useState<Program[]>([]);
+  const [assessments, setAssessments] = useState<Assessment[]>([]);
   const [customers, setCustomers] = useState<User[]>([]);
   const [clientFilter, setClientFilter] = useState("all");
   const [editingProgramId, setEditingProgramId] = useState<string | null>(null);
@@ -126,6 +199,7 @@ function TrainerProgramsContent() {
 
     setCustomers(nextCustomers);
     setPrograms(nextPrograms);
+    setAssessments(getItems<Assessment>("ishow_assessments"));
   }
 
   useEffect(() => {
@@ -168,6 +242,16 @@ function TrainerProgramsContent() {
 
   const activityCount = visiblePrograms.reduce((total, program) => total + program.activities.length, 0);
   const currentWeek = visiblePrograms.reduce((highest, program) => Math.max(highest, program.weekNumber), 0);
+
+  const assessmentByUserId = Object.fromEntries(
+    assessments.map((a) => [a.userId, a])
+  );
+
+  const selectedClientAssessment = form.userId ? assessmentByUserId[form.userId] : undefined;
+  const selectedClientAssessmentBlocked =
+    !editingProgramId &&
+    form.userId &&
+    (!selectedClientAssessment || selectedClientAssessment.status !== "reviewed");
 
   function resetForm(preferredUserId?: string) {
     const fallbackUserId = preferredUserId ?? (clientFilter === "all" ? customers[0]?.id ?? "" : clientFilter);
@@ -290,12 +374,11 @@ function TrainerProgramsContent() {
           </div>
 
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-            <label className="flex items-center gap-3 rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-600 shadow-sm">
-              <Users className="h-4 w-4 text-gray-400" />
-              <select
+            <div className="flex items-center gap-2 rounded-2xl border border-gray-200 bg-white px-3 py-2 shadow-sm">
+              <Users className="h-4 w-4 text-gray-400 flex-shrink-0" />
+              <ClientCombobox
                 value={clientFilter}
-                onChange={(event) => {
-                  const nextValue = event.target.value;
+                onChange={(nextValue) => {
                   setClientFilter(nextValue);
                   if (!editingProgramId) {
                     setForm((current) => ({
@@ -304,14 +387,11 @@ function TrainerProgramsContent() {
                     }));
                   }
                 }}
-                className="bg-transparent font-medium text-gray-900 outline-none"
-              >
-                <option value="all">All clients</option>
-                {customers.map((customer) => (
-                  <option key={customer.id} value={customer.id}>{customer.name}</option>
-                ))}
-              </select>
-            </label>
+                customers={customers}
+                includeAll
+                className="min-w-[160px]"
+              />
+            </div>
 
             <button
               type="button"
@@ -366,19 +446,15 @@ function TrainerProgramsContent() {
           </div>
 
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            <label className="text-sm font-semibold text-gray-700">
+            <div className="text-sm font-semibold text-gray-700">
               Client
-              <select
+              <ClientCombobox
                 value={form.userId}
-                onChange={(event) => setForm((current) => ({ ...current, userId: event.target.value }))}
-                className="mt-1 w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition-colors focus:border-blue-500"
-              >
-                <option value="">Select client</option>
-                {customers.map((customer) => (
-                  <option key={customer.id} value={customer.id}>{customer.name}</option>
-                ))}
-              </select>
-            </label>
+                onChange={(id) => setForm((current) => ({ ...current, userId: id }))}
+                customers={customers}
+                className="mt-1"
+              />
+            </div>
 
             <label className="text-sm font-semibold text-gray-700">
               Week Number
@@ -509,6 +585,12 @@ function TrainerProgramsContent() {
             </div>
           ) : null}
 
+          {selectedClientAssessmentBlocked ? (
+            <div className="mt-4 rounded-2xl border border-orange-200 bg-orange-50 px-4 py-3 text-sm font-medium text-orange-700">
+              <strong>Assessment not reviewed.</strong> The selected client&apos;s assessment must be marked as reviewed before setting up a program. Go to the Clients page to review their assessment.
+            </div>
+          ) : null}
+
           {successMessage ? (
             <div className="mt-4 rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-medium text-green-700">
               {successMessage}
@@ -518,7 +600,8 @@ function TrainerProgramsContent() {
           <div className="mt-6 flex flex-col gap-3 sm:flex-row">
             <button
               type="submit"
-              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-orange-500 px-6 py-3 text-sm font-black text-white transition-all hover:-translate-y-0.5 hover:bg-orange-600"
+              disabled={!!selectedClientAssessmentBlocked}
+              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-orange-500 px-6 py-3 text-sm font-black text-white transition-all hover:-translate-y-0.5 hover:bg-orange-600 disabled:opacity-40 disabled:cursor-not-allowed disabled:translate-y-0"
             >
               <Save className="h-4 w-4" />
               {editingProgramId ? "Save Changes" : "Create Program"}

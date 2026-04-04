@@ -169,7 +169,7 @@ export default function CustomerDashboard() {
                         Active
                       </div>
                       <div className="text-gray-900 font-bold">
-                        ${plan.monthlyRate}/month
+                        AED {plan.monthlyRate}/month
                       </div>
                     </div>
                   </div>

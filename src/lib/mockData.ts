@@ -8,6 +8,7 @@ const SESSIONS_KEY = 'ishow_sessions';
 const PROGRAMS_KEY = 'ishow_programs';
 const PAYMENTS_KEY = 'ishow_payments';
 const SEEDED_KEY = 'ishow_seeded';
+const SEED_VERSION = 'v2_uae';
 const AUTH_KEY = 'ishow_auth';
 
 const TRAINER_NAME = 'Mohammed Sufiyan';
@@ -138,6 +139,16 @@ function syncStoredAuth(users: User[]): void {
 export function seedMockData(): void {
   if (typeof window === 'undefined') return;
 
+  // Force re-seed when UAE data version is introduced
+  const storedVersion = localStorage.getItem(SEED_VERSION);
+  if (storedVersion !== 'true') {
+    localStorage.removeItem(ASSESSMENTS_KEY);
+    localStorage.removeItem(PLANS_KEY);
+    localStorage.removeItem(SESSIONS_KEY);
+    localStorage.removeItem(PROGRAMS_KEY);
+    localStorage.removeItem(PAYMENTS_KEY);
+  }
+
   // Users
   const defaultUsers: User[] = [
     {
@@ -145,46 +156,46 @@ export function seedMockData(): void {
       name: TRAINER_NAME,
       email: TRAINER_EMAIL,
       password: TRAINER_PASSWORD,
-      phone: '+1 (555) 001-0001',
+      phone: '+971 50 101 2345',
       role: 'trainer',
       createdAt: '2023-01-01T00:00:00.000Z',
     },
     {
       id: 'user_john_1',
-      name: 'John Smith',
+      name: 'Ahmad Al Mansouri',
       email: CUSTOMER_EMAIL,
       password: CUSTOMER_PASSWORD,
-      phone: '+1 (555) 001-0002',
+      phone: '+971 55 234 5678',
       role: 'customer',
       customerStatus: 'client',
       createdAt: '2024-01-15T00:00:00.000Z',
     },
     {
       id: 'user_sarah_1',
-      name: 'Sarah Johnson',
-      email: 'sarah@example.com',
+      name: 'Fatima Al Hashimi',
+      email: 'fatima@example.com',
       password: 'demo123',
-      phone: '+1 (555) 001-0003',
+      phone: '+971 50 345 6789',
       role: 'customer',
       customerStatus: 'request',
       createdAt: '2024-02-20T00:00:00.000Z',
     },
     {
       id: 'user_marcus_1',
-      name: 'Marcus Lee',
-      email: 'marcus@example.com',
+      name: 'Omar Al Rashidi',
+      email: 'omar@example.com',
       password: 'demo123',
-      phone: '+1 (555) 001-0004',
+      phone: '+971 52 456 7890',
       role: 'customer',
       customerStatus: 'client',
       createdAt: '2024-03-08T00:00:00.000Z',
     },
     {
       id: 'user_priya_1',
-      name: 'Priya Patel',
-      email: 'priya@example.com',
+      name: 'Riya Sharma',
+      email: 'riya@example.com',
       password: 'demo123',
-      phone: '+1 (555) 001-0005',
+      phone: '+971 56 567 8901',
       role: 'customer',
       customerStatus: 'client',
       createdAt: '2024-03-24T00:00:00.000Z',
@@ -194,7 +205,7 @@ export function seedMockData(): void {
       name: 'Aisha Khan',
       email: 'aisha@example.com',
       password: 'demo123',
-      phone: '+1 (555) 001-0006',
+      phone: '+971 58 678 9012',
       role: 'customer',
       customerStatus: 'client',
       createdAt: '2024-04-11T00:00:00.000Z',
@@ -207,8 +218,8 @@ export function seedMockData(): void {
       id: 'assessment_1',
       userId: 'user_john_1',
       age: 32,
-      weight: '185 lbs',
-      height: '5\'11"',
+      weight: '84 kg',
+      height: '180 cm',
       gender: 'male',
       goals: ['muscle_gain', 'strength', 'endurance'],
       experienceLevel: 'intermediate',
@@ -221,15 +232,15 @@ export function seedMockData(): void {
       trainerNotes: 'Great candidate for the Elite Performance Pack. Strong foundation, ready to push limits.',
       preferredDate: '2024-01-18',
       preferredTimeSlot: '08:00-10:00',
-      preferredLocation: 'Downtown Gym Floor',
+      preferredLocation: 'Dubai Sports City Gym',
       convertedToClientAt: '2024-01-18T08:30:00.000Z',
     },
     {
       id: 'assessment_2',
       userId: 'user_sarah_1',
       age: 28,
-      weight: '135 lbs',
-      height: '5\'5"',
+      weight: '61 kg',
+      height: '165 cm',
       gender: 'female',
       goals: ['weight_loss', 'toning', 'endurance'],
       experienceLevel: 'beginner',
@@ -240,14 +251,14 @@ export function seedMockData(): void {
       submittedAt: '2024-02-21T10:00:00.000Z',
       preferredDate: '2024-02-23',
       preferredTimeSlot: '18:00-20:00',
-      preferredLocation: 'Online consultation',
+      preferredLocation: 'Online via Zoom',
     },
     {
       id: 'assessment_3',
       userId: 'user_marcus_1',
       age: 35,
-      weight: '202 lbs',
-      height: '6\'1"',
+      weight: '92 kg',
+      height: '185 cm',
       gender: 'male',
       goals: ['strength', 'mobility', 'body_recomposition'],
       experienceLevel: 'intermediate',
@@ -260,15 +271,15 @@ export function seedMockData(): void {
       trainerNotes: 'Needs structured strength work with mobility support and controlled lower-body loading.',
       preferredDate: '2024-03-11',
       preferredTimeSlot: '07:00-09:00',
-      preferredLocation: 'Performance Lab Studio',
+      preferredLocation: 'Abu Dhabi Performance Centre',
       convertedToClientAt: '2024-03-11T09:00:00.000Z',
     },
     {
       id: 'assessment_4',
       userId: 'user_priya_1',
       age: 30,
-      weight: '148 lbs',
-      height: '5\'6"',
+      weight: '67 kg',
+      height: '168 cm',
       gender: 'female',
       goals: ['weight_loss', 'endurance', 'consistency'],
       experienceLevel: 'beginner',
@@ -281,15 +292,15 @@ export function seedMockData(): void {
       trainerNotes: 'Responds well to simple structure. Keep conditioning progressive and sustainable.',
       preferredDate: '2024-03-27',
       preferredTimeSlot: '06:00-08:00',
-      preferredLocation: 'Northside Strength Club',
+      preferredLocation: 'JLT Fitness Hub',
       convertedToClientAt: '2024-03-28T10:00:00.000Z',
     },
     {
       id: 'assessment_5',
       userId: 'user_aisha_1',
       age: 27,
-      weight: '158 lbs',
-      height: '5\'7"',
+      weight: '72 kg',
+      height: '170 cm',
       gender: 'female',
       goals: ['weight_loss', 'toning', 'strength'],
       experienceLevel: 'intermediate',
@@ -302,7 +313,7 @@ export function seedMockData(): void {
       trainerNotes: 'Good consistency potential. Needs balanced conditioning and strength progression.',
       preferredDate: '2024-04-15',
       preferredTimeSlot: '17:00-19:00',
-      preferredLocation: 'Hybrid: gym + remote check-ins',
+      preferredLocation: 'Dubai Fitness Club + remote check-ins',
       convertedToClientAt: '2024-04-15T17:30:00.000Z',
     },
   ];
@@ -321,9 +332,9 @@ export function seedMockData(): void {
       userId: 'user_john_1',
       name: 'Elite Performance Pack',
       description: 'A comprehensive high-intensity program designed to maximize muscle gain and athletic performance. Includes personalized nutrition guidance, weekly check-ins, and real-time form correction.',
-      monthlyRate: 299,
+      monthlyRate: 1100,
       paymentFrequency: 'monthly',
-      goals: ['Increase lean muscle mass by 10 lbs', 'Improve compound lift maxes by 20%', 'Enhance cardiovascular endurance', 'Optimize recovery protocols'],
+      goals: ['Increase lean muscle mass by 5 kg', 'Improve compound lift maxes by 20%', 'Enhance cardiovascular endurance', 'Optimize recovery protocols'],
       startDate: monthDate(-3),
       status: 'active',
       trainerName: TRAINER_NAME,
@@ -334,7 +345,7 @@ export function seedMockData(): void {
       userId: 'user_sarah_1',
       name: 'Starter Reset Plan',
       description: 'A low-friction entry plan focused on routine, movement quality, and basic nutrition consistency.',
-      monthlyRate: 129,
+      monthlyRate: 475,
       paymentFrequency: 'monthly',
       goals: ['Train 3 times per week', 'Improve posture and confidence', 'Reduce lower back discomfort'],
       startDate: monthDate(0),
@@ -347,7 +358,7 @@ export function seedMockData(): void {
       userId: 'user_marcus_1',
       name: 'Strength Rebuild Plan',
       description: 'A structured return-to-strength program with mobility primers, progressive loading, and recovery checkpoints.',
-      monthlyRate: 239,
+      monthlyRate: 875,
       paymentFrequency: 'monthly',
       goals: ['Rebuild lower body strength', 'Improve hinge mechanics', 'Restore weekly training rhythm'],
       startDate: monthDate(-2),
@@ -360,9 +371,9 @@ export function seedMockData(): void {
       userId: 'user_priya_1',
       name: 'Lifestyle Conditioning Plan',
       description: 'An accountability-driven conditioning plan designed to improve stamina, tighten nutrition habits, and reduce fatigue.',
-      monthlyRate: 179,
+      monthlyRate: 655,
       paymentFrequency: 'monthly',
-      goals: ['Improve workday energy', 'Build cardio fitness', 'Lose 8 lbs sustainably'],
+      goals: ['Improve workday energy', 'Build cardio fitness', 'Lose 4 kg sustainably'],
       startDate: monthDate(-1),
       status: 'active',
       trainerName: TRAINER_NAME,
@@ -373,7 +384,7 @@ export function seedMockData(): void {
       userId: 'user_aisha_1',
       name: 'Fat Loss Accelerator',
       description: 'A higher-frequency transformation plan built around progressive training, conditioning, and simple nutrition discipline.',
-      monthlyRate: 219,
+      monthlyRate: 799,
       paymentFrequency: 'monthly',
       goals: ['Reduce body fat', 'Increase training consistency', 'Build visible upper-body definition'],
       startDate: monthDate(-2),
@@ -754,7 +765,7 @@ export function seedMockData(): void {
     {
       id: 'payment_1',
       userId: 'user_john_1',
-      amount: 299,
+      amount: 1100,
       date: monthDate(-3),
       status: 'paid',
       reference: 'PAY-2024-001',
@@ -764,7 +775,7 @@ export function seedMockData(): void {
     {
       id: 'payment_2',
       userId: 'user_john_1',
-      amount: 299,
+      amount: 1100,
       date: monthDate(-2),
       status: 'paid',
       reference: 'PAY-2024-002',
@@ -774,7 +785,7 @@ export function seedMockData(): void {
     {
       id: 'payment_3',
       userId: 'user_john_1',
-      amount: 299,
+      amount: 1100,
       date: monthDate(-1),
       status: 'paid',
       reference: 'PAY-2024-003',
@@ -784,7 +795,7 @@ export function seedMockData(): void {
     {
       id: 'payment_4',
       userId: 'user_john_1',
-      amount: 299,
+      amount: 1100,
       date: '',
       status: 'pending',
       reference: 'PAY-2024-004',
@@ -794,7 +805,7 @@ export function seedMockData(): void {
     {
       id: 'payment_5',
       userId: 'user_sarah_1',
-      amount: 129,
+      amount: 475,
       date: '',
       status: 'pending',
       reference: 'PAY-2024-005',
@@ -804,7 +815,7 @@ export function seedMockData(): void {
     {
       id: 'payment_6',
       userId: 'user_marcus_1',
-      amount: 239,
+      amount: 875,
       date: monthDate(-2),
       status: 'paid',
       reference: 'PAY-2024-006',
@@ -814,7 +825,7 @@ export function seedMockData(): void {
     {
       id: 'payment_7',
       userId: 'user_marcus_1',
-      amount: 239,
+      amount: 875,
       date: monthDate(-1),
       status: 'paid',
       reference: 'PAY-2024-007',
@@ -824,7 +835,7 @@ export function seedMockData(): void {
     {
       id: 'payment_8',
       userId: 'user_marcus_1',
-      amount: 239,
+      amount: 875,
       date: '',
       status: 'pending',
       reference: 'PAY-2024-008',
@@ -834,7 +845,7 @@ export function seedMockData(): void {
     {
       id: 'payment_9',
       userId: 'user_priya_1',
-      amount: 179,
+      amount: 655,
       date: monthDate(-1),
       status: 'paid',
       reference: 'PAY-2024-009',
@@ -844,7 +855,7 @@ export function seedMockData(): void {
     {
       id: 'payment_10',
       userId: 'user_aisha_1',
-      amount: 219,
+      amount: 799,
       date: monthDate(-2),
       status: 'paid',
       reference: 'PAY-2024-010',
@@ -854,7 +865,7 @@ export function seedMockData(): void {
     {
       id: 'payment_11',
       userId: 'user_aisha_1',
-      amount: 219,
+      amount: 799,
       date: '',
       status: 'overdue',
       reference: 'PAY-2024-011',
@@ -892,5 +903,6 @@ export function seedMockData(): void {
   setItems(PROGRAMS_KEY, mergedPrograms);
   setItems(PAYMENTS_KEY, mergedPayments);
   localStorage.setItem(SEEDED_KEY, 'true');
+  localStorage.setItem(SEED_VERSION, 'true');
   syncStoredAuth(users);
 }

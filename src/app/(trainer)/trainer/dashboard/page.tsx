@@ -291,7 +291,7 @@ export default function TrainerDashboardPage() {
                         <p className="font-semibold text-gray-900">{customerById[payment.userId]?.name ?? "Unknown Client"}</p>
                         <p className="text-sm text-red-700 mt-1">{payment.description}</p>
                       </div>
-                      <span className="text-sm font-black text-red-600">${payment.amount}</span>
+                      <span className="text-sm font-black text-red-600">AED {payment.amount}</span>
                     </div>
                   </div>
                 ))

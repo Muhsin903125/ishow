@@ -19,6 +19,7 @@ const steps = [
   { id: 2, title: "Fitness Goals", subtitle: "What you want to achieve" },
   { id: 3, title: "Current Status", subtitle: "Your fitness background" },
   { id: 4, title: "Availability", subtitle: "Schedule preferences" },
+  { id: 5, title: "Session Details", subtitle: "Pick a date, time & location" },
 ];
 
 const fitnessGoals = [
@@ -44,6 +45,21 @@ const availabilityOptions = [
   "5x per week",
 ];
 
+const timeSlots = [
+  "6:00 AM", "7:00 AM", "8:00 AM", "9:00 AM", "10:00 AM",
+  "11:00 AM", "12:00 PM", "1:00 PM", "2:00 PM", "3:00 PM",
+  "4:00 PM", "5:00 PM", "6:00 PM", "7:00 PM", "8:00 PM",
+];
+
+const locationOptions = [
+  "Dubai Sports City Gym",
+  "Abu Dhabi Performance Centre",
+  "JLT Fitness Hub",
+  "Jumeirah Beach Fitness Club",
+  "Mirdif Community Gym",
+  "Other / Online",
+];
+
 export default function AssessmentPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
@@ -59,6 +75,9 @@ export default function AssessmentPage() {
     healthConditions: "",
     availability: "",
     experience: "",
+    preferredDate: "",
+    preferredTimeSlot: "",
+    preferredLocation: "",
   });
 
   useEffect(() => {
@@ -91,6 +110,8 @@ export default function AssessmentPage() {
         return formData.currentFitnessLevel && formData.experience;
       case 4:
         return formData.availability;
+      case 5:
+        return formData.preferredDate && formData.preferredTimeSlot && formData.preferredLocation;
       default:
         return false;
     }
@@ -111,6 +132,9 @@ export default function AssessmentPage() {
         healthConditions: formData.healthConditions,
         daysPerWeek: 3,
         preferredTimes: formData.availability,
+        preferredDate: formData.preferredDate,
+        preferredTimeSlot: formData.preferredTimeSlot,
+        preferredLocation: formData.preferredLocation,
         status: "pending",
         submittedAt: new Date().toISOString(),
       };
@@ -296,7 +320,7 @@ export default function AssessmentPage() {
           {/* Step 4: Availability */}
           {currentStep === 4 && (
             <div>
-              <p className="text-sm text-gray-600 mb-4">When are you available to train?</p>
+              <p className="text-sm text-gray-600 mb-4">When are you generally available to train?</p>
               <div className="grid grid-cols-2 gap-3">
                 {availabilityOptions.map((option) => (
                   <button
@@ -313,6 +337,63 @@ export default function AssessmentPage() {
                     {option}
                   </button>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {/* Step 5: Session Details */}
+          {currentStep === 5 && (
+            <div className="space-y-6">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                  Preferred Assessment Date *
+                </label>
+                <input
+                  type="date"
+                  value={formData.preferredDate}
+                  min={new Date().toISOString().split("T")[0]}
+                  onChange={(e) => handleChange("preferredDate", e.target.value)}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-gray-900"
+                />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-gray-700 mb-3">Preferred Time *</p>
+                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                  {timeSlots.map((slot) => (
+                    <button
+                      key={slot}
+                      type="button"
+                      onClick={() => handleChange("preferredTimeSlot", slot)}
+                      className={`py-2.5 px-3 rounded-lg border-2 text-xs font-semibold transition-all ${
+                        formData.preferredTimeSlot === slot
+                          ? "border-blue-700 bg-blue-50 text-blue-700"
+                          : "border-gray-200 hover:border-gray-300 text-gray-600 hover:bg-gray-50"
+                      }`}
+                    >
+                      {slot}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-gray-700 mb-3">Location *</p>
+                <div className="grid grid-cols-1 gap-2">
+                  {locationOptions.map((loc) => (
+                    <button
+                      key={loc}
+                      type="button"
+                      onClick={() => handleChange("preferredLocation", loc)}
+                      className={`py-3 px-4 rounded-xl border-2 text-sm font-medium transition-all text-left ${
+                        formData.preferredLocation === loc
+                          ? "border-orange-500 bg-orange-50 text-orange-700"
+                          : "border-gray-200 hover:border-gray-300 text-gray-700 hover:bg-gray-50"
+                      }`}
+                    >
+                      {formData.preferredLocation === loc && <CheckCircle className="w-4 h-4 inline mr-1" />}
+                      {loc}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
           )}

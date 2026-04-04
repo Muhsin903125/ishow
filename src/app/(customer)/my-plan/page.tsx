@@ -69,7 +69,7 @@ export default function MyPlanPage() {
                 </div>
                 <div className="bg-white/20 rounded-xl p-4 text-center backdrop-blur">
                   <p className="text-blue-200 text-sm">Monthly Rate</p>
-                  <p className="text-3xl font-black">${plan.monthlyRate}</p>
+                  <p className="text-3xl font-black">AED {plan.monthlyRate}</p>
                   <p className="text-blue-300 text-xs capitalize">{plan.paymentFrequency} billing</p>
                 </div>
               </div>
@@ -152,7 +152,7 @@ export default function MyPlanPage() {
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="text-gray-500">Monthly Rate</span>
-                    <span className="text-xl font-black text-gray-900">${plan.monthlyRate}</span>
+                    <span className="text-xl font-black text-gray-900">AED {plan.monthlyRate}</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-gray-500">Payment Frequency</span>
@@ -164,7 +164,7 @@ export default function MyPlanPage() {
                     <div className="flex items-center justify-between">
                       <span className="text-gray-500">Weekly Rate</span>
                       <span className="font-medium text-gray-900">
-                        ${(plan.monthlyRate / 4.33).toFixed(2)}
+                        AED {(plan.monthlyRate / 4.33).toFixed(2)}
                       </span>
                     </div>
                   )}
