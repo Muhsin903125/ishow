@@ -28,7 +28,7 @@ export default function DashboardLayout({ children, role }: Props) {
       {sidebarOpen && (
         <div className="fixed inset-0 z-40 lg:hidden">
           <div
-            className="fixed inset-0 bg-black/50"
+            className="fixed inset-0 bg-black/70"
             onClick={() => setSidebarOpen(false)}
           />
           <div className="fixed left-0 top-0 h-full w-64 z-50">
