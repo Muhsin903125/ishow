@@ -80,7 +80,7 @@ export default function TrainerClientsPage() {
     ? customers.filter(
         (c) =>
           c.name.toLowerCase().includes(q) ||
-          c.email.toLowerCase().includes(q) ||
+          (c.email ?? "").toLowerCase().includes(q) ||
           (c.phone ?? "").toLowerCase().includes(q)
       )
     : customers;

@@ -230,7 +230,7 @@ export default function TrainerAssessmentsPage() {
                         { label: "Gender", value: assessment.gender },
                         { label: "Weight", value: assessment.weight },
                         { label: "Height", value: assessment.height },
-                        { label: "Experience", value: assessment.experienceLevel.replace("_", " ") },
+                        { label: "Experience", value: assessment.experienceLevel?.replace("_", " ") },
                         { label: "Days / week", value: `${assessment.daysPerWeek} days` },
                         { label: "Preferred time", value: assessment.preferredTimes },
                         { label: "Health conditions", value: assessment.healthConditions || "None" },

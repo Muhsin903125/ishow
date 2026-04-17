@@ -212,7 +212,7 @@ function TrainerProgramsContent() {
   const customerById = Object.fromEntries(customers.map((c) => [c.id, c]));
   const visiblePrograms = programs.filter((p) => clientFilter === "all" || p.userId === clientFilter);
   const visibleCustomers = clientFilter === "all" ? customers : customers.filter((c) => c.id === clientFilter);
-  const activityCount = visiblePrograms.reduce((t, p) => t + p.activities.length, 0);
+  const activityCount = visiblePrograms.reduce((t, p) => t + (p.activities?.length ?? 0), 0);
   const currentWeek = visiblePrograms.reduce((h, p) => Math.max(h, p.weekNumber), 0);
   const assessmentByUserId = Object.fromEntries(assessments.map((a) => [a.userId, a]));
   const selectedClientAssessment = form.userId ? assessmentByUserId[form.userId] : undefined;
@@ -239,7 +239,7 @@ function TrainerProgramsContent() {
       weekNumber: String(program.weekNumber),
       title: program.title,
       description: program.description,
-      activities: program.activities.length ? program.activities.map(fromActivity) : [createBlankActivity()],
+      activities: program.activities?.length ? program.activities.map(fromActivity) : [createBlankActivity()],
     });
   }
 
@@ -590,8 +590,8 @@ function TrainerProgramsContent() {
                 ) : (
                   <div className="space-y-4">
                     {customerPrograms.map((program) => {
-                      const activeDays = Array.from(new Set(program.activities.map((a) => a.day)));
-                      const previewActivities = program.activities.slice(0, 4);
+                      const activeDays = Array.from(new Set((program.activities ?? []).map((a) => a.day)));
+                      const previewActivities = (program.activities ?? []).slice(0, 4);
 
                       return (
                         <article key={program.id} className="rounded-3xl border border-gray-100 bg-gray-50 p-5">
@@ -647,7 +647,7 @@ function TrainerProgramsContent() {
                             </div>
                             <div className="rounded-2xl border border-white bg-white px-4 py-3">
                               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-400">Activities</p>
-                              <p className="mt-2 text-sm font-semibold text-gray-900">{program.activities.length} total items</p>
+                              <p className="mt-2 text-sm font-semibold text-gray-900">{program.activities?.length ?? 0} total items</p>
                             </div>
                             <div className="rounded-2xl border border-white bg-white px-4 py-3 sm:col-span-2">
                               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-400">Days Covered</p>
@@ -669,9 +669,9 @@ function TrainerProgramsContent() {
                                   </div>
                                 </div>
                               ))}
-                              {program.activities.length > previewActivities.length && (
+                              {(program.activities?.length ?? 0) > previewActivities.length && (
                                 <p className="pt-1 text-xs font-semibold uppercase tracking-[0.18em] text-gray-400">
-                                  +{program.activities.length - previewActivities.length} more items
+                                  +{(program.activities?.length ?? 0) - previewActivities.length} more items
                                 </p>
                               )}
                             </div>

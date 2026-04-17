@@ -43,7 +43,7 @@ const statusConfig = {
   },
 };
 
-function formatDate(dateStr: string) {
+function formatDate(dateStr?: string) {
   if (!dateStr) return "—";
   return new Date(dateStr + "T00:00:00").toLocaleDateString("en-US", {
     month: "short",

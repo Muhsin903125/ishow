@@ -166,7 +166,7 @@ export default function AdminAssessmentsPage() {
       } else {
         await createSession({
           userId: assessment.userId,
-          trainerId: user.id,
+          trainerId: user!.id,
           title: scheduleForm.title,
           scheduledDate: scheduleForm.date,
           scheduledTime: scheduleForm.time,

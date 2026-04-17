@@ -156,6 +156,7 @@ export default function AssessmentPage() {
         goals: form.goals,
         experienceLevel: form.experienceLevel,
         daysPerWeek: parseInt(form.daysPerWeek),
+        bodyMeasurements: {},
         preferredDate: form.preferredDate,
         preferredTimeSlot: form.preferredTimeSlot,
         preferredLocation: form.preferredLocation,
@@ -164,8 +165,16 @@ export default function AssessmentPage() {
           form.otherHealth.trim() ? `Other: ${form.otherHealth.trim()}` : "",
         ].filter(Boolean).join(", ") || undefined,
         medicalHistory: {
-          conditions: form.medicalConditions,
-          other: form.otherHealth.trim() || undefined,
+          lowerBack: form.medicalConditions.includes("Lower back issues") || undefined,
+          knee: form.medicalConditions.includes("Knee problems") || undefined,
+          shoulder: form.medicalConditions.includes("Shoulder injury") || undefined,
+          heart: form.medicalConditions.includes("Heart condition") || undefined,
+          diabetes: form.medicalConditions.includes("Diabetes") || undefined,
+          hypertension: form.medicalConditions.includes("Hypertension") || undefined,
+          other: [
+            form.medicalConditions.filter(c => !["Lower back issues","Knee problems","Shoulder injury","Heart condition","Diabetes","Hypertension"].includes(c)).join(", "),
+            form.otherHealth.trim(),
+          ].filter(Boolean).join(", ") || undefined,
         },
       });
       // Notify user by email (non-blocking)

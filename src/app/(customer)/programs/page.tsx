@@ -78,7 +78,7 @@ export default function ProgramsPage() {
           <div className="bg-orange-500 text-white rounded-2xl p-5">
             <Target className="w-5 h-5 opacity-75 mb-2" />
             <p className="text-3xl font-black">
-              {programs.reduce((acc, p) => acc + p.activities.length, 0)}
+              {programs.reduce((acc, p) => acc + (p.activities?.length ?? 0), 0)}
             </p>
             <p className="text-sm opacity-75 font-medium mt-0.5">Total Exercises</p>
           </div>
@@ -101,7 +101,7 @@ export default function ProgramsPage() {
           <div className="space-y-4">
             {programs.map((program) => {
               const isOpen = expanded === program.id;
-              const grouped = groupByDay(program.activities);
+              const grouped = groupByDay(program.activities ?? []);
               const daysPresent = DAYS.filter((d) => grouped[d]);
 
               return (
@@ -129,7 +129,7 @@ export default function ProgramsPage() {
                     <div className="flex items-center gap-3 flex-shrink-0">
                       <div className="hidden sm:flex items-center gap-2">
                         <span className="text-xs text-gray-400 font-medium">
-                          {program.activities.length} exercises · {daysPresent.length} days
+                          {(program.activities?.length ?? 0)} exercises · {daysPresent.length} days
                         </span>
                       </div>
                       {isOpen ? (

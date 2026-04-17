@@ -120,7 +120,7 @@ export default function MyPlanPage() {
                   <div className="flex items-center justify-between">
                     <span className="text-gray-500">Start Date</span>
                     <span className="font-medium text-gray-900">
-                      {new Date(plan.startDate).toLocaleDateString("en-US", {
+                      {new Date(plan.startDate!).toLocaleDateString("en-US", {
                         month: "long",
                         day: "numeric",
                         year: "numeric",
@@ -165,7 +165,7 @@ export default function MyPlanPage() {
                     <div className="flex items-center justify-between">
                       <span className="text-gray-500">Weekly Rate</span>
                       <span className="font-medium text-gray-900">
-                        AED {(plan.monthlyRate / 4.33).toFixed(2)}
+                        AED {((plan.monthlyRate ?? 0) / 4.33).toFixed(2)}
                       </span>
                     </div>
                   )}
