@@ -238,7 +238,7 @@ function TrainerProgramsContent() {
       userId: program.userId,
       weekNumber: String(program.weekNumber),
       title: program.title,
-      description: program.description,
+      description: program.description ?? "",
       activities: program.activities?.length ? program.activities.map(fromActivity) : [createBlankActivity()],
     });
   }
