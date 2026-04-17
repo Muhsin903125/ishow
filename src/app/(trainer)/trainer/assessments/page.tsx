@@ -4,9 +4,9 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useAuth } from "@/contexts/AuthContext";
-import { getItems, updateItem } from "@/lib/storage";
-import type { User } from "@/lib/auth";
-import type { Assessment } from "@/lib/mockData";
+import { listAssessments, reviewAssessment, type Assessment } from "@/lib/db/assessments";
+import { listCustomers, type Profile } from "@/lib/db/profiles";
+import { createClient } from "@/lib/supabase/client";
 import { CheckCircle, Clock, ChevronDown, ChevronUp, CalendarDays, MapPin, Phone, Mail } from "lucide-react";
 
 function formatDate(iso: string) {
@@ -22,24 +22,29 @@ export default function TrainerAssessmentsPage() {
   const router = useRouter();
 
   const [assessments, setAssessments] = useState<Assessment[]>([]);
-  const [customers, setCustomers] = useState<User[]>([]);
+  const [customers, setCustomers] = useState<Profile[]>([]);
   const [filter, setFilter] = useState<Filter>("all");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [editingNotes, setEditingNotes] = useState<string | null>(null);
   const [notesText, setNotesText] = useState("");
 
-  function loadData() {
-    setAssessments(getItems<Assessment>("ishow_assessments"));
-    setCustomers(getItems<User>("ishow_users").filter((u) => u.role === "customer"));
-  }
+  const loadData = async () => {
+    const [a, c] = await Promise.all([listAssessments(), listCustomers()]);
+    setAssessments(a);
+    setCustomers(c);
+  };
 
   useEffect(() => {
     if (!loading && !user) { router.push("/login"); return; }
-    if (!loading && user) {
-      if (user.role !== "trainer") { router.push("/dashboard"); return; }
-      loadData();
-    }
-  }, [loading, router, user]);
+    const init = async () => {
+      if (!loading && user) {
+        if (user.role === 'customer') { router.push('/dashboard'); return; }
+        if (user.role === 'admin') { router.push('/admin/dashboard'); return; }
+        await loadData();
+      }
+    };
+    init();
+  }, [loading, router, user]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (loading || !user) return null;
 
@@ -55,18 +60,17 @@ export default function TrainerAssessmentsPage() {
     return customers.find((c) => c.id === userId) ?? null;
   }
 
-  function markReviewed(id: string) {
-    updateItem<Assessment>("ishow_assessments", id, {
-      status: "reviewed",
-      reviewedAt: new Date().toISOString(),
-    });
-    loadData();
+  async function markReviewed(id: string) {
+    await reviewAssessment(id, notesText || '', 'reviewed');
+    setEditingNotes(null);
+    await loadData();
   }
 
-  function saveNotes(id: string) {
-    updateItem<Assessment>("ishow_assessments", id, { trainerNotes: notesText });
+  async function saveNotes(id: string) {
+    const supabase = createClient();
+    await supabase.from('assessments').update({ trainer_notes: notesText }).eq('id', id);
     setEditingNotes(null);
-    loadData();
+    await loadData();
   }
 
   return (

@@ -3,155 +3,187 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
-import { getItems, addItem } from "@/lib/storage";
-import type { Assessment } from "@/lib/mockData";
+import { getAssessment, submitAssessment } from "@/lib/db/assessments";
+import { getLocations, getGoalTypes, type Location, type GoalType } from "@/lib/db/master";
+import { notify } from "@/lib/email/notify";
 import DashboardLayout from "@/components/DashboardLayout";
-import {
-  ChevronRight,
-  ChevronLeft,
-  CheckCircle,
-  Loader2,
-  ClipboardList,
-} from "lucide-react";
+import { CheckCircle, Loader2, Send } from "lucide-react";
 
-const steps = [
-  { id: 1, title: "Personal Info", subtitle: "Basic measurements" },
-  { id: 2, title: "Fitness Goals", subtitle: "What you want to achieve" },
-  { id: 3, title: "Current Status", subtitle: "Your fitness background" },
-  { id: 4, title: "Availability", subtitle: "Schedule preferences" },
-  { id: 5, title: "Session Details", subtitle: "Pick a date, time & location" },
+const GOALS_FALLBACK = [
+  "Weight Loss", "Muscle Gain", "Strength Training", "Improved Endurance",
+  "Flexibility & Mobility", "Athletic Performance", "General Fitness", "Rehabilitation",
 ];
 
-const fitnessGoals = [
-  "Weight Loss",
-  "Muscle Gain",
-  "Improved Endurance",
-  "Strength Training",
-  "Athletic Performance",
-  "General Fitness",
-  "Rehabilitation",
-  "Flexibility & Mobility",
+const LOCATIONS_FALLBACK = [
+  "Dubai Sports City Gym", "Abu Dhabi Performance Centre", "JLT Fitness Hub",
+  "Jumeirah Beach Fitness Club", "Mirdif Community Gym", "Other / Online",
 ];
 
-const fitnessLevels = ["Beginner", "Intermediate", "Advanced", "Athlete"];
+const EXPERIENCE_LEVELS = ["Beginner", "Intermediate", "Advanced", "Athlete"];
 
-const availabilityOptions = [
-  "Weekday Mornings",
-  "Weekday Afternoons",
-  "Weekday Evenings",
-  "Weekends Only",
-  "Flexible",
-  "3x per week",
-  "5x per week",
+const DAYS = [2, 3, 4, 5, 6];
+
+const TIME_SLOTS = [
+  "6:00 AM", "7:00 AM", "8:00 AM", "9:00 AM", "10:00 AM", "11:00 AM",
+  "12:00 PM", "1:00 PM", "2:00 PM", "3:00 PM", "4:00 PM", "5:00 PM",
+  "6:00 PM", "7:00 PM", "8:00 PM",
 ];
 
-const timeSlots = [
-  "6:00 AM", "7:00 AM", "8:00 AM", "9:00 AM", "10:00 AM",
-  "11:00 AM", "12:00 PM", "1:00 PM", "2:00 PM", "3:00 PM",
-  "4:00 PM", "5:00 PM", "6:00 PM", "7:00 PM", "8:00 PM",
+const MEDICAL_CONDITIONS = [
+  "Lower back issues", "Knee problems", "Shoulder injury", "Heart condition",
+  "Diabetes", "Hypertension", "Asthma", "Joint pain / Arthritis",
 ];
 
-const locationOptions = [
-  "Dubai Sports City Gym",
-  "Abu Dhabi Performance Centre",
-  "JLT Fitness Hub",
-  "Jumeirah Beach Fitness Club",
-  "Mirdif Community Gym",
-  "Other / Online",
-];
+type Form = {
+  age: string;
+  gender: "male" | "female" | "prefer_not_to_say" | "";
+  weight: string;
+  height: string;
+  goals: string[];
+  experienceLevel: string;
+  daysPerWeek: string;
+  preferredDate: string;
+  preferredTimeSlot: string;
+  preferredLocation: string;
+  medicalConditions: string[];
+  otherHealth: string;
+};
+
+function blank(): Form {
+  return {
+    age: "", gender: "", weight: "", height: "", goals: [],
+    experienceLevel: "", daysPerWeek: "3",
+    preferredDate: "", preferredTimeSlot: "", preferredLocation: "",
+    medicalConditions: [], otherHealth: "",
+  };
+}
+
+function toggle(arr: string[], v: string) {
+  return arr.includes(v) ? arr.filter(x => x !== v) : [...arr, v];
+}
+
+function Chip({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl border text-sm font-medium transition-all ${
+        active
+          ? "border-orange-500/60 bg-orange-500/15 text-orange-300"
+          : "border-zinc-700 bg-zinc-800/60 text-zinc-400 hover:border-zinc-600 hover:text-zinc-200"
+      }`}
+    >
+      {active && <CheckCircle className="w-3.5 h-3.5 shrink-0" />}
+      {children}
+    </button>
+  );
+}
+
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return <p className="text-xs font-bold uppercase tracking-wider text-zinc-500 mb-3">{children}</p>;
+}
+
+function Input({ label, type = "text", value, onChange, placeholder, min }: {
+  label: string; type?: string; value: string;
+  onChange: (v: string) => void; placeholder?: string; min?: string;
+}) {
+  return (
+    <div>
+      <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-1.5">{label}</label>
+      <input
+        type={type} value={value} onChange={e => onChange(e.target.value)}
+        placeholder={placeholder} min={min}
+        className="w-full rounded-xl bg-zinc-800/60 border border-zinc-700 px-4 py-3 text-sm text-white placeholder-zinc-600 outline-none focus:border-orange-500/60 focus:ring-2 focus:ring-orange-500/10 transition"
+      />
+    </div>
+  );
+}
 
 export default function AssessmentPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
-  const [currentStep, setCurrentStep] = useState(1);
-  const [loading, setLoading] = useState(false);
-  const [checkingExisting, setCheckingExisting] = useState(true);
-  const [formData, setFormData] = useState({
-    age: "",
-    weight: "",
-    height: "",
-    fitnessGoal: "",
-    currentFitnessLevel: "",
-    healthConditions: "",
-    availability: "",
-    experience: "",
-    preferredDate: "",
-    preferredTimeSlot: "",
-    preferredLocation: "",
-  });
+  const [checking, setChecking] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
+  const [locations, setLocations] = useState<Location[]>([]);
+  const [goalTypes, setGoalTypes] = useState<GoalType[]>([]);
+  const [form, setForm] = useState<Form>(blank());
 
   useEffect(() => {
-    if (!authLoading && !user) {
-      router.push("/login");
-      return;
-    }
+    if (!authLoading && !user) { router.push("/login"); return; }
     if (!authLoading && user) {
-      const assessments = getItems<Assessment>("ishow_assessments");
-      const existing = assessments.find((a) => a.userId === user.id);
-      if (existing) {
-        router.push("/dashboard");
-      } else {
-        setCheckingExisting(false);
+      if (user.role !== 'customer') {
+        router.push(user.role === 'admin' ? '/admin/dashboard' : '/trainer/dashboard');
+        return;
       }
+      const init = async () => {
+        const [existing, locs, goals] = await Promise.all([
+          getAssessment(user.id),
+          getLocations(true),
+          getGoalTypes(true),
+        ]);
+        if (existing) { router.push("/dashboard"); return; }
+        setLocations(locs);
+        setGoalTypes(goals);
+        setChecking(false);
+      };
+      init();
     }
   }, [authLoading, user, router]);
 
-  const handleChange = (field: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
-  };
+  function set<K extends keyof Form>(field: K, value: Form[K]) {
+    setForm(f => ({ ...f, [field]: value }));
+  }
 
-  const canProceed = () => {
-    switch (currentStep) {
-      case 1:
-        return formData.age && formData.weight && formData.height;
-      case 2:
-        return formData.fitnessGoal;
-      case 3:
-        return formData.currentFitnessLevel && formData.experience;
-      case 4:
-        return formData.availability;
-      case 5:
-        return formData.preferredDate && formData.preferredTimeSlot && formData.preferredLocation;
-      default:
-        return false;
-    }
-  };
+  const goalList = goalTypes.length > 0 ? goalTypes.map(g => g.name) : GOALS_FALLBACK;
+  const locationList = locations.length > 0 ? locations.map(l => l.name) : LOCATIONS_FALLBACK;
 
-  const handleSubmit = async () => {
-    setLoading(true);
+  const canSubmit = form.age && form.gender && form.weight && form.height &&
+    form.goals.length > 0 && form.experienceLevel &&
+    form.preferredDate && form.preferredTimeSlot && form.preferredLocation;
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!user || !canSubmit) return;
+    setError('');
+    setSubmitting(true);
     try {
-      const newAssessment: Assessment = {
-        id: `assessment_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        userId: user!.id,
-        age: parseInt(formData.age),
-        weight: formData.weight,
-        height: formData.height,
-        gender: "",
-        goals: [formData.fitnessGoal],
-        experienceLevel: formData.currentFitnessLevel,
-        healthConditions: formData.healthConditions,
-        daysPerWeek: 3,
-        preferredTimes: formData.availability,
-        preferredDate: formData.preferredDate,
-        preferredTimeSlot: formData.preferredTimeSlot,
-        preferredLocation: formData.preferredLocation,
-        status: "pending",
-        submittedAt: new Date().toISOString(),
-      };
-      addItem("ishow_assessments", newAssessment);
+      await submitAssessment(user.id, {
+        age: parseInt(form.age),
+        gender: form.gender as "male" | "female" | "prefer_not_to_say",
+        weight: form.weight,
+        height: form.height,
+        goals: form.goals,
+        experienceLevel: form.experienceLevel,
+        daysPerWeek: parseInt(form.daysPerWeek),
+        preferredDate: form.preferredDate,
+        preferredTimeSlot: form.preferredTimeSlot,
+        preferredLocation: form.preferredLocation,
+        healthConditions: [
+          ...form.medicalConditions,
+          form.otherHealth.trim() ? `Other: ${form.otherHealth.trim()}` : "",
+        ].filter(Boolean).join(", ") || undefined,
+        medicalHistory: {
+          conditions: form.medicalConditions,
+          other: form.otherHealth.trim() || undefined,
+        },
+      });
+      // Notify user by email (non-blocking)
+      if (user.email) {
+        notify('assessment-submitted', user.email, { name: user.name ?? user.email });
+      }
       router.push("/dashboard");
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
+    } catch {
+      setError("Something went wrong. Please try again.");
+      setSubmitting(false);
     }
-  };
+  }
 
-  if (checkingExisting || authLoading) {
+  if (checking || authLoading) {
     return (
       <DashboardLayout role="CUSTOMER">
-        <div className="flex items-center justify-center h-full">
-          <Loader2 className="w-8 h-8 animate-spin text-blue-700" />
+        <div className="flex items-center justify-center h-full min-h-[400px]">
+          <Loader2 className="w-7 h-7 animate-spin text-orange-500" />
         </div>
       </DashboardLayout>
     );
@@ -159,215 +191,125 @@ export default function AssessmentPage() {
 
   return (
     <DashboardLayout role="CUSTOMER">
-      <div className="w-full max-w-2xl p-6 lg:p-8">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center">
-              <ClipboardList className="w-5 h-5 text-orange-600" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-black text-gray-900">Fitness Assessment</h1>
-              <p className="text-gray-500 text-sm">Help us understand your fitness needs</p>
-            </div>
+      <div className="min-h-full bg-zinc-950">
+        <div className="max-w-2xl p-6 lg:p-8">
+
+          {/* Header */}
+          <div className="mb-8">
+            <p className="text-orange-500 text-xs font-bold tracking-[0.3em] uppercase mb-1.5">New Request</p>
+            <h1 className="text-3xl font-black text-white tracking-tight">Assessment Request</h1>
+            <p className="text-zinc-500 text-sm mt-2">Fill in your details so your trainer can design the perfect plan.</p>
           </div>
-        </div>
 
-        {/* Progress Steps */}
-        <div className="flex items-center gap-2 mb-8">
-          {steps.map((step, index) => (
-            <div key={step.id} className="flex items-center gap-2 flex-1">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all ${
-                currentStep > step.id
-                  ? "bg-green-500 text-white"
-                  : currentStep === step.id
-                  ? "bg-blue-700 text-white"
-                  : "bg-gray-200 text-gray-500"
-              }`}>
-                {currentStep > step.id ? <CheckCircle className="w-4 h-4" /> : step.id}
-              </div>
-              {index < steps.length - 1 && (
-                <div className={`h-0.5 flex-1 transition-all ${currentStep > step.id ? "bg-green-400" : "bg-gray-200"}`} />
-              )}
-            </div>
-          ))}
-        </div>
-
-        <div className="mb-4">
-          <h2 className="font-bold text-gray-900 text-lg">{steps[currentStep - 1].title}</h2>
-          <p className="text-gray-500 text-sm">{steps[currentStep - 1].subtitle}</p>
-        </div>
-
-        {/* Form Card */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-          {/* Step 1: Personal Info */}
-          {currentStep === 1 && (
-            <div className="space-y-5">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                  Age (years)
-                </label>
-                <input
-                  type="number"
-                  value={formData.age}
-                  onChange={(e) => handleChange("age", e.target.value)}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-gray-900"
-                  placeholder="e.g., 28"
-                  min="13"
-                  max="100"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                  Weight (lbs)
-                </label>
-                <input
-                  type="number"
-                  value={formData.weight}
-                  onChange={(e) => handleChange("weight", e.target.value)}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-gray-900"
-                  placeholder="e.g., 165"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                  Height (inches)
-                </label>
-                <input
-                  type="number"
-                  value={formData.height}
-                  onChange={(e) => handleChange("height", e.target.value)}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-gray-900"
-                  placeholder="e.g., 68"
-                />
-              </div>
+          {error && (
+            <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400 mb-6">
+              {error}
             </div>
           )}
 
-          {/* Step 2: Fitness Goals */}
-          {currentStep === 2 && (
-            <div>
-              <p className="text-sm text-gray-600 mb-4">Select your primary fitness goal:</p>
-              <div className="grid grid-cols-2 gap-3">
-                {fitnessGoals.map((goal) => (
-                  <button
-                    key={goal}
-                    type="button"
-                    onClick={() => handleChange("fitnessGoal", goal)}
-                    className={`p-3 rounded-xl border-2 text-sm font-medium transition-all text-left ${
-                      formData.fitnessGoal === goal
-                        ? "border-blue-700 bg-blue-50 text-blue-700"
-                        : "border-gray-200 hover:border-gray-300 text-gray-700 hover:bg-gray-50"
-                    }`}
-                  >
-                    {formData.fitnessGoal === goal && <CheckCircle className="w-4 h-4 inline mr-1" />}
+          <form onSubmit={handleSubmit} className="space-y-8">
+
+            {/* Personal Info */}
+            <div className="rounded-2xl bg-zinc-900 border border-zinc-800 p-6 space-y-4">
+              <SectionLabel>Personal Info</SectionLabel>
+              <div className="grid grid-cols-2 gap-4">
+                <Input label="Age *" type="number" value={form.age} onChange={v => set("age", v)} placeholder="28" min="13" />
+                <Input label="Weight *" value={form.weight} onChange={v => set("weight", v)} placeholder="75 kg" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <Input label="Height *" value={form.height} onChange={v => set("height", v)} placeholder="175 cm" />
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-1.5">Gender *</label>
+                  <div className="flex flex-col gap-2">
+                    {(["male", "female", "prefer_not_to_say"] as const).map(g => (
+                      <button
+                        key={g}
+                        type="button"
+                        onClick={() => set("gender", g)}
+                        className={`py-2 px-3 rounded-xl border text-xs font-semibold transition-all text-left ${
+                          form.gender === g
+                            ? "border-orange-500/60 bg-orange-500/15 text-orange-300"
+                            : "border-zinc-700 bg-zinc-800/60 text-zinc-400 hover:border-zinc-600 hover:text-zinc-200"
+                        }`}
+                      >
+                        {g === "prefer_not_to_say" ? "Prefer not to say" : g.charAt(0).toUpperCase() + g.slice(1)}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Goals */}
+            <div className="rounded-2xl bg-zinc-900 border border-zinc-800 p-6">
+              <SectionLabel>Fitness Goals * (select all that apply)</SectionLabel>
+              <div className="flex flex-wrap gap-2">
+                {goalList.map(goal => (
+                  <Chip key={goal} active={form.goals.includes(goal)} onClick={() => set("goals", toggle(form.goals, goal))}>
                     {goal}
-                  </button>
+                  </Chip>
                 ))}
               </div>
             </div>
-          )}
 
-          {/* Step 3: Current Status */}
-          {currentStep === 3 && (
-            <div className="space-y-5">
+            {/* Experience & Schedule */}
+            <div className="rounded-2xl bg-zinc-900 border border-zinc-800 p-6 space-y-5">
+              <SectionLabel>Experience & Schedule</SectionLabel>
+
               <div>
-                <p className="text-sm font-semibold text-gray-700 mb-3">Current Fitness Level</p>
-                <div className="grid grid-cols-2 gap-3">
-                  {fitnessLevels.map((level) => (
+                <p className="text-xs font-semibold text-zinc-400 mb-2">Experience Level *</p>
+                <div className="flex flex-wrap gap-2">
+                  {EXPERIENCE_LEVELS.map(l => (
+                    <Chip key={l} active={form.experienceLevel === l} onClick={() => set("experienceLevel", l)}>{l}</Chip>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <p className="text-xs font-semibold text-zinc-400 mb-2">Training days per week</p>
+                <div className="flex gap-2">
+                  {DAYS.map(d => (
                     <button
-                      key={level}
+                      key={d}
                       type="button"
-                      onClick={() => handleChange("currentFitnessLevel", level)}
-                      className={`p-3 rounded-xl border-2 text-sm font-medium transition-all ${
-                        formData.currentFitnessLevel === level
-                          ? "border-orange-500 bg-orange-50 text-orange-700"
-                          : "border-gray-200 hover:border-gray-300 text-gray-700"
+                      onClick={() => set("daysPerWeek", String(d))}
+                      className={`w-11 h-11 rounded-xl border text-sm font-bold transition-all ${
+                        form.daysPerWeek === String(d)
+                          ? "border-orange-500/60 bg-orange-500/15 text-orange-300"
+                          : "border-zinc-700 bg-zinc-800/60 text-zinc-400 hover:border-zinc-600"
                       }`}
                     >
-                      {level}
+                      {d}
                     </button>
                   ))}
                 </div>
               </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                  Exercise Experience
-                </label>
-                <textarea
-                  value={formData.experience}
-                  onChange={(e) => handleChange("experience", e.target.value)}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-gray-900 resize-none"
-                  rows={3}
-                  placeholder="Describe your exercise history, any sports played, gym experience..."
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                  Health Conditions <span className="text-gray-400 font-normal">(optional)</span>
-                </label>
-                <textarea
-                  value={formData.healthConditions}
-                  onChange={(e) => handleChange("healthConditions", e.target.value)}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-gray-900 resize-none"
-                  rows={2}
-                  placeholder="Any injuries, medical conditions, or physical limitations..."
-                />
-              </div>
             </div>
-          )}
 
-          {/* Step 4: Availability */}
-          {currentStep === 4 && (
-            <div>
-              <p className="text-sm text-gray-600 mb-4">When are you generally available to train?</p>
-              <div className="grid grid-cols-2 gap-3">
-                {availabilityOptions.map((option) => (
-                  <button
-                    key={option}
-                    type="button"
-                    onClick={() => handleChange("availability", option)}
-                    className={`p-3 rounded-xl border-2 text-sm font-medium transition-all text-left ${
-                      formData.availability === option
-                        ? "border-blue-700 bg-blue-50 text-blue-700"
-                        : "border-gray-200 hover:border-gray-300 text-gray-700 hover:bg-gray-50"
-                    }`}
-                  >
-                    {formData.availability === option && <CheckCircle className="w-4 h-4 inline mr-1" />}
-                    {option}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
+            {/* Session Preferences */}
+            <div className="rounded-2xl bg-zinc-900 border border-zinc-800 p-6 space-y-5">
+              <SectionLabel>Session Preferences</SectionLabel>
 
-          {/* Step 5: Session Details */}
-          {currentStep === 5 && (
-            <div className="space-y-6">
+              <Input
+                label="Preferred Start Date *"
+                type="date"
+                value={form.preferredDate}
+                onChange={v => set("preferredDate", v)}
+                min={new Date().toISOString().split("T")[0]}
+              />
+
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                  Preferred Assessment Date *
-                </label>
-                <input
-                  type="date"
-                  value={formData.preferredDate}
-                  min={new Date().toISOString().split("T")[0]}
-                  onChange={(e) => handleChange("preferredDate", e.target.value)}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-gray-900"
-                />
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-gray-700 mb-3">Preferred Time *</p>
-                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                  {timeSlots.map((slot) => (
+                <p className="text-xs font-semibold text-zinc-400 mb-2">Preferred Time *</p>
+                <div className="flex flex-wrap gap-2">
+                  {TIME_SLOTS.map(slot => (
                     <button
                       key={slot}
                       type="button"
-                      onClick={() => handleChange("preferredTimeSlot", slot)}
-                      className={`py-2.5 px-3 rounded-lg border-2 text-xs font-semibold transition-all ${
-                        formData.preferredTimeSlot === slot
-                          ? "border-blue-700 bg-blue-50 text-blue-700"
-                          : "border-gray-200 hover:border-gray-300 text-gray-600 hover:bg-gray-50"
+                      onClick={() => set("preferredTimeSlot", slot)}
+                      className={`px-3 py-2 rounded-xl border text-xs font-semibold transition-all ${
+                        form.preferredTimeSlot === slot
+                          ? "border-orange-500/60 bg-orange-500/15 text-orange-300"
+                          : "border-zinc-700 bg-zinc-800/60 text-zinc-400 hover:border-zinc-600"
                       }`}
                     >
                       {slot}
@@ -375,80 +317,68 @@ export default function AssessmentPage() {
                   ))}
                 </div>
               </div>
+
               <div>
-                <p className="text-sm font-semibold text-gray-700 mb-3">Location *</p>
-                <div className="grid grid-cols-1 gap-2">
-                  {locationOptions.map((loc) => (
+                <p className="text-xs font-semibold text-zinc-400 mb-2">Location *</p>
+                <div className="flex flex-col gap-2">
+                  {locationList.map(loc => (
                     <button
                       key={loc}
                       type="button"
-                      onClick={() => handleChange("preferredLocation", loc)}
-                      className={`py-3 px-4 rounded-xl border-2 text-sm font-medium transition-all text-left ${
-                        formData.preferredLocation === loc
-                          ? "border-orange-500 bg-orange-50 text-orange-700"
-                          : "border-gray-200 hover:border-gray-300 text-gray-700 hover:bg-gray-50"
+                      onClick={() => set("preferredLocation", loc)}
+                      className={`flex items-center gap-2 px-4 py-3 rounded-xl border text-sm font-medium text-left transition-all ${
+                        form.preferredLocation === loc
+                          ? "border-orange-500/60 bg-orange-500/15 text-orange-300"
+                          : "border-zinc-700 bg-zinc-800/60 text-zinc-400 hover:border-zinc-600 hover:text-zinc-200"
                       }`}
                     >
-                      {formData.preferredLocation === loc && <CheckCircle className="w-4 h-4 inline mr-1" />}
+                      {form.preferredLocation === loc && <CheckCircle className="w-4 h-4 shrink-0" />}
                       {loc}
                     </button>
                   ))}
                 </div>
               </div>
             </div>
-          )}
 
-          {/* Navigation */}
-          <div className="flex justify-between mt-8">
-            {currentStep > 1 ? (
-              <button
-                type="button"
-                onClick={() => setCurrentStep((prev) => prev - 1)}
-                className="flex items-center gap-2 px-5 py-2.5 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition-colors"
-              >
-                <ChevronLeft className="w-4 h-4" />
-                Back
-              </button>
-            ) : (
-              <div />
-            )}
+            {/* Health (optional) */}
+            <div className="rounded-2xl bg-zinc-900 border border-zinc-800 p-6 space-y-4">
+              <SectionLabel>Health & Injuries <span className="normal-case font-normal text-zinc-600">(optional)</span></SectionLabel>
+              <div className="flex flex-wrap gap-2">
+                {MEDICAL_CONDITIONS.map(cond => (
+                  <Chip
+                    key={cond}
+                    active={form.medicalConditions.includes(cond)}
+                    onClick={() => set("medicalConditions", toggle(form.medicalConditions, cond))}
+                  >
+                    {cond}
+                  </Chip>
+                ))}
+              </div>
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-1.5">Other notes</label>
+                <textarea
+                  value={form.otherHealth}
+                  onChange={e => set("otherHealth", e.target.value)}
+                  rows={2}
+                  placeholder="Any other conditions your trainer should know about…"
+                  className="w-full rounded-xl bg-zinc-800/60 border border-zinc-700 px-4 py-3 text-sm text-white placeholder-zinc-600 outline-none focus:border-orange-500/60 focus:ring-2 focus:ring-orange-500/10 transition resize-none"
+                />
+              </div>
+            </div>
 
-            {currentStep < steps.length ? (
-              <button
-                type="button"
-                onClick={() => setCurrentStep((prev) => prev + 1)}
-                disabled={!canProceed()}
-                className="flex items-center gap-2 px-6 py-2.5 bg-blue-700 text-white rounded-lg font-semibold hover:bg-blue-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                Next
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={handleSubmit}
-                disabled={!canProceed() || loading}
-                className="flex items-center gap-2 px-6 py-2.5 bg-orange-500 text-white rounded-lg font-semibold hover:bg-orange-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Submitting...
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle className="w-4 h-4" />
-                    Submit Assessment
-                  </>
-                )}
-              </button>
-            )}
-          </div>
+            {/* Submit */}
+            <button
+              type="submit"
+              disabled={!canSubmit || submitting}
+              className="w-full flex items-center justify-center gap-2 rounded-xl bg-orange-500 hover:bg-orange-400 py-4 text-sm font-black text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-lg shadow-orange-500/20"
+            >
+              {submitting
+                ? <><Loader2 className="w-4 h-4 animate-spin" />Submitting request…</>
+                : <><Send className="w-4 h-4" />Submit Assessment Request</>
+              }
+            </button>
+          </form>
         </div>
-
-        <p className="text-xs text-gray-400 text-center mt-4">
-          Step {currentStep} of {steps.length}
-        </p>
       </div>
     </DashboardLayout>
   );

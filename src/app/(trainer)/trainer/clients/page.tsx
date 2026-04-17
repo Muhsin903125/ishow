@@ -5,9 +5,13 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useAuth } from "@/contexts/AuthContext";
-import { getItems, updateItem, addItem, deleteItem, setItems } from "@/lib/storage";
-import type { User } from "@/lib/auth";
-import type { Assessment, Payment, Plan, Program, Session } from "@/lib/mockData";
+import { listCustomers, updateProfile, deleteProfile, type Profile } from "@/lib/db/profiles";
+import { createClient } from "@/lib/supabase/client";
+import { listAssessments, type Assessment } from "@/lib/db/assessments";
+import { listAllPlans, type Plan } from "@/lib/db/plans";
+import { listSessions, type TrainingSession as Session } from "@/lib/db/sessions";
+import { listPrograms, type Program } from "@/lib/db/programs";
+import { listPayments, type Payment } from "@/lib/db/payments";
 import {
   Users, ClipboardList, Calendar, CreditCard, Phone, Mail,
   CheckCircle, Target, Dumbbell, ArrowRight, Search, Plus,
@@ -26,7 +30,7 @@ export default function TrainerClientsPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
 
-  const [customers, setCustomers] = useState<User[]>([]);
+  const [customers, setCustomers] = useState<Profile[]>([]);
   const [assessments, setAssessments] = useState<Assessment[]>([]);
   const [plans, setPlans] = useState<Plan[]>([]);
   const [sessions, setSessions] = useState<Session[]>([]);
@@ -35,27 +39,39 @@ export default function TrainerClientsPage() {
   const [search, setSearch] = useState("");
 
   const [addOpen, setAddOpen] = useState(false);
-  const [editTarget, setEditTarget] = useState<User | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<User | null>(null);
+  const [editTarget, setEditTarget] = useState<Profile | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Profile | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [formError, setFormError] = useState("");
 
-  function loadData() {
-    setCustomers(getItems<User>("ishow_users").filter((u) => u.role === "customer"));
-    setAssessments(getItems<Assessment>("ishow_assessments"));
-    setPlans(getItems<Plan>("ishow_plans"));
-    setSessions(getItems<Session>("ishow_sessions"));
-    setPrograms(getItems<Program>("ishow_programs"));
-    setPayments(getItems<Payment>("ishow_payments"));
-  }
+  const loadData = async () => {
+    const [c, a, p, s, prog, pay] = await Promise.all([
+      listCustomers(),
+      listAssessments(),
+      listAllPlans(),
+      listSessions(),
+      listPrograms(),
+      listPayments(),
+    ]);
+    setCustomers(c);
+    setAssessments(a);
+    setPlans(p);
+    setSessions(s);
+    setPrograms(prog);
+    setPayments(pay);
+  };
 
   useEffect(() => {
     if (!loading && !user) { router.push("/login"); return; }
-    if (!loading && user) {
-      if (user.role !== "trainer") { router.push("/dashboard"); return; }
-      loadData();
-    }
-  }, [loading, router, user]);
+    const init = async () => {
+      if (!loading && user) {
+        if (user.role === 'customer') { router.push('/dashboard'); return; }
+        if (user.role === 'admin') { router.push('/admin/dashboard'); return; }
+        await loadData();
+      }
+    };
+    init();
+  }, [loading, router, user]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (loading || !user) return null;
 
@@ -69,17 +85,16 @@ export default function TrainerClientsPage() {
       )
     : customers;
 
-  function markAssessmentReviewed(assessmentId: string) {
-    updateItem<Assessment>("ishow_assessments", assessmentId, {
-      status: "reviewed",
-      reviewedAt: new Date().toISOString(),
-    });
-    loadData();
+  async function markAssessmentReviewed(assessmentId: string) {
+    const supabase = createClient();
+    await supabase.from('assessments').update({ status: 'reviewed', reviewed_at: new Date().toISOString() }).eq('id', assessmentId);
+    await loadData();
   }
 
-  function cancelPlan(planId: string) {
-    updateItem<Plan>("ishow_plans", planId, { status: "inactive" });
-    loadData();
+  async function cancelPlan(planId: string) {
+    const supabase = createClient();
+    await supabase.from('plans').update({ status: 'inactive' }).eq('id', planId);
+    await loadData();
   }
 
   function openAdd() {
@@ -88,69 +103,46 @@ export default function TrainerClientsPage() {
     setAddOpen(true);
   }
 
-  function openEdit(customer: User) {
-    setForm({ name: customer.name, email: customer.email, password: "", phone: customer.phone ?? "" });
+  function openEdit(customer: Profile) {
+    setForm({ name: customer.name, email: '', password: "", phone: customer.phone ?? "" });
     setFormError("");
     setEditTarget(customer);
   }
 
-  function submitAdd() {
+  async function submitAdd() {
     if (!form.name.trim() || !form.email.trim() || !form.password.trim()) {
       setFormError("Name, email, and password are required.");
       return;
     }
-    const all = getItems<User>("ishow_users");
-    if (all.some((u) => u.email.toLowerCase() === form.email.trim().toLowerCase())) {
-      setFormError("A user with this email already exists.");
-      return;
-    }
-    addItem<User>("ishow_users", {
-      id: `user_${Date.now()}`,
-      name: form.name.trim(),
+    // Use Supabase Auth admin invite (via API route) or regular signup
+    const supabase = createClient();
+    const { error } = await supabase.auth.signUp({
       email: form.email.trim().toLowerCase(),
       password: form.password,
-      phone: form.phone.trim() || undefined,
-      role: "customer",
-      customerStatus: "client",
-      createdAt: new Date().toISOString(),
+      options: { data: { name: form.name.trim(), phone: form.phone.trim() || null, role: 'customer' } },
     });
+    if (error) { setFormError(error.message); return; }
     setAddOpen(false);
-    loadData();
+    await loadData();
   }
 
-  function submitEdit() {
+  async function submitEdit() {
     if (!editTarget) return;
-    if (!form.name.trim() || !form.email.trim()) {
-      setFormError("Name and email are required.");
-      return;
-    }
-    const all = getItems<User>("ishow_users");
-    if (all.some((u) => u.email.toLowerCase() === form.email.trim().toLowerCase() && u.id !== editTarget.id)) {
-      setFormError("A user with this email already exists.");
-      return;
-    }
-    const updates: Partial<User> = {
+    if (!form.name.trim()) { setFormError("Name is required."); return; }
+    await updateProfile(editTarget.id, {
       name: form.name.trim(),
-      email: form.email.trim().toLowerCase(),
       phone: form.phone.trim() || undefined,
-    };
-    if (form.password.trim()) updates.password = form.password.trim();
-    updateItem<User>("ishow_users", editTarget.id, updates);
+    });
     setEditTarget(null);
-    loadData();
+    await loadData();
   }
 
-  function confirmDelete() {
+  async function confirmDelete() {
     if (!deleteTarget) return;
-    const id = deleteTarget.id;
-    deleteItem("ishow_users", id);
-    setItems("ishow_assessments", getItems<Assessment>("ishow_assessments").filter((a) => a.userId !== id));
-    setItems("ishow_plans", getItems<Plan>("ishow_plans").filter((p) => p.userId !== id));
-    setItems("ishow_sessions", getItems<Session>("ishow_sessions").filter((s) => s.userId !== id));
-    setItems("ishow_programs", getItems<Program>("ishow_programs").filter((p) => p.userId !== id));
-    setItems("ishow_payments", getItems<Payment>("ishow_payments").filter((p) => p.userId !== id));
+    // Cascades handle related records (ON DELETE CASCADE in schema)
+    await deleteProfile(deleteTarget.id);
     setDeleteTarget(null);
-    loadData();
+    await loadData();
   }
 
   const today = new Date().toISOString().split("T")[0];
@@ -193,8 +185,8 @@ export default function TrainerClientsPage() {
             const customerPrograms = programs.filter((item) => item.userId === customer.id);
             const customerSessions = sessions.filter((item) => item.userId === customer.id);
             const nextSession = sessions
-              .filter((item) => item.userId === customer.id && item.status === "scheduled" && item.date >= today)
-              .sort((l, r) => (l.date + l.time).localeCompare(r.date + r.time))[0];
+              .filter((item) => item.userId === customer.id && item.status === "scheduled" && item.scheduledDate >= today)
+              .sort((l, r) => (l.scheduledDate + l.scheduledTime).localeCompare(r.scheduledDate + r.scheduledTime))[0];
             const paymentIssue = payments.find(
               (item) => item.userId === customer.id && (item.status === "pending" || item.status === "overdue")
             );
@@ -270,7 +262,7 @@ export default function TrainerClientsPage() {
                     </div>
                     <p className="text-sm text-gray-600">
                       {nextSession
-                        ? `${nextSession.title} · ${formatDate(nextSession.date)} at ${nextSession.time}`
+                        ? `${nextSession.title} · ${formatDate(nextSession.scheduledDate)} at ${nextSession.scheduledTime}`
                         : "No upcoming session scheduled."}
                     </p>
                   </div>

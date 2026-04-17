@@ -1,297 +1,200 @@
-"use client";
+'use client';
 
-import Image from "next/image";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import { useAuth } from "@/contexts/AuthContext";
-import {
-  Mail,
-  Lock,
-  AlertCircle,
-  Loader2,
-  ArrowRight,
-  CheckCircle,
-  Flame,
-  Shield,
-  Star,
-  Users,
-} from "lucide-react";
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { Mail, Lock, Eye, EyeOff, ArrowRight, Loader2, AlertCircle } from 'lucide-react';
 
-const demoAccounts = [
-  {
-    label: "Trainer Demo",
-    email: "trainer@ishow.com",
-    password: "trainer123",
-    accent: "from-blue-700 to-blue-900",
-    note: "Opens the trainer dashboard",
-  },
-  {
-    label: "Customer Demo",
-    email: "customer@ishow.com",
-    password: "customer123",
-    accent: "from-orange-500 to-orange-700",
-    note: "Opens the customer dashboard",
-  },
-] as const;
+function GoogleIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="w-4 h-4 shrink-0">
+      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+      <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/>
+      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+    </svg>
+  );
+}
 
-const highlights = [
-  { icon: Shield, title: "Trainer-led system", text: "Structured plans and real follow-up" },
-  { icon: Users, title: "One place", text: "Assessment, sessions, programs, payments" },
-  { icon: Star, title: "Coach access", text: "Mohammed Sufiyan and demo-ready flows" },
-] as const;
+function InputField({
+  label, type = 'text', value, onChange, placeholder, autoComplete, icon: Icon, rightEl, error,
+}: {
+  label: string; type?: string; value: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  placeholder?: string; autoComplete?: string;
+  icon: React.ComponentType<{ className?: string }>;
+  rightEl?: React.ReactNode; error?: string;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-400">{label}</label>
+      <div className="relative">
+        <Icon className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+        <input
+          type={type} value={value} onChange={onChange}
+          placeholder={placeholder} autoComplete={autoComplete}
+          className={`w-full rounded-xl bg-zinc-800/60 border pl-10 pr-10 py-3 text-sm text-white placeholder-zinc-600 outline-none transition focus:bg-zinc-800 focus:border-orange-500/70 focus:ring-2 focus:ring-orange-500/15 ${error ? 'border-red-500/60' : 'border-zinc-700'}`}
+        />
+        {rightEl && <div className="absolute right-3.5 top-1/2 -translate-y-1/2">{rightEl}</div>}
+      </div>
+      {error && <p className="text-xs text-red-400 flex items-center gap-1"><AlertCircle className="w-3 h-3" />{error}</p>}
+    </div>
+  );
+}
 
 export default function LoginPage() {
   const router = useRouter();
-  const { user, login, loading: authLoading } = useAuth();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const { user, login, loginWithGoogle, loading: authLoading } = useAuth();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPw, setShowPw] = useState(false);
+  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [gLoading, setGLoading] = useState(false);
 
   useEffect(() => {
     if (!authLoading && user) {
-      router.push(user.role === "trainer" ? "/trainer/dashboard" : "/dashboard");
+      if (user.role === 'admin') router.push('/admin/dashboard');
+      else if (user.role === 'trainer') router.push('/trainer/dashboard');
+      else router.push('/dashboard');
     }
   }, [authLoading, router, user]);
 
-  const applyDemo = (nextEmail: string, nextPassword: string) => {
-    setEmail(nextEmail);
-    setPassword(nextPassword);
-    setError("");
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
-
-    if (authLoading) {
-      setError("Preparing demo data. Try again in a moment.");
-      return;
-    }
-
+    setError('');
     setLoading(true);
-    const signedInUser = await login(email.trim(), password);
+    const { error: err } = await login(email.trim(), password);
     setLoading(false);
+    if (err) setError('Invalid email or password. Please try again.');
+  };
 
-    if (!signedInUser) {
-      setError("Invalid email or password. Use a demo card above or check your credentials.");
-      return;
-    }
-
-    router.push(signedInUser.role === "trainer" ? "/trainer/dashboard" : "/dashboard");
+  const handleGoogle = async () => {
+    setGLoading(true);
+    const { error: err } = await loginWithGoogle();
+    if (err) { setError(err); setGLoading(false); }
   };
 
   if (!authLoading && user) return null;
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-gray-950">
-      <div className="absolute inset-0">
-        <Image
-          src="https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=1920&h=1400&auto=format&fit=crop&q=80"
-          alt="Athlete training in the gym"
-          fill
-          priority
-          className="object-cover object-center"
-          sizes="100vw"
-        />
-        <div className="absolute inset-0 bg-gradient-to-br from-black/95 via-slate-950/85 to-blue-950/80" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(249,115,22,0.22),transparent_28%),radial-gradient(circle_at_bottom_right,rgba(59,130,246,0.18),transparent_32%)]" />
+    <div className="min-h-screen bg-zinc-950 flex">
+      {/* Left — brand panel */}
+      <div className="hidden lg:flex flex-col justify-between w-[520px] xl:w-[580px] shrink-0 relative overflow-hidden bg-[#0D0D0F] px-12 py-14">
+        {/* decorative glow */}
+        <div className="pointer-events-none absolute -top-40 -left-40 w-[600px] h-[600px] rounded-full bg-orange-500/10 blur-[120px]" />
+        <div className="pointer-events-none absolute bottom-0 right-0 w-80 h-80 rounded-full bg-blue-600/8 blur-[80px]" />
+
+        <div className="relative">
+          <Link href="/" className="inline-flex items-baseline gap-0 mb-16">
+            <span className="font-black text-xl text-white tracking-tight">iShow</span>
+            <span className="font-black text-xl text-orange-500 tracking-tight">Transformation</span>
+          </Link>
+
+          <div className="mb-6">
+            <span className="inline-flex items-center gap-2 rounded-full bg-orange-500/10 border border-orange-500/20 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-orange-400">
+              Member Portal
+            </span>
+          </div>
+
+          <h1 className="text-5xl xl:text-6xl font-black text-white leading-[0.95] tracking-tight mb-6">
+            Back to<br />
+            <span className="text-orange-500">your</span><br />
+            journey.
+          </h1>
+
+          <p className="text-zinc-400 text-base leading-relaxed max-w-sm">
+            Your programs, sessions, and progress — all in one place. Sign in to pick up where you left off.
+          </p>
+        </div>
+
+        {/* Stats strip */}
+        <div className="relative grid grid-cols-3 gap-4">
+          {[
+            { value: '1-on-1', label: 'Coaching' },
+            { value: '100%', label: 'Personalised' },
+            { value: 'UAE', label: 'Based' },
+          ].map((s) => (
+            <div key={s.label} className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-5 backdrop-blur-sm">
+              <p className="text-xl font-black text-white mb-0.5">{s.value}</p>
+              <p className="text-xs text-zinc-500 font-medium">{s.label}</p>
+            </div>
+          ))}
+        </div>
       </div>
 
-      <div className="relative z-10 min-h-screen grid lg:grid-cols-[1.05fr_0.95fr]">
-        <section className="hidden lg:flex flex-col justify-between px-8 py-10 xl:px-14 xl:py-12">
-          <div>
-            <Link href="/" className="inline-flex whitespace-nowrap leading-none">
-              <span className="font-black text-2xl text-white tracking-tight">iShow</span>
-              <span className="font-black text-2xl text-orange-400 tracking-tight">Transformation</span>
-            </Link>
+      {/* Right — form */}
+      <div className="flex-1 flex flex-col items-center justify-center px-5 py-12 sm:px-10">
+        {/* Mobile logo */}
+        <Link href="/" className="inline-flex items-baseline gap-0 mb-10 lg:hidden">
+          <span className="font-black text-xl text-white tracking-tight">iShow</span>
+          <span className="font-black text-xl text-orange-500 tracking-tight">Transformation</span>
+        </Link>
 
-            <div className="inline-flex items-center gap-2 rounded-full border border-orange-400/25 bg-orange-500/10 px-4 py-2 mt-10 mb-6">
-              <Flame className="w-4 h-4 text-orange-400" />
-              <span className="text-xs font-semibold uppercase tracking-[0.25em] text-orange-300">Member Login</span>
-            </div>
-
-            <h1 className="max-w-2xl text-5xl xl:text-7xl font-black leading-[0.92] tracking-tight text-white">
-              Return to the plan and keep your momentum moving.
-            </h1>
-
-            <p className="max-w-xl text-lg xl:text-xl text-white/60 mt-6 leading-relaxed">
-              Sign in to access assessments, sessions, weekly programs, and the coach-led system built for
-              real transformation.
+        <div className="w-full max-w-md">
+          <div className="mb-8">
+            <h2 className="text-3xl font-black text-white tracking-tight">Sign in</h2>
+            <p className="text-zinc-500 text-sm mt-1.5">
+              New here?{' '}
+              <Link href="/register" className="text-orange-400 font-semibold hover:text-orange-300 transition-colors">
+                Create an account
+              </Link>
             </p>
           </div>
 
-          <div className="grid max-w-xl gap-4 md:grid-cols-3">
-            {highlights.map((item) => {
-              const Icon = item.icon;
-              return (
-                <div key={item.title} className="rounded-3xl border border-white/10 bg-white/5 p-5 backdrop-blur-sm">
-                  <Icon className="w-5 h-5 text-orange-400 mb-4" />
-                  <p className="font-bold text-white text-sm mb-1">{item.title}</p>
-                  <p className="text-xs leading-relaxed text-white/55">{item.text}</p>
-                </div>
-              );
-            })}
+          {/* Google */}
+          <button
+            type="button" onClick={handleGoogle} disabled={gLoading}
+            className="w-full flex items-center justify-center gap-2.5 rounded-xl border border-zinc-700 bg-zinc-800/50 hover:bg-zinc-800 py-3 px-4 text-sm font-semibold text-zinc-200 transition-all mb-5 disabled:opacity-50"
+          >
+            {gLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <GoogleIcon />}
+            Continue with Google
+          </button>
+
+          <div className="flex items-center gap-3 mb-5">
+            <div className="flex-1 h-px bg-zinc-800" />
+            <span className="text-xs text-zinc-600 font-medium">or email</span>
+            <div className="flex-1 h-px bg-zinc-800" />
           </div>
 
-          <div className="relative max-w-xl overflow-hidden rounded-[2rem] border border-white/10 shadow-2xl">
-            <div className="relative aspect-[16/10]">
-              <Image
-                src="https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=1200&h=760&auto=format&fit=crop&q=80"
-                alt="Structured gym training"
-                fill
-                className="object-cover"
-                sizes="(max-width: 1280px) 50vw, 40vw"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/15 to-transparent" />
-              <div className="absolute inset-x-0 bottom-0 p-6">
-                <p className="text-xs font-semibold uppercase tracking-[0.28em] text-orange-300 mb-2">
-                  Coach Spotlight
-                </p>
-                <div className="flex items-end justify-between gap-4">
-                  <div>
-                    <p className="text-2xl font-black text-white">Mohammed Sufiyan</p>
-                    <p className="text-sm text-white/65">Trainer-led accountability and structured transformation</p>
-                  </div>
-                  <Link
-                    href="https://www.instagram.com/sufiyan_mohd26/"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-sm font-semibold text-white backdrop-blur-sm transition-colors hover:bg-white/15"
-                  >
-                    Instagram
-                    <ArrowRight className="w-4 h-4" />
-                  </Link>
-                </div>
-              </div>
+          {error && (
+            <div className="flex items-center gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400 mb-4">
+              <AlertCircle className="w-4 h-4 shrink-0" />{error}
             </div>
-          </div>
-        </section>
+          )}
 
-        <section className="flex items-center justify-center px-4 py-10 sm:px-6 lg:px-10">
-          <div className="w-full max-w-xl">
-            <div className="mb-6 text-center lg:hidden">
-              <Link href="/" className="inline-flex whitespace-nowrap leading-none">
-                <span className="font-black text-2xl text-white tracking-tight">iShow</span>
-                <span className="font-black text-2xl text-orange-400 tracking-tight">Transformation</span>
-              </Link>
-            </div>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <InputField label="Email" type="email" value={email} onChange={e => setEmail(e.target.value)}
+              placeholder="you@example.com" autoComplete="email" icon={Mail} />
 
-            <div className="rounded-[2rem] border border-white/10 bg-white/95 p-6 shadow-[0_40px_120px_rgba(0,0,0,0.35)] backdrop-blur-xl sm:p-8">
-              <div className="mb-6">
-                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-orange-500 mb-3">Sign In</p>
-                <h2 className="text-3xl sm:text-4xl font-black tracking-tight text-gray-950">Welcome back</h2>
-                <p className="text-gray-500 mt-3 leading-relaxed">
-                  Use your account or tap a demo profile to autofill working credentials instantly.
-                </p>
-              </div>
-
-              <div className="grid gap-3 sm:grid-cols-2 mb-6">
-                {demoAccounts.map((account) => (
-                  <button
-                    key={account.label}
-                    type="button"
-                    onClick={() => applyDemo(account.email, account.password)}
-                    className="rounded-2xl border border-gray-200 bg-white p-4 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-gray-300 hover:shadow-md"
-                  >
-                    <div className={`h-1.5 rounded-full bg-gradient-to-r ${account.accent} mb-4`} />
-                    <p className="font-black text-gray-900 text-sm">{account.label}</p>
-                    <p className="text-xs text-gray-500 mt-1">{account.note}</p>
-                    <p className="text-sm font-semibold text-gray-700 mt-4">{account.email}</p>
-                    <p className="text-xs text-gray-400">{account.password}</p>
-                  </button>
-                ))}
-              </div>
-
-              {authLoading && (
-                <div className="mb-5 flex items-center gap-2 rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-700">
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Preparing demo data...
-                </div>
-              )}
-
-              <form onSubmit={handleSubmit} className="space-y-5">
-                {error && (
-                  <div className="flex items-center gap-2 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                    <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                    {error}
-                  </div>
-                )}
-
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Email Address</label>
-                  <div className="relative">
-                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                    <input
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="w-full rounded-2xl border border-gray-200 bg-white px-12 py-4 text-gray-900 outline-none transition-all focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
-                      placeholder="customer@ishow.com"
-                      autoComplete="email"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Password</label>
-                  <div className="relative">
-                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                    <input
-                      type="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="w-full rounded-2xl border border-gray-200 bg-white px-12 py-4 text-gray-900 outline-none transition-all focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
-                      placeholder="Enter your password"
-                      autoComplete="current-password"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={loading || authLoading}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gray-950 px-6 py-4 text-base font-black text-white transition-all hover:-translate-y-0.5 hover:bg-blue-900 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {loading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      Signing in...
-                    </>
-                  ) : (
-                    <>
-                      Enter Dashboard
-                      <ArrowRight className="w-4 h-4" />
-                    </>
-                  )}
+            <InputField label="Password" type={showPw ? 'text' : 'password'} value={password}
+              onChange={e => setPassword(e.target.value)} placeholder="Your password"
+              autoComplete="current-password" icon={Lock}
+              rightEl={
+                <button type="button" onClick={() => setShowPw(!showPw)} className="text-zinc-500 hover:text-zinc-300 transition-colors">
+                  {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
-              </form>
+              }
+            />
 
-              <div className="mt-6 flex items-center gap-2 text-sm text-gray-500">
-                <CheckCircle className="w-4 h-4 text-green-500" />
-                Demo accounts are pre-seeded automatically when the app loads.
-              </div>
-
-              <div className="mt-6 border-t border-gray-100 pt-6 text-center">
-                <p className="text-sm text-gray-600">
-                  Don&apos;t have an account?{" "}
-                  <Link href="/register" className="font-semibold text-orange-500 transition-colors hover:text-orange-600">
-                    Create one here
-                  </Link>
-                </p>
-              </div>
+            <div className="flex justify-end">
+              <Link href="/forgot-password" className="text-xs text-zinc-500 hover:text-orange-400 transition-colors font-medium">
+                Forgot password?
+              </Link>
             </div>
 
-            <p className="text-center text-sm text-white/50 mt-5">
-              <Link href="/" className="transition-colors hover:text-white/80">
-                Back to home
-              </Link>
-            </p>
-          </div>
-        </section>
+            <button type="submit" disabled={loading || authLoading}
+              className="w-full flex items-center justify-center gap-2 rounded-xl bg-orange-500 hover:bg-orange-400 active:bg-orange-600 py-3.5 text-sm font-black text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-orange-500/20"
+            >
+              {loading ? <><Loader2 className="w-4 h-4 animate-spin" />Signing in…</> : <>Sign in<ArrowRight className="w-4 h-4" /></>}
+            </button>
+          </form>
+
+          <p className="text-center text-xs text-zinc-600 mt-8">
+            <Link href="/" className="hover:text-zinc-400 transition-colors">← Back to home</Link>
+          </p>
+        </div>
       </div>
     </div>
   );

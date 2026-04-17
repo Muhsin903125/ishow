@@ -3,8 +3,9 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
-import { getItems } from "@/lib/storage";
-import type { Assessment, Plan } from "@/lib/mockData";
+import { getAssessment, type Assessment } from "@/lib/db/assessments";
+import { getPlan, type Plan } from "@/lib/db/plans";
+import { getProfile } from "@/lib/db/profiles";
 import DashboardLayout from "@/components/DashboardLayout";
 import Link from "next/link";
 import {
@@ -22,24 +23,24 @@ export default function MyPlanPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
   const [plan, setPlan] = useState<Plan | null>(null);
+  const [trainerName, setTrainerName] = useState('');
   const [assessment, setAssessment] = useState<Assessment | null>(null);
 
   useEffect(() => {
-    if (!loading && !user) {
-      router.push("/login");
-      return;
-    }
-    if (!loading && user) {
-      if (user.role !== "customer") {
-        router.push("/trainer/dashboard");
-        return;
+    if (!loading && !user) { router.push("/login"); return; }
+    const load = async () => {
+      if (!loading && user) {
+        if (user.role === 'admin') { router.push('/admin/dashboard'); return; }
+        if (user.role === 'trainer') { router.push('/trainer/dashboard'); return; }
+        const [p, a] = await Promise.all([getPlan(user.id), getAssessment(user.id)]);
+        setPlan(p);
+        setAssessment(a);
+        if (p?.trainerId) {
+          getProfile(p.trainerId).then(tp => setTrainerName(tp?.name ?? 'Your Trainer'));
+        }
       }
-      const plans = getItems<Plan>("ishow_plans");
-      setPlan(plans.find((p) => p.userId === user.id && p.status === "active") ?? null);
-
-      const assessments = getItems<Assessment>("ishow_assessments");
-      setAssessment(assessments.find((a) => a.userId === user.id) ?? null);
-    }
+    };
+    load();
   }, [loading, user, router]);
 
   if (loading || !user) return null;
@@ -99,10 +100,10 @@ export default function MyPlanPage() {
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center text-white font-bold text-lg">
-                    {plan.trainerName.charAt(0)}
+                    {(trainerName || 'T').charAt(0)}
                   </div>
                   <div>
-                    <p className="font-semibold text-gray-900">{plan.trainerName}</p>
+                    <p className="font-semibold text-gray-900">{trainerName || 'Your Trainer'}</p>
                   </div>
                 </div>
               </div>

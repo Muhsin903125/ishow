@@ -5,9 +5,12 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useAuth } from "@/contexts/AuthContext";
-import { getItems } from "@/lib/storage";
-import type { User } from "@/lib/auth";
-import type { Assessment, Payment, Plan, Program, Session } from "@/lib/mockData";
+import { listCustomers, type Profile } from "@/lib/db/profiles";
+import { listAssessments, type Assessment } from "@/lib/db/assessments";
+import { listAllPlans, type Plan } from "@/lib/db/plans";
+import { listSessions, type TrainingSession as Session } from "@/lib/db/sessions";
+import { listPrograms, type Program } from "@/lib/db/programs";
+import { listPayments, type Payment } from "@/lib/db/payments";
 import {
   Users,
   ClipboardList,
@@ -23,7 +26,7 @@ export default function TrainerDashboardPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
 
-  const [customers, setCustomers] = useState<User[]>([]);
+  const [customers, setCustomers] = useState<Profile[]>([]);
   const [assessments, setAssessments] = useState<Assessment[]>([]);
   const [plans, setPlans] = useState<Plan[]>([]);
   const [sessions, setSessions] = useState<Session[]>([]);
@@ -36,19 +39,27 @@ export default function TrainerDashboardPage() {
       return;
     }
 
-    if (!loading && user) {
-      if (user.role !== "trainer") {
-        router.push("/dashboard");
-        return;
+    const load = async () => {
+      if (!loading && user) {
+        if (user.role === 'customer') { router.push('/dashboard'); return; }
+        if (user.role === 'admin') { router.push('/admin/dashboard'); return; }
+        const [c, a, p, s, prog, pay] = await Promise.all([
+          listCustomers(),
+          listAssessments(),
+          listAllPlans(),
+          listSessions(),
+          listPrograms(),
+          listPayments(),
+        ]);
+        setCustomers(c);
+        setAssessments(a);
+        setPlans(p);
+        setSessions(s);
+        setPrograms(prog);
+        setPayments(pay);
       }
-
-      setCustomers(getItems<User>("ishow_users").filter((item) => item.role === "customer"));
-      setAssessments(getItems<Assessment>("ishow_assessments"));
-      setPlans(getItems<Plan>("ishow_plans"));
-      setSessions(getItems<Session>("ishow_sessions"));
-      setPrograms(getItems<Program>("ishow_programs"));
-      setPayments(getItems<Payment>("ishow_payments"));
-    }
+    };
+    load();
   }, [loading, router, user]);
 
   if (loading || !user) return null;
@@ -59,21 +70,21 @@ export default function TrainerDashboardPage() {
   const pendingAssessments = assessments.filter((assessment) => assessment.status === "pending");
   const activePlans = plans.filter((plan) => plan.status === "active");
   const todaySessions = sessions.filter(
-    (session) => session.status === "scheduled" && session.date === today
+    (session) => session.status === "scheduled" && session.scheduledDate === today
   );
   const pendingPayments = payments.filter(
     (payment) => payment.status === "pending" || payment.status === "overdue"
   );
   const upcomingSessions = sessions
-    .filter((session) => session.status === "scheduled" && session.date >= today)
-    .sort((left, right) => (left.date + left.time).localeCompare(right.date + right.time))
+    .filter((session) => session.status === "scheduled" && session.scheduledDate >= today)
+    .sort((left, right) => (left.scheduledDate + left.scheduledTime).localeCompare(right.scheduledDate + right.scheduledTime))
     .slice(0, 4);
   const clientSummaries = customers.map((customer) => {
     const clientPrograms = programs.filter((program) => program.userId === customer.id);
     const clientSessions = sessions.filter((session) => session.userId === customer.id);
     const nextSession = clientSessions
-      .filter((session) => session.status === "scheduled" && session.date >= today)
-      .sort((left, right) => (left.date + left.time).localeCompare(right.date + right.time))[0];
+      .filter((session) => session.status === "scheduled" && session.scheduledDate >= today)
+      .sort((left, right) => (left.scheduledDate + left.scheduledTime).localeCompare(right.scheduledDate + right.scheduledTime))[0];
     const activePlan = plans.find((plan) => plan.userId === customer.id && plan.status === "active");
     const pendingAssessment = assessments.find(
       (assessment) => assessment.userId === customer.id && assessment.status === "pending"
@@ -185,7 +196,7 @@ export default function TrainerDashboardPage() {
                           <p className="text-sm text-gray-500 mt-1">{customer?.name ?? "Unknown Client"}</p>
                         </div>
                         <span className="text-xs font-semibold text-gray-500 whitespace-nowrap">
-                          {new Date(session.date + "T00:00:00").toLocaleDateString("en-US", {
+                          {new Date(session.scheduledDate + "T00:00:00").toLocaleDateString("en-US", {
                             month: "short",
                             day: "numeric",
                           })}
@@ -193,7 +204,7 @@ export default function TrainerDashboardPage() {
                       </div>
                       <div className="flex items-center gap-3 mt-3 text-sm text-gray-600">
                         <Clock className="w-4 h-4 text-gray-400" />
-                        {session.time} · {session.duration} min
+                        {session.scheduledTime} · {session.duration} min
                       </div>
                     </div>
                   );
@@ -241,7 +252,7 @@ export default function TrainerDashboardPage() {
                     <div className="rounded-2xl border border-white bg-white px-4 py-3">
                       <p className="text-xs font-semibold uppercase tracking-[0.18em] text-gray-400">Next Session</p>
                       <p className="mt-2 text-sm font-black text-gray-900">
-                        {summary.nextSession ? `${summary.nextSession.date} ${summary.nextSession.time}` : "Not scheduled"}
+                        {summary.nextSession ? `${summary.nextSession.scheduledDate} ${summary.nextSession.scheduledTime}` : "Not scheduled"}
                       </p>
                     </div>
                   </div>

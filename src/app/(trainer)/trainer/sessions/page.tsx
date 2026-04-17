@@ -4,9 +4,8 @@ import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useAuth } from "@/contexts/AuthContext";
-import { addItem, deleteItem, getItems, updateItem } from "@/lib/storage";
-import type { User } from "@/lib/auth";
-import type { Session } from "@/lib/mockData";
+import { listCustomers, type Profile } from "@/lib/db/profiles";
+import { listSessions, createSession, updateSession, deleteSession, type TrainingSession as Session } from "@/lib/db/sessions";
 import {
   Calendar,
   CheckCircle,
@@ -27,8 +26,8 @@ type SessionFilter = "all" | "scheduled" | "completed" | "cancelled";
 type SessionFormState = {
   userId: string;
   title: string;
-  date: string;
-  time: string;
+  scheduledDate: string;
+  scheduledTime: string;
   duration: string;
   status: Session["status"];
   notes: string;
@@ -44,8 +43,8 @@ function createBlankSessionForm(userId = ""): SessionFormState {
   return {
     userId,
     title: "",
-    date: new Date().toISOString().split("T")[0],
-    time: "07:00",
+    scheduledDate: new Date().toISOString().split("T")[0],
+    scheduledTime: "07:00",
     duration: "60",
     status: "scheduled",
     notes: "",
@@ -69,7 +68,7 @@ function ClientCombobox({
 }: {
   value: string;
   onChange: (id: string) => void;
-  customers: User[];
+  customers: Profile[];
   includeAll?: boolean;
   className?: string;
 }) {
@@ -139,7 +138,7 @@ function TrainerSessionsContent() {
   const queryClient = searchParams.get("client") ?? "all";
 
   const [sessions, setSessions] = useState<Session[]>([]);
-  const [customers, setCustomers] = useState<User[]>([]);
+  const [customers, setCustomers] = useState<Profile[]>([]);
   const [filter, setFilter] = useState<SessionFilter>("all");
   const [clientFilter, setClientFilter] = useState("all");
   const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
@@ -147,38 +146,30 @@ function TrainerSessionsContent() {
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
 
-  function loadData() {
-    const nextCustomers = getItems<User>("ishow_users")
-      .filter((item) => item.role === "customer")
-      .sort((left, right) => left.name.localeCompare(right.name));
-
-    const customerNameById = Object.fromEntries(nextCustomers.map((customer) => [customer.id, customer.name]));
-
-    const nextSessions = getItems<Session>("ishow_sessions").sort((left, right) => {
-      const nameCompare = (customerNameById[left.userId] ?? "").localeCompare(customerNameById[right.userId] ?? "");
-      if (nameCompare !== 0) return nameCompare;
-      return (right.date + right.time).localeCompare(left.date + left.time);
+  const loadData = async () => {
+    const [nextCustomers, nextSessions] = await Promise.all([listCustomers(), listSessions()]);
+    const sorted = nextCustomers.sort((a, b) => a.name.localeCompare(b.name));
+    const customerNameById = Object.fromEntries(sorted.map(c => [c.id, c.name]));
+    const sortedSessions = [...nextSessions].sort((l, r) => {
+      const nc = (customerNameById[l.userId] ?? "").localeCompare(customerNameById[r.userId] ?? "");
+      if (nc !== 0) return nc;
+      return (r.scheduledDate + r.scheduledTime).localeCompare(l.scheduledDate + l.scheduledTime);
     });
-
-    setCustomers(nextCustomers);
-    setSessions(nextSessions);
-  }
+    setCustomers(sorted);
+    setSessions(sortedSessions);
+  };
 
   useEffect(() => {
-    if (!loading && !user) {
-      router.push("/login");
-      return;
-    }
-
-    if (!loading && user) {
-      if (user.role !== "trainer") {
-        router.push("/dashboard");
-        return;
+    if (!loading && !user) { router.push("/login"); return; }
+    const init = async () => {
+      if (!loading && user) {
+        if (user.role === 'customer') { router.push('/dashboard'); return; }
+        if (user.role === 'admin') { router.push('/admin/dashboard'); return; }
+        await loadData();
       }
-
-      loadData();
-    }
-  }, [loading, router, user]);
+    };
+    init();
+  }, [loading, router, user]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     setClientFilter(queryClient === "all" ? "all" : queryClient);
@@ -205,7 +196,7 @@ function TrainerSessionsContent() {
   ).sort((left, right) => {
     if (left.status === "scheduled" && right.status !== "scheduled") return -1;
     if (right.status === "scheduled" && left.status !== "scheduled") return 1;
-    return (right.date + right.time).localeCompare(left.date + left.time);
+    return (right.scheduledDate + right.scheduledTime).localeCompare(left.scheduledDate + left.scheduledTime);
   });
 
   function resetForm(preferredUserId?: string) {
@@ -227,78 +218,63 @@ function TrainerSessionsContent() {
     setForm({
       userId: session.userId,
       title: session.title,
-      date: session.date,
-      time: session.time,
+      scheduledDate: session.scheduledDate,
+      scheduledTime: session.scheduledTime,
       duration: String(session.duration),
       status: session.status,
       notes: session.notes ?? "",
     });
   }
 
-  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-
     const duration = Number(form.duration);
-
-    if (!form.userId) {
-      setErrorMessage("Select a client before saving a session.");
-      return;
-    }
-
-    if (!form.title.trim()) {
-      setErrorMessage("Session title is required.");
-      return;
-    }
-
-    if (!form.date || !form.time) {
-      setErrorMessage("Date and time are required.");
-      return;
-    }
-
-    if (!Number.isFinite(duration) || duration <= 0) {
-      setErrorMessage("Duration must be a positive number of minutes.");
-      return;
-    }
-
-    const payload: Session = {
-      id: editingSessionId ?? `session_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-      userId: form.userId,
-      title: form.title.trim(),
-      date: form.date,
-      time: form.time,
-      duration,
-      status: form.status,
-      notes: form.notes.trim() || undefined,
-      trainerName: user?.name ?? "Trainer",
-    };
+    if (!form.userId) { setErrorMessage("Select a client before saving."); return; }
+    if (!form.title.trim()) { setErrorMessage("Session title is required."); return; }
+    if (!form.scheduledDate || !form.scheduledTime) { setErrorMessage("Date and time are required."); return; }
+    if (!Number.isFinite(duration) || duration <= 0) { setErrorMessage("Duration must be a positive number."); return; }
 
     if (editingSessionId) {
-      updateItem<Session>("ishow_sessions", editingSessionId, payload);
+      await updateSession(editingSessionId, {
+        title: form.title.trim(),
+        scheduledDate: form.scheduledDate,
+        scheduledTime: form.scheduledTime,
+        duration,
+        status: form.status,
+        notes: form.notes.trim() || undefined,
+      });
       setSuccessMessage("Session updated successfully.");
     } else {
-      addItem<Session>("ishow_sessions", payload);
+      await createSession({
+        userId: form.userId,
+        trainerId: user?.id,
+        title: form.title.trim(),
+        scheduledDate: form.scheduledDate,
+        scheduledTime: form.scheduledTime,
+        duration,
+        status: form.status,
+        notes: form.notes.trim() || undefined,
+      });
       setSuccessMessage("Session created successfully.");
     }
-
-    loadData();
-    resetForm(payload.userId);
+    await loadData();
+    resetForm(form.userId);
   }
 
-  function handleDelete(session: Session) {
+  async function handleDelete(session: Session) {
     const confirmed = window.confirm(`Delete ${session.title} for ${customerById[session.userId]?.name ?? "this client"}?`);
     if (!confirmed) return;
-
-    deleteItem("ishow_sessions", session.id);
+    await deleteSession(session.id);
     setSuccessMessage("Session deleted.");
     if (editingSessionId === session.id) resetForm(session.userId);
-    loadData();
+    await loadData();
   }
 
   const stats = [
     { label: "Visible Sessions", value: clientScopedSessions.length, icon: Dumbbell, tone: "bg-gray-900 text-white" },
     { label: "Scheduled", value: clientScopedSessions.filter((item) => item.status === "scheduled").length, icon: Calendar, tone: "bg-blue-700 text-white" },
     { label: "Completed", value: clientScopedSessions.filter((item) => item.status === "completed").length, icon: CheckCircle, tone: "bg-green-600 text-white" },
-    { label: "Today", value: clientScopedSessions.filter((item) => item.status === "scheduled" && item.date === today).length, icon: Clock, tone: "bg-orange-500 text-white" },
+    { label: "Today", value: clientScopedSessions.filter((item) => item.status === "scheduled" && item.scheduledDate === today).length, icon: Clock, tone: "bg-orange-500 text-white" },
   ];
 
   return (
@@ -418,8 +394,8 @@ function TrainerSessionsContent() {
               Date
               <input
                 type="date"
-                value={form.date}
-                onChange={(event) => setForm((current) => ({ ...current, date: event.target.value }))}
+                value={form.scheduledDate}
+                onChange={(event) => setForm((current) => ({ ...current, scheduledDate: event.target.value }))}
                 className="mt-1 w-full rounded-2xl border border-gray-200 px-4 py-3 text-sm text-gray-900 outline-none transition-colors focus:border-blue-500"
               />
             </label>
@@ -428,8 +404,8 @@ function TrainerSessionsContent() {
               Time
               <input
                 type="time"
-                value={form.time}
-                onChange={(event) => setForm((current) => ({ ...current, time: event.target.value }))}
+                value={form.scheduledTime}
+                onChange={(event) => setForm((current) => ({ ...current, scheduledTime: event.target.value }))}
                 className="mt-1 w-full rounded-2xl border border-gray-200 px-4 py-3 text-sm text-gray-900 outline-none transition-colors focus:border-blue-500"
               />
             </label>
@@ -541,15 +517,11 @@ function TrainerSessionsContent() {
               <div className="mt-4 flex flex-wrap gap-4 text-sm text-gray-600">
                 <span className="inline-flex items-center gap-2">
                   <Calendar className="h-4 w-4 text-gray-400" />
-                  {formatDate(session.date)}
+                  {formatDate(session.scheduledDate)}
                 </span>
                 <span className="inline-flex items-center gap-2">
                   <Clock className="h-4 w-4 text-gray-400" />
-                  {session.time} · {session.duration} min
-                </span>
-                <span className="inline-flex items-center gap-2">
-                  <Users className="h-4 w-4 text-gray-400" />
-                  {session.trainerName}
+                  {session.scheduledTime} · {session.duration} min
                 </span>
               </div>
 

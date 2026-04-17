@@ -3,8 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
-import { getItems } from "@/lib/storage";
-import type { Session } from "@/lib/mockData";
+import { listSessions, type TrainingSession as Session } from "@/lib/db/sessions";
 import DashboardLayout from "@/components/DashboardLayout";
 import {
   Calendar,
@@ -65,22 +64,22 @@ export default function SessionsPage() {
 
   useEffect(() => {
     if (!loading && !user) { router.push("/login"); return; }
-    if (!loading && user) {
-      if (user.role !== "customer") { router.push("/trainer/dashboard"); return; }
-      const all = getItems<Session>("ishow_sessions");
-      setSessions(
-        all
-          .filter((s) => s.userId === user.id)
-          .sort((a, b) => {
-            // upcoming first, then past descending
-            const today = new Date().toISOString().split("T")[0];
+    const load = async () => {
+      if (!loading && user) {
+        if (user.role === 'admin') { router.push('/admin/dashboard'); return; }
+        if (user.role === 'trainer') { router.push('/trainer/dashboard'); return; }
+        const all = await listSessions(user.id);
+        setSessions(
+          all.sort((a, b) => {
             if (a.status === "scheduled" && b.status !== "scheduled") return -1;
             if (b.status === "scheduled" && a.status !== "scheduled") return 1;
-            if (a.status === "scheduled") return a.date.localeCompare(b.date);
-            return b.date.localeCompare(a.date);
+            if (a.status === "scheduled") return a.scheduledDate.localeCompare(b.scheduledDate);
+            return b.scheduledDate.localeCompare(a.scheduledDate);
           })
-      );
-    }
+        );
+      }
+    };
+    load();
   }, [loading, user, router]);
 
   if (loading || !user) return null;
@@ -88,7 +87,7 @@ export default function SessionsPage() {
   const filtered = filter === "all" ? sessions : sessions.filter((s) => s.status === filter);
   const upcoming = sessions.filter((s) => s.status === "scheduled");
   const completed = sessions.filter((s) => s.status === "completed");
-  const today = sessions.filter((s) => isToday(s.date) && s.status === "scheduled");
+  const today = sessions.filter((s) => isToday(s.scheduledDate) && s.status === "scheduled");
 
   return (
     <DashboardLayout role="CUSTOMER">
@@ -124,7 +123,7 @@ export default function SessionsPage() {
             <div>
               <p className="font-black text-lg">Session Today!</p>
               <p className="text-orange-100 text-sm">
-                {today[0].title} at {formatTime(today[0].time)} · {today[0].duration} min with {today[0].trainerName}
+                {today[0].title} at {formatTime(today[0].scheduledTime)} · {today[0].duration} min
               </p>
             </div>
           </div>
@@ -159,7 +158,7 @@ export default function SessionsPage() {
             filtered.map((session) => {
               const cfg = statusConfig[session.status];
               const Icon = cfg.icon;
-              const todayHighlight = isToday(session.date) && session.status === "scheduled";
+              const todayHighlight = isToday(session.scheduledDate) && session.status === "scheduled";
               return (
                 <div
                   key={session.id}
@@ -178,10 +177,10 @@ export default function SessionsPage() {
                       "bg-gray-100 text-gray-400"
                     }`}>
                       <p className="text-xs font-semibold uppercase">
-                        {new Date(session.date + "T00:00:00").toLocaleDateString("en-US", { month: "short" })}
+                        {new Date(session.scheduledDate + "T00:00:00").toLocaleDateString("en-US", { month: "short" })}
                       </p>
                       <p className="text-2xl font-black leading-none">
-                        {new Date(session.date + "T00:00:00").getDate()}
+                        {new Date(session.scheduledDate + "T00:00:00").getDate()}
                       </p>
                       {todayHighlight && <p className="text-xs font-bold mt-0.5">TODAY</p>}
                     </div>
@@ -192,7 +191,7 @@ export default function SessionsPage() {
                         <div>
                           <h3 className="font-black text-gray-900 text-base">{session.title}</h3>
                           <p className="text-gray-500 text-sm mt-0.5">
-                            {formatDate(session.date)}
+                            {formatDate(session.scheduledDate)}
                           </p>
                         </div>
                         <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold flex-shrink-0 ${cfg.badge}`}>
@@ -204,7 +203,7 @@ export default function SessionsPage() {
                       <div className="flex flex-wrap gap-4 mt-3 text-sm text-gray-600">
                         <span className="flex items-center gap-1.5">
                           <Clock className="w-4 h-4 text-gray-400" />
-                          {formatTime(session.time)}
+                          {formatTime(session.scheduledTime)}
                         </span>
                         <span className="flex items-center gap-1.5">
                           <Dumbbell className="w-4 h-4 text-gray-400" />
@@ -212,7 +211,7 @@ export default function SessionsPage() {
                         </span>
                         <span className="flex items-center gap-1.5">
                           <User className="w-4 h-4 text-gray-400" />
-                          {session.trainerName}
+                          Your Trainer
                         </span>
                       </div>
 

@@ -4,11 +4,20 @@ import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useAuth } from "@/contexts/AuthContext";
-import { addItem, deleteItem, getItems, updateItem } from "@/lib/storage";
-import type { User } from "@/lib/auth";
-import type { Assessment, DayActivity, Program } from "@/lib/mockData";
+import { listCustomers, type Profile } from "@/lib/db/profiles";
+import { listAssessments, type Assessment } from "@/lib/db/assessments";
+import {
+  listPrograms,
+  createProgram,
+  updateProgram,
+  deleteProgram,
+  duplicateProgramToNextWeek,
+  type Program,
+  type ProgramActivity,
+} from "@/lib/db/programs";
 import {
   Calendar,
+  Copy,
   Dumbbell,
   Layers,
   Pencil,
@@ -22,7 +31,7 @@ import {
 
 type ProgramActivityForm = {
   day: string;
-  exercise: string;
+  exerciseName: string;
   sets: string;
   reps: string;
   duration: string;
@@ -40,55 +49,36 @@ type ProgramFormState = {
 const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
 function createBlankActivity(): ProgramActivityForm {
-  return {
-    day: "Monday",
-    exercise: "",
-    sets: "",
-    reps: "",
-    duration: "",
-    notes: "",
-  };
+  return { day: "Monday", exerciseName: "", sets: "", reps: "", duration: "", notes: "" };
 }
 
 function createBlankForm(userId = ""): ProgramFormState {
-  return {
-    userId,
-    weekNumber: "1",
-    title: "",
-    description: "",
-    activities: [createBlankActivity()],
-  };
+  return { userId, weekNumber: "1", title: "", description: "", activities: [createBlankActivity()] };
 }
 
 function formatDate(date: string) {
-  return new Date(date).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
+  return new Date(date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
-function toActivity(activity: ProgramActivityForm): DayActivity | null {
-  const exercise = activity.exercise.trim();
-  if (!exercise) return null;
-
-  const setsValue = activity.sets.trim();
-  const parsedSets = setsValue ? Number(setsValue) : undefined;
-
+function toActivityPayload(activity: ProgramActivityForm): Omit<ProgramActivity, "id" | "programId"> | null {
+  const name = activity.exerciseName.trim();
+  if (!name) return null;
+  const parsedSets = activity.sets.trim() ? Number(activity.sets.trim()) : undefined;
   return {
     day: activity.day,
-    exercise,
+    exerciseName: name,
     sets: Number.isFinite(parsedSets) ? parsedSets : undefined,
     reps: activity.reps.trim() || undefined,
     duration: activity.duration.trim() || undefined,
     notes: activity.notes.trim() || undefined,
+    sortOrder: 0,
   };
 }
 
-function fromActivity(activity: DayActivity): ProgramActivityForm {
+function fromActivity(activity: ProgramActivity): ProgramActivityForm {
   return {
     day: activity.day,
-    exercise: activity.exercise,
+    exerciseName: activity.exerciseName,
     sets: activity.sets ? String(activity.sets) : "",
     reps: activity.reps ?? "",
     duration: activity.duration ?? "",
@@ -105,7 +95,7 @@ function ClientCombobox({
 }: {
   value: string;
   onChange: (id: string) => void;
-  customers: User[];
+  customers: Profile[];
   includeAll?: boolean;
   className?: string;
 }) {
@@ -124,19 +114,9 @@ function ClientCombobox({
     return () => document.removeEventListener("mousedown", onMouseDown);
   }, []);
 
-  const allOptions = includeAll
-    ? [{ id: "all", name: "All clients" }, ...customers]
-    : customers;
-
-  const filtered = query
-    ? allOptions.filter((o) => o.name.toLowerCase().includes(query.toLowerCase()))
-    : allOptions;
-
-  const displayValue = open
-    ? query
-    : value === "all"
-    ? "All clients"
-    : customers.find((c) => c.id === value)?.name ?? "";
+  const allOptions = includeAll ? [{ id: "all", name: "All clients" }, ...customers] : customers;
+  const filtered = query ? allOptions.filter((o) => o.name.toLowerCase().includes(query.toLowerCase())) : allOptions;
+  const displayValue = open ? query : value === "all" ? "All clients" : customers.find((c) => c.id === value)?.name ?? "";
 
   return (
     <div ref={containerRef} className={`relative ${className ?? ""}`}>
@@ -176,47 +156,43 @@ function TrainerProgramsContent() {
 
   const [programs, setPrograms] = useState<Program[]>([]);
   const [assessments, setAssessments] = useState<Assessment[]>([]);
-  const [customers, setCustomers] = useState<User[]>([]);
+  const [customers, setCustomers] = useState<Profile[]>([]);
   const [clientFilter, setClientFilter] = useState("all");
   const [editingProgramId, setEditingProgramId] = useState<string | null>(null);
   const [form, setForm] = useState<ProgramFormState>(createBlankForm());
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
 
-  function loadData() {
-    const nextCustomers = getItems<User>("ishow_users")
-      .filter((item) => item.role === "customer")
-      .sort((left, right) => left.name.localeCompare(right.name));
-
-    const customerNameById = Object.fromEntries(nextCustomers.map((customer) => [customer.id, customer.name]));
-
-    const nextPrograms = getItems<Program>("ishow_programs").sort((left, right) => {
-      const nameCompare = (customerNameById[left.userId] ?? "").localeCompare(customerNameById[right.userId] ?? "");
-      if (nameCompare !== 0) return nameCompare;
-      if (right.weekNumber !== left.weekNumber) return right.weekNumber - left.weekNumber;
-      return right.createdAt.localeCompare(left.createdAt);
+  const loadData = async () => {
+    const [nextCustomers, nextPrograms, nextAssessments] = await Promise.all([
+      listCustomers(),
+      listPrograms(),
+      listAssessments(),
+    ]);
+    const sorted = nextCustomers.sort((a, b) => a.name.localeCompare(b.name));
+    const customerNameById = Object.fromEntries(sorted.map((c) => [c.id, c.name]));
+    const sortedPrograms = [...nextPrograms].sort((l, r) => {
+      const nc = (customerNameById[l.userId] ?? "").localeCompare(customerNameById[r.userId] ?? "");
+      if (nc !== 0) return nc;
+      if (r.weekNumber !== l.weekNumber) return r.weekNumber - l.weekNumber;
+      return r.createdAt.localeCompare(l.createdAt);
     });
-
-    setCustomers(nextCustomers);
-    setPrograms(nextPrograms);
-    setAssessments(getItems<Assessment>("ishow_assessments"));
-  }
+    setCustomers(sorted);
+    setPrograms(sortedPrograms);
+    setAssessments(nextAssessments);
+  };
 
   useEffect(() => {
-    if (!loading && !user) {
-      router.push("/login");
-      return;
-    }
-
-    if (!loading && user) {
-      if (user.role !== "trainer") {
-        router.push("/dashboard");
-        return;
+    if (!loading && !user) { router.push("/login"); return; }
+    const init = async () => {
+      if (!loading && user) {
+        if (user.role === 'customer') { router.push('/dashboard'); return; }
+        if (user.role === 'admin') { router.push('/admin/dashboard'); return; }
+        await loadData();
       }
-
-      loadData();
-    }
-  }, [loading, router, user]);
+    };
+    init();
+  }, [loading, router, user]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     setClientFilter(queryClient === "all" ? "all" : queryClient);
@@ -224,7 +200,6 @@ function TrainerProgramsContent() {
 
   useEffect(() => {
     if (!customers.length || editingProgramId) return;
-
     setForm((current) => {
       if (current.userId) return current;
       const defaultUserId = clientFilter === "all" ? customers[0]?.id ?? "" : clientFilter;
@@ -234,24 +209,14 @@ function TrainerProgramsContent() {
 
   if (loading || !user) return null;
 
-  const customerById = Object.fromEntries(customers.map((customer) => [customer.id, customer]));
-  const visiblePrograms = programs.filter((program) => clientFilter === "all" || program.userId === clientFilter);
-  const visibleCustomers = clientFilter === "all"
-    ? customers
-    : customers.filter((customer) => customer.id === clientFilter);
-
-  const activityCount = visiblePrograms.reduce((total, program) => total + program.activities.length, 0);
-  const currentWeek = visiblePrograms.reduce((highest, program) => Math.max(highest, program.weekNumber), 0);
-
-  const assessmentByUserId = Object.fromEntries(
-    assessments.map((a) => [a.userId, a])
-  );
-
+  const customerById = Object.fromEntries(customers.map((c) => [c.id, c]));
+  const visiblePrograms = programs.filter((p) => clientFilter === "all" || p.userId === clientFilter);
+  const visibleCustomers = clientFilter === "all" ? customers : customers.filter((c) => c.id === clientFilter);
+  const activityCount = visiblePrograms.reduce((t, p) => t + p.activities.length, 0);
+  const currentWeek = visiblePrograms.reduce((h, p) => Math.max(h, p.weekNumber), 0);
+  const assessmentByUserId = Object.fromEntries(assessments.map((a) => [a.userId, a]));
   const selectedClientAssessment = form.userId ? assessmentByUserId[form.userId] : undefined;
-  const selectedClientAssessmentBlocked =
-    !editingProgramId &&
-    form.userId &&
-    (!selectedClientAssessment || selectedClientAssessment.status !== "reviewed");
+  const assessmentBlocked = !editingProgramId && form.userId && (!selectedClientAssessment || selectedClientAssessment.status !== "reviewed");
 
   function resetForm(preferredUserId?: string) {
     const fallbackUserId = preferredUserId ?? (clientFilter === "all" ? customers[0]?.id ?? "" : clientFilter);
@@ -281,87 +246,67 @@ function TrainerProgramsContent() {
   function updateActivityField(index: number, field: keyof ProgramActivityForm, value: string) {
     setForm((current) => ({
       ...current,
-      activities: current.activities.map((activity, activityIndex) =>
-        activityIndex === index ? { ...activity, [field]: value } : activity
-      ),
+      activities: current.activities.map((act, i) => i === index ? { ...act, [field]: value } : act),
     }));
   }
 
   function addActivityRow() {
-    setForm((current) => ({
-      ...current,
-      activities: [...current.activities, createBlankActivity()],
-    }));
+    setForm((current) => ({ ...current, activities: [...current.activities, createBlankActivity()] }));
   }
 
   function removeActivityRow(index: number) {
     setForm((current) => ({
       ...current,
-      activities:
-        current.activities.length === 1
-          ? [createBlankActivity()]
-          : current.activities.filter((_, activityIndex) => activityIndex !== index),
+      activities: current.activities.length === 1
+        ? [createBlankActivity()]
+        : current.activities.filter((_, i) => i !== index),
     }));
   }
 
-  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-
     const weekNumber = Number(form.weekNumber);
-    const activities = form.activities.map(toActivity).filter((item): item is DayActivity => item !== null);
+    const activities = form.activities.map(toActivityPayload).filter((a) => a !== null) as Omit<ProgramActivity, "id" | "programId">[];
 
-    if (!form.userId) {
-      setErrorMessage("Select a client before saving a program.");
-      return;
-    }
-
-    if (!form.title.trim()) {
-      setErrorMessage("Program title is required.");
-      return;
-    }
-
-    if (!Number.isFinite(weekNumber) || weekNumber < 1) {
-      setErrorMessage("Week number must be 1 or higher.");
-      return;
-    }
-
-    if (!activities.length) {
-      setErrorMessage("Add at least one exercise or activity to the program.");
-      return;
-    }
-
-    const payload: Program = {
-      id: editingProgramId ?? `program_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-      userId: form.userId,
-      weekNumber,
-      title: form.title.trim(),
-      description: form.description.trim(),
-      activities,
-      createdAt: editingProgramId
-        ? programs.find((program) => program.id === editingProgramId)?.createdAt ?? new Date().toISOString()
-        : new Date().toISOString(),
-    };
+    if (!form.userId) { setErrorMessage("Select a client before saving a program."); return; }
+    if (!form.title.trim()) { setErrorMessage("Program title is required."); return; }
+    if (!Number.isFinite(weekNumber) || weekNumber < 1) { setErrorMessage("Week number must be 1 or higher."); return; }
+    if (!activities.length) { setErrorMessage("Add at least one exercise or activity to the program."); return; }
 
     if (editingProgramId) {
-      updateItem<Program>("ishow_programs", editingProgramId, payload);
+      await updateProgram(editingProgramId, {
+        weekNumber,
+        title: form.title.trim(),
+        description: form.description.trim(),
+      }, activities);
       setSuccessMessage("Program updated successfully.");
     } else {
-      addItem<Program>("ishow_programs", payload);
+      await createProgram({
+        userId: form.userId,
+        trainerId: user?.id,
+        weekNumber,
+        title: form.title.trim(),
+        description: form.description.trim(),
+      }, activities);
       setSuccessMessage("Program created successfully.");
     }
-
-    loadData();
-    resetForm(payload.userId);
+    await loadData();
+    resetForm(form.userId);
   }
 
-  function handleDelete(program: Program) {
-    const confirmed = window.confirm(`Delete ${program.title} for ${customerById[program.userId]?.name ?? "this client"}?`);
+  async function handleDelete(program: Program) {
+    const confirmed = window.confirm(`Delete "${program.title}" for ${customerById[program.userId]?.name ?? "this client"}?`);
     if (!confirmed) return;
-
-    deleteItem("ishow_programs", program.id);
+    await deleteProgram(program.id);
     setSuccessMessage("Program deleted.");
     if (editingProgramId === program.id) resetForm(program.userId);
-    loadData();
+    await loadData();
+  }
+
+  async function handleDuplicate(program: Program) {
+    await duplicateProgramToNextWeek(program.id);
+    setSuccessMessage(`Duplicated Week ${program.weekNumber} → Week ${program.weekNumber + 1}.`);
+    await loadData();
   }
 
   return (
@@ -433,7 +378,7 @@ function TrainerProgramsContent() {
               </h2>
             </div>
 
-            {editingProgramId ? (
+            {editingProgramId && (
               <button
                 type="button"
                 onClick={() => resetForm()}
@@ -442,7 +387,7 @@ function TrainerProgramsContent() {
                 <X className="h-4 w-4" />
                 Cancel Edit
               </button>
-            ) : null}
+            )}
           </div>
 
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -496,7 +441,6 @@ function TrainerProgramsContent() {
                 <p className="text-sm font-black text-gray-900">Activities</p>
                 <p className="text-xs text-gray-500">Add exercises, conditioning blocks, or recovery work for the week.</p>
               </div>
-
               <button
                 type="button"
                 onClick={addActivityRow}
@@ -528,15 +472,13 @@ function TrainerProgramsContent() {
                       onChange={(event) => updateActivityField(index, "day", event.target.value)}
                       className="rounded-2xl border border-gray-200 px-4 py-3 text-sm text-gray-900 outline-none transition-colors focus:border-blue-500"
                     >
-                      {DAYS.map((day) => (
-                        <option key={day} value={day}>{day}</option>
-                      ))}
+                      {DAYS.map((day) => <option key={day} value={day}>{day}</option>)}
                     </select>
 
                     <input
                       type="text"
-                      value={activity.exercise}
-                      onChange={(event) => updateActivityField(index, "exercise", event.target.value)}
+                      value={activity.exerciseName}
+                      onChange={(event) => updateActivityField(index, "exerciseName", event.target.value)}
                       placeholder="Exercise"
                       className="rounded-2xl border border-gray-200 px-4 py-3 text-sm text-gray-900 outline-none transition-colors focus:border-blue-500 lg:col-span-2"
                     />
@@ -579,28 +521,28 @@ function TrainerProgramsContent() {
             </div>
           </div>
 
-          {errorMessage ? (
+          {errorMessage && (
             <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
               {errorMessage}
             </div>
-          ) : null}
+          )}
 
-          {selectedClientAssessmentBlocked ? (
+          {assessmentBlocked && (
             <div className="mt-4 rounded-2xl border border-orange-200 bg-orange-50 px-4 py-3 text-sm font-medium text-orange-700">
-              <strong>Assessment not reviewed.</strong> The selected client&apos;s assessment must be marked as reviewed before setting up a program. Go to the Clients page to review their assessment.
+              <strong>Assessment not reviewed.</strong> The selected client&apos;s assessment must be marked as reviewed before setting up a program. Go to the Assessments page to review it first.
             </div>
-          ) : null}
+          )}
 
-          {successMessage ? (
+          {successMessage && (
             <div className="mt-4 rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-medium text-green-700">
               {successMessage}
             </div>
-          ) : null}
+          )}
 
           <div className="mt-6 flex flex-col gap-3 sm:flex-row">
             <button
               type="submit"
-              disabled={!!selectedClientAssessmentBlocked}
+              disabled={!!assessmentBlocked}
               className="inline-flex items-center justify-center gap-2 rounded-2xl bg-orange-500 px-6 py-3 text-sm font-black text-white transition-all hover:-translate-y-0.5 hover:bg-orange-600 disabled:opacity-40 disabled:cursor-not-allowed disabled:translate-y-0"
             >
               <Save className="h-4 w-4" />
@@ -620,7 +562,7 @@ function TrainerProgramsContent() {
 
         <div className="space-y-6">
           {visibleCustomers.map((customer) => {
-            const customerPrograms = visiblePrograms.filter((program) => program.userId === customer.id);
+            const customerPrograms = visiblePrograms.filter((p) => p.userId === customer.id);
 
             return (
               <section key={customer.id} className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
@@ -648,7 +590,7 @@ function TrainerProgramsContent() {
                 ) : (
                   <div className="space-y-4">
                     {customerPrograms.map((program) => {
-                      const activeDays = Array.from(new Set(program.activities.map((activity) => activity.day)));
+                      const activeDays = Array.from(new Set(program.activities.map((a) => a.day)));
                       const previewActivities = program.activities.slice(0, 4);
 
                       return (
@@ -670,6 +612,15 @@ function TrainerProgramsContent() {
                             </div>
 
                             <div className="flex flex-wrap gap-2">
+                              <button
+                                type="button"
+                                onClick={() => handleDuplicate(program)}
+                                className="inline-flex items-center gap-2 rounded-2xl border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-700 transition-colors hover:bg-blue-100"
+                                title={`Duplicate as Week ${program.weekNumber + 1}`}
+                              >
+                                <Copy className="h-4 w-4" />
+                                Duplicate
+                              </button>
                               <button
                                 type="button"
                                 onClick={() => startEdit(program)}
@@ -708,21 +659,21 @@ function TrainerProgramsContent() {
                             <p className="mb-3 text-sm font-semibold text-gray-900">Activity Preview</p>
                             <div className="space-y-2">
                               {previewActivities.map((activity, index) => (
-                                <div key={`${activity.day}-${activity.exercise}-${index}`} className="flex items-start gap-3 text-sm text-gray-600">
+                                <div key={`${activity.day}-${activity.exerciseName}-${index}`} className="flex items-start gap-3 text-sm text-gray-600">
                                   <Dumbbell className="mt-0.5 h-4 w-4 shrink-0 text-orange-500" />
                                   <div>
-                                    <span className="font-medium text-gray-900">{activity.day}:</span> {activity.exercise}
-                                    {activity.sets && activity.reps ? ` · ${activity.sets} x ${activity.reps}` : ""}
+                                    <span className="font-medium text-gray-900">{activity.day}:</span> {activity.exerciseName}
+                                    {activity.sets && activity.reps ? ` · ${activity.sets} × ${activity.reps}` : ""}
                                     {activity.duration ? ` · ${activity.duration}` : ""}
                                     {activity.notes ? ` · ${activity.notes}` : ""}
                                   </div>
                                 </div>
                               ))}
-                              {program.activities.length > previewActivities.length ? (
+                              {program.activities.length > previewActivities.length && (
                                 <p className="pt-1 text-xs font-semibold uppercase tracking-[0.18em] text-gray-400">
                                   +{program.activities.length - previewActivities.length} more items
                                 </p>
-                              ) : null}
+                              )}
                             </div>
                           </div>
                         </article>

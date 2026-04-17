@@ -3,8 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
-import { getItems } from "@/lib/storage";
-import type { Program, DayActivity } from "@/lib/mockData";
+import { listPrograms, type Program, type ProgramActivity as DayActivity } from "@/lib/db/programs";
 import DashboardLayout from "@/components/DashboardLayout";
 import {
   Dumbbell,
@@ -37,15 +36,16 @@ export default function ProgramsPage() {
 
   useEffect(() => {
     if (!loading && !user) { router.push("/login"); return; }
-    if (!loading && user) {
-      if (user.role !== "customer") { router.push("/trainer/dashboard"); return; }
-      const all = getItems<Program>("ishow_programs");
-      const mine = all
-        .filter((p) => p.userId === user.id)
-        .sort((a, b) => a.weekNumber - b.weekNumber);
-      setPrograms(mine);
-      if (mine.length > 0) setExpanded(mine[mine.length - 1].id); // open latest week
-    }
+    const load = async () => {
+      if (!loading && user) {
+        if (user.role === 'admin') { router.push('/admin/dashboard'); return; }
+        if (user.role === 'trainer') { router.push('/trainer/dashboard'); return; }
+        const mine = await listPrograms(user.id);
+        setPrograms(mine);
+        if (mine.length > 0) setExpanded(mine[mine.length - 1].id);
+      }
+    };
+    load();
   }, [loading, user, router]);
 
   if (loading || !user) return null;
@@ -177,7 +177,7 @@ export default function ProgramsPage() {
                                       )}
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                      <p className="font-semibold text-gray-900 text-sm">{act.exercise}</p>
+                                      <p className="font-semibold text-gray-900 text-sm">{act.exerciseName}</p>
                                       <div className="flex flex-wrap gap-3 mt-1">
                                         {act.sets && act.reps && (
                                           <span className="flex items-center gap-1 text-xs text-gray-500">

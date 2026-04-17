@@ -3,8 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
-import { getItems } from "@/lib/storage";
-import type { Payment } from "@/lib/mockData";
+import { listPayments, type Payment } from "@/lib/db/payments";
 import DashboardLayout from "@/components/DashboardLayout";
 import {
   CreditCard,
@@ -61,18 +60,20 @@ export default function PaymentsPage() {
 
   useEffect(() => {
     if (!loading && !user) { router.push("/login"); return; }
-    if (!loading && user) {
-      if (user.role !== "customer") { router.push("/trainer/dashboard"); return; }
-      const all = getItems<Payment>("ishow_payments");
-      setPayments(
-        all
-          .filter((p) => p.userId === user.id)
-          .sort((a, b) => {
+    const load = async () => {
+      if (!loading && user) {
+        if (user.role === 'admin') { router.push('/admin/dashboard'); return; }
+        if (user.role === 'trainer') { router.push('/trainer/dashboard'); return; }
+        const all = await listPayments(user.id);
+        setPayments(
+          all.sort((a, b) => {
             const order = { overdue: 0, pending: 1, paid: 2 };
             return order[a.status] - order[b.status];
           })
-      );
-    }
+        );
+      }
+    };
+    load();
   }, [loading, user, router]);
 
   if (loading || !user) return null;
@@ -220,10 +221,10 @@ export default function PaymentsPage() {
                             <FileText className="w-3.5 h-3.5" />
                             {payment.reference}
                           </span>
-                          {payment.date && (
+                          {payment.paidDate && (
                             <span className="flex items-center gap-1">
                               <Calendar className="w-3.5 h-3.5" />
-                              {payment.status === "paid" ? "Paid " : "Due "}{formatDate(payment.status === "paid" ? payment.date : payment.dueDate)}
+                              {payment.status === "paid" ? "Paid " : "Due "}{formatDate(payment.status === "paid" ? payment.paidDate : payment.dueDate)}
                             </span>
                           )}
                           {payment.status !== "paid" && payment.dueDate && (

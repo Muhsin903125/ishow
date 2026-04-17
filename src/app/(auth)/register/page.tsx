@@ -1,356 +1,166 @@
-"use client";
+'use client';
 
-import Image from "next/image";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import { useAuth } from "@/contexts/AuthContext";
-import {
-  Mail,
-  Lock,
-  User,
-  Phone,
-  AlertCircle,
-  CheckCircle,
-  Loader2,
-  ArrowRight,
-  ClipboardList,
-  Target,
-  Shield,
-} from "lucide-react";
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { User, Mail, Lock, Eye, EyeOff, AlertCircle, Loader2, ArrowRight, CheckCircle } from 'lucide-react';
 
-const setupSteps = [
-  { icon: ClipboardList, title: "Create your account", text: "Start with your details and secure your member access." },
-  { icon: Target, title: "Complete assessment", text: "Tell us your goals, experience, and weekly training capacity." },
-  { icon: Shield, title: "Get trainer direction", text: "Receive a structured plan with coach-led accountability." },
-] as const;
-
-const benefits = [
-  "Assessment-first onboarding",
-  "Trainer-led weekly structure",
-  "Customer dashboard with sessions and payments",
-  "Built for body transformation, not guesswork",
-] as const;
+function GoogleIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="w-4 h-4 shrink-0">
+      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+      <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/>
+      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+    </svg>
+  );
+}
 
 export default function RegisterPage() {
   const router = useRouter();
-  const { user, register, loading: authLoading } = useAuth();
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    password: "",
-    confirmPassword: "",
-  });
-  const [error, setError] = useState("");
+  const { user, register, loginWithGoogle, loading: authLoading } = useAuth();
+
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [gLoading, setGLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [emailSent, setEmailSent] = useState(false);
 
   useEffect(() => {
-    if (!authLoading && user) {
-      router.push(user.role === "trainer" ? "/trainer/dashboard" : "/dashboard");
-    }
+    if (!authLoading && user) router.push('/assessment');
   }, [authLoading, router, user]);
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
-
-    if (authLoading) {
-      setError("Preparing the app. Try again in a moment.");
-      return;
-    }
-
-    if (formData.password !== formData.confirmPassword) {
-      setError("Passwords do not match.");
-      return;
-    }
-
-    if (formData.password.length < 6) {
-      setError("Password must be at least 6 characters.");
-      return;
-    }
-
+    setError('');
+    if (!name.trim()) { setError('Please enter your name.'); return; }
+    if (password.length < 8) { setError('Password must be at least 8 characters.'); return; }
     setLoading(true);
-
-    const newUser = await register({
-      name: formData.name.trim(),
-      email: formData.email.trim(),
-      phone: formData.phone.trim(),
-      password: formData.password,
+    const { error: err, needsConfirmation } = await register({
+      name: name.trim(), email: email.trim(), password,
     });
-
     setLoading(false);
+    if (err) { setError(err); return; }
+    if (needsConfirmation) { setEmailSent(true); return; }
+    router.push('/assessment');
+  };
 
-    if (!newUser) {
-      setError("An account with this email already exists.");
-      return;
-    }
-
-    router.push("/assessment");
+  const handleGoogle = async () => {
+    setGLoading(true);
+    const { error: err } = await loginWithGoogle();
+    if (err) { setError(err); setGLoading(false); }
   };
 
   if (!authLoading && user) return null;
 
-  return (
-    <div className="relative min-h-screen overflow-hidden bg-gray-950">
-      <div className="absolute inset-0">
-        <Image
-          src="https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=1920&h=1400&auto=format&fit=crop&q=80"
-          alt="Personal training session"
-          fill
-          priority
-          className="object-cover object-center"
-          sizes="100vw"
-        />
-        <div className="absolute inset-0 bg-gradient-to-br from-slate-950/96 via-slate-950/88 to-orange-950/78" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(249,115,22,0.22),transparent_28%),radial-gradient(circle_at_bottom_left,rgba(59,130,246,0.18),transparent_30%)]" />
+  if (emailSent) {
+    return (
+      <div className="min-h-screen bg-zinc-950 flex items-center justify-center px-5">
+        <div className="w-full max-w-sm text-center">
+          <div className="w-16 h-16 rounded-2xl bg-green-500/10 border border-green-500/20 flex items-center justify-center mx-auto mb-5">
+            <CheckCircle className="w-8 h-8 text-green-400" />
+          </div>
+          <h2 className="text-2xl font-black text-white mb-2">Check your inbox</h2>
+          <p className="text-zinc-400 text-sm leading-relaxed mb-1">A confirmation link was sent to</p>
+          <p className="font-semibold text-white text-sm mb-5">{email}</p>
+          <p className="text-xs text-zinc-600 mb-6">Click the link to activate your account, then sign in.</p>
+          <Link href="/login" className="inline-flex items-center gap-2 rounded-xl bg-orange-500 hover:bg-orange-400 px-6 py-3 text-sm font-black text-white transition-colors shadow-lg shadow-orange-500/20">
+            Back to sign in
+          </Link>
+        </div>
       </div>
+    );
+  }
 
-      <div className="relative z-10 min-h-screen grid lg:grid-cols-[0.94fr_1.06fr]">
-        <section className="flex items-center justify-center px-4 py-10 sm:px-6 lg:px-10 order-2 lg:order-1">
-          <div className="w-full max-w-xl">
-            <div className="mb-6 text-center lg:hidden">
-              <Link href="/" className="inline-flex whitespace-nowrap leading-none">
-                <span className="font-black text-2xl text-white tracking-tight">iShow</span>
-                <span className="font-black text-2xl text-orange-400 tracking-tight">Transformation</span>
-              </Link>
-            </div>
+  return (
+    <div className="min-h-screen bg-zinc-950 flex items-center justify-center px-5 py-12">
+      <div className="w-full max-w-sm">
+        <Link href="/" className="inline-flex items-baseline gap-0 mb-10">
+          <span className="font-black text-xl text-white tracking-tight">iShow</span>
+          <span className="font-black text-xl text-orange-500 tracking-tight">Transformation</span>
+        </Link>
 
-            <div className="rounded-[2rem] border border-white/10 bg-white/95 p-6 shadow-[0_40px_120px_rgba(0,0,0,0.35)] backdrop-blur-xl sm:p-8">
-              <div className="mb-6">
-                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-orange-500 mb-3">Create Account</p>
-                <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-gray-950">Build your member profile</h1>
-                <p className="text-gray-500 mt-3 leading-relaxed">
-                  Register once, then head straight into the assessment so your training plan starts with real context.
-                </p>
-              </div>
+        <div className="mb-7">
+          <h1 className="text-3xl font-black text-white tracking-tight">Create account</h1>
+          <p className="text-zinc-500 text-sm mt-1.5">
+            Already have one?{' '}
+            <Link href="/login" className="text-orange-400 font-semibold hover:text-orange-300 transition-colors">Sign in</Link>
+          </p>
+        </div>
 
-              {authLoading && (
-                <div className="mb-5 flex items-center gap-2 rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-700">
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Preparing demo data...
-                </div>
-              )}
+        <button type="button" onClick={handleGoogle} disabled={gLoading}
+          className="w-full flex items-center justify-center gap-2.5 rounded-xl border border-zinc-700 bg-zinc-800/50 hover:bg-zinc-800 py-3 px-4 text-sm font-semibold text-zinc-200 transition-all mb-5 disabled:opacity-50"
+        >
+          {gLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <GoogleIcon />}
+          Continue with Google
+        </button>
 
-              <form onSubmit={handleSubmit} className="space-y-5">
-                {error && (
-                  <div className="flex items-center gap-2 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                    <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                    {error}
-                  </div>
-                )}
+        <div className="flex items-center gap-3 mb-5">
+          <div className="flex-1 h-px bg-zinc-800" />
+          <span className="text-xs text-zinc-600 font-medium">or with email</span>
+          <div className="flex-1 h-px bg-zinc-800" />
+        </div>
 
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Full Name</label>
-                  <div className="relative">
-                    <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                    <input
-                      type="text"
-                      name="name"
-                      value={formData.name}
-                      onChange={handleChange}
-                      className="w-full rounded-2xl border border-gray-200 bg-white px-12 py-4 text-gray-900 outline-none transition-all focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10"
-                      placeholder="Your full name"
-                      autoComplete="name"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Email Address</label>
-                  <div className="relative">
-                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                    <input
-                      type="email"
-                      name="email"
-                      value={formData.email}
-                      onChange={handleChange}
-                      className="w-full rounded-2xl border border-gray-200 bg-white px-12 py-4 text-gray-900 outline-none transition-all focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10"
-                      placeholder="you@example.com"
-                      autoComplete="email"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Phone Number <span className="font-normal text-gray-400">(optional)</span>
-                  </label>
-                  <div className="relative">
-                    <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                    <input
-                      type="tel"
-                      name="phone"
-                      value={formData.phone}
-                      onChange={handleChange}
-                      className="w-full rounded-2xl border border-gray-200 bg-white px-12 py-4 text-gray-900 outline-none transition-all focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10"
-                      placeholder="+1 (555) 000-0000"
-                      autoComplete="tel"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid gap-5 sm:grid-cols-2">
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Password</label>
-                    <div className="relative">
-                      <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                      <input
-                        type="password"
-                        name="password"
-                        value={formData.password}
-                        onChange={handleChange}
-                        className="w-full rounded-2xl border border-gray-200 bg-white px-12 py-4 text-gray-900 outline-none transition-all focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10"
-                        placeholder="At least 6 characters"
-                        autoComplete="new-password"
-                        minLength={6}
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Confirm Password</label>
-                    <div className="relative">
-                      <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                      <input
-                        type="password"
-                        name="confirmPassword"
-                        value={formData.confirmPassword}
-                        onChange={handleChange}
-                        className="w-full rounded-2xl border border-gray-200 bg-white px-12 py-4 text-gray-900 outline-none transition-all focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10"
-                        placeholder="Repeat password"
-                        autoComplete="new-password"
-                        required
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={loading || authLoading}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-orange-500 px-6 py-4 text-base font-black text-white transition-all hover:-translate-y-0.5 hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {loading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      Creating account...
-                    </>
-                  ) : (
-                    <>
-                      Continue to Assessment
-                      <ArrowRight className="w-4 h-4" />
-                    </>
-                  )}
-                </button>
-              </form>
-
-              <div className="mt-6 flex items-center gap-2 text-sm text-gray-500">
-                <CheckCircle className="w-4 h-4 text-green-500" />
-                After signup you will be taken directly to the assessment form.
-              </div>
-
-              <div className="mt-6 border-t border-gray-100 pt-6 text-center">
-                <p className="text-sm text-gray-600">
-                  Already have an account?{" "}
-                  <Link href="/login" className="font-semibold text-blue-700 transition-colors hover:text-blue-800">
-                    Sign in here
-                  </Link>
-                </p>
-              </div>
-            </div>
-
-            <p className="text-center text-sm text-white/50 mt-5">
-              <Link href="/" className="transition-colors hover:text-white/80">
-                Back to home
-              </Link>
-            </p>
+        {error && (
+          <div className="flex items-start gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400 mb-4">
+            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />{error}
           </div>
-        </section>
+        )}
 
-        <section className="hidden lg:flex flex-col justify-between px-8 py-10 xl:px-14 xl:py-12 order-1 lg:order-2">
+        <form onSubmit={handleSubmit} className="space-y-3">
           <div>
-            <Link href="/" className="inline-flex whitespace-nowrap leading-none">
-              <span className="font-black text-2xl text-white tracking-tight">iShow</span>
-              <span className="font-black text-2xl text-orange-400 tracking-tight">Transformation</span>
-            </Link>
-
-            <div className="inline-flex items-center gap-2 rounded-full border border-orange-400/25 bg-orange-500/10 px-4 py-2 mt-10 mb-6">
-              <Target className="w-4 h-4 text-orange-400" />
-              <span className="text-xs font-semibold uppercase tracking-[0.25em] text-orange-300">Start Strong</span>
-            </div>
-
-            <h2 className="max-w-2xl text-5xl xl:text-7xl font-black leading-[0.92] tracking-tight text-white">
-              Build the profile your training plan can actually use.
-            </h2>
-
-            {/* <p className="max-w-xl text-lg xl:text-xl text-white/60 mt-6 leading-relaxed">
-              Registration is just the first step. The real value starts when your assessment, coaching direction,
-              and weekly structure line up.
-            </p> */}
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-3 max-w-2xl">
-            {setupSteps.map((step) => {
-              const Icon = step.icon;
-              return (
-                <div key={step.title} className="rounded-3xl border border-white/10 bg-white/5 p-5 backdrop-blur-sm">
-                  <Icon className="w-5 h-5 text-orange-400 mb-4" />
-                  <p className="font-bold text-white text-sm mb-1">{step.title}</p>
-                  <p className="text-xs leading-relaxed text-white/55">{step.text}</p>
-                </div>
-              );
-            })}
-          </div>
-
-          <div className="max-w-2xl grid grid-cols-2 gap-4">
-            <div className="col-span-2 relative overflow-hidden rounded-[2rem] border border-white/10 shadow-2xl aspect-[16/10]">
-              <Image
-                src="https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=1200&h=760&auto=format&fit=crop&q=80"
-                alt="Progress-driven gym training"
-                fill
-                className="object-cover"
-                sizes="(max-width: 1280px) 50vw, 40vw"
+            <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-1.5">Full Name</label>
+            <div className="relative">
+              <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+              <input
+                type="text" value={name} onChange={e => setName(e.target.value)}
+                placeholder="Your full name" required autoComplete="name"
+                className="w-full rounded-xl bg-zinc-800/60 border border-zinc-700 pl-10 pr-4 py-3 text-sm text-white placeholder-zinc-600 outline-none focus:border-orange-500/70 focus:ring-2 focus:ring-orange-500/15 transition"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
-              <div className="absolute left-6 right-6 bottom-6 rounded-2xl bg-black/45 p-5 backdrop-blur-md border border-white/10">
-                <p className="text-xs font-semibold uppercase tracking-[0.28em] text-orange-300 mb-2">Onboarding</p>
-                <p className="text-2xl font-black text-white leading-tight">Join, assess, and move directly into a structured transformation flow.</p>
-              </div>
             </div>
-
-            {/* <div className="rounded-3xl border border-white/10 bg-white/5 p-5 backdrop-blur-sm">
-              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-orange-300 mb-4">Why it works</p>
-              <div className="space-y-3">
-                {benefits.slice(0, 2).map((item) => (
-                  <div key={item} className="flex items-start gap-3 text-sm text-white/75">
-                    <CheckCircle className="w-4 h-4 text-green-400 shrink-0 mt-0.5" />
-                    {item}
-                  </div>
-                ))}
-              </div>
-            </div> */}
-
-            {/* <div className="rounded-3xl border border-white/10 bg-white/5 p-5 backdrop-blur-sm">
-              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-orange-300 mb-4">What follows</p>
-              <div className="space-y-3">
-                {benefits.slice(2).map((item) => (
-                  <div key={item} className="flex items-start gap-3 text-sm text-white/75">
-                    <CheckCircle className="w-4 h-4 text-green-400 shrink-0 mt-0.5" />
-                    {item}
-                  </div>
-                ))}
-              </div>
-            </div> */}
           </div>
-        </section>
+
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-1.5">Email</label>
+            <div className="relative">
+              <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+              <input
+                type="email" value={email} onChange={e => setEmail(e.target.value)}
+                placeholder="you@example.com" required autoComplete="email"
+                className="w-full rounded-xl bg-zinc-800/60 border border-zinc-700 pl-10 pr-4 py-3 text-sm text-white placeholder-zinc-600 outline-none focus:border-orange-500/70 focus:ring-2 focus:ring-orange-500/15 transition"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-1.5">Password</label>
+            <div className="relative">
+              <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+              <input
+                type={showPw ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)}
+                placeholder="Min. 8 characters" required autoComplete="new-password"
+                className="w-full rounded-xl bg-zinc-800/60 border border-zinc-700 pl-10 pr-10 py-3 text-sm text-white placeholder-zinc-600 outline-none focus:border-orange-500/70 focus:ring-2 focus:ring-orange-500/15 transition"
+              />
+              <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors">
+                {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+          </div>
+
+          <button type="submit" disabled={loading}
+            className="w-full flex items-center justify-center gap-2 rounded-xl bg-orange-500 hover:bg-orange-400 active:bg-orange-600 py-3.5 text-sm font-black text-white transition-all disabled:opacity-50 shadow-lg shadow-orange-500/20 mt-2"
+          >
+            {loading ? <><Loader2 className="w-4 h-4 animate-spin" />Creating account…</> : <>Create account <ArrowRight className="w-4 h-4" /></>}
+          </button>
+        </form>
+
+        <p className="text-center text-xs text-zinc-600 mt-8">
+          <Link href="/" className="hover:text-zinc-400 transition-colors">← Back to home</Link>
+        </p>
       </div>
     </div>
   );
