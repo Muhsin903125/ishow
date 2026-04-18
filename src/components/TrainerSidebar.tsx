@@ -10,13 +10,15 @@ import {
   Dumbbell,
   LogOut,
   X,
+  UserPlus,
 } from "lucide-react";
 
 const navItems = [
-  { href: "/trainer/dashboard", icon: LayoutDashboard, label: "Dashboard" },
-  { href: "/trainer/clients", icon: Users, label: "Clients" },
-  { href: "/trainer/sessions", icon: Calendar, label: "Sessions" },
-  { href: "/trainer/programs", icon: Dumbbell, label: "Programs" },
+  { href: "/trainer/dashboard",    icon: LayoutDashboard, label: "Dashboard" },
+  { href: "/trainer/clients",      icon: Users,           label: "Clients" },
+  { href: "/trainer/sessions",     icon: Calendar,        label: "Sessions" },
+  { href: "/trainer/programs",     icon: Dumbbell,        label: "Programs" },
+  { href: "/trainer/team",         icon: UserPlus,        label: "Team" },
 ];
 
 interface Props {

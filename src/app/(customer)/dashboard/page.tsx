@@ -61,6 +61,12 @@ export default function CustomerDashboard() {
         (p) => p.userId === user.id && (p.status === "pending" || p.status === "overdue")
       );
 
+      // Gate: new customers must complete assessment before accessing dashboard
+      if (!userAssessment) {
+        router.push("/assessment");
+        return;
+      }
+
       setAssessment(userAssessment);
       setPlan(activePlan);
       setUpcomingSessions(upcoming);
