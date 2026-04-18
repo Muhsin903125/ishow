@@ -1,13 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { Menu } from "lucide-react";
+import { Menu, Dumbbell } from "lucide-react";
 import CustomerSidebar from "./CustomerSidebar";
 import TrainerSidebar from "./TrainerSidebar";
 
 interface Props {
   children: React.ReactNode;
-  role: "CUSTOMER" | "TRAINER";
+  role: "customer" | "trainer";
 }
 
 export default function DashboardLayout({ children, role }: Props) {
@@ -17,7 +17,7 @@ export default function DashboardLayout({ children, role }: Props) {
     <div className="flex h-screen bg-gray-50 overflow-hidden">
       {/* Desktop Sidebar */}
       <div className="hidden lg:flex lg:w-64 lg:flex-shrink-0">
-        {role === "TRAINER" ? (
+        {role === "trainer" ? (
           <TrainerSidebar />
         ) : (
           <CustomerSidebar />
@@ -32,7 +32,7 @@ export default function DashboardLayout({ children, role }: Props) {
             onClick={() => setSidebarOpen(false)}
           />
           <div className="fixed left-0 top-0 h-full w-64 z-50">
-            {role === "TRAINER" ? (
+            {role === "trainer" ? (
               <TrainerSidebar onClose={() => setSidebarOpen(false)} />
             ) : (
               <CustomerSidebar onClose={() => setSidebarOpen(false)} />
@@ -51,9 +51,14 @@ export default function DashboardLayout({ children, role }: Props) {
           >
             <Menu className="w-5 h-5" />
           </button>
-          <span className="font-bold text-gray-900">
-            iShow<span className="text-orange-500">Fitness</span>
-          </span>
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 bg-gradient-to-br from-blue-700 to-orange-500 rounded-lg flex items-center justify-center">
+              <Dumbbell className="w-4 h-4 text-white" />
+            </div>
+            <span className="font-bold text-gray-900">
+              iShow<span className="text-orange-500">Fitness</span>
+            </span>
+          </div>
         </div>
 
         {/* Page Content */}

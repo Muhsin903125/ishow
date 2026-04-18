@@ -4,10 +4,10 @@ import type { User } from './auth';
 export interface Assessment {
   id: string;
   userId: string;
-  age: number;
-  weight: string;
-  height: string;
-  gender: string;
+  age?: number;
+  weight?: string;
+  height?: string;
+  gender?: string;
   goals: string[];
   experienceLevel: string;
   healthConditions: string;

@@ -3,11 +3,12 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { signIn } from "next-auth/react";
+import { useAuth } from "@/contexts/AuthContext";
 import { Dumbbell, Mail, Lock, User, Phone, AlertCircle, CheckCircle, Loader2 } from "lucide-react";
 
 export default function RegisterPage() {
   const router = useRouter();
+  const { register } = useAuth();
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -38,39 +39,21 @@ export default function RegisterPage() {
 
     setLoading(true);
 
-    const response = await fetch("/api/register", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name: formData.name,
-        email: formData.email,
-        phone: formData.phone,
-        password: formData.password,
-      }),
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      setLoading(false);
-      setError(data.error || "Registration failed");
-      return;
-    }
-
-    // Auto login after registration
-    const result = await signIn("credentials", {
+    const user = await register({
+      name: formData.name,
       email: formData.email,
+      phone: formData.phone,
       password: formData.password,
-      redirect: false,
     });
 
     setLoading(false);
 
-    if (result?.error) {
-      router.push("/login");
-    } else {
-      router.push("/assessment");
+    if (!user) {
+      setError("An account with this email already exists");
+      return;
     }
+
+    router.push("/assessment");
   };
 
   const benefits = [
@@ -137,9 +120,7 @@ export default function RegisterPage() {
               )}
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                  Full Name
-                </label>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Full Name</label>
                 <div className="relative">
                   <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <input
@@ -155,9 +136,7 @@ export default function RegisterPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                  Email Address
-                </label>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Email Address</label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <input
@@ -190,9 +169,7 @@ export default function RegisterPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                  Password
-                </label>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Password</label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <input
@@ -209,9 +186,7 @@ export default function RegisterPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                  Confirm Password
-                </label>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Confirm Password</label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <input

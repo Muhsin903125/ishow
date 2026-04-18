@@ -2,12 +2,18 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useSession, signOut } from "next-auth/react";
+import { useAuth } from "@/contexts/AuthContext";
 import { Dumbbell, Menu, X, User, LogOut, LayoutDashboard } from "lucide-react";
 
 export default function Navbar() {
-  const { data: session } = useSession();
+  const { user, logout } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  const handleSignOut = () => {
+    logout();
+    setMobileOpen(false);
+    window.location.href = "/";
+  };
 
   return (
     <nav className="bg-white shadow-sm border-b border-gray-100 sticky top-0 z-50">
@@ -25,14 +31,17 @@ export default function Navbar() {
 
           {/* Desktop nav */}
           <div className="hidden md:flex items-center gap-6">
-            {!session ? (
+            {/* Always-visible nav links */}
+            <Link href="/#services" className="text-gray-600 hover:text-blue-700 font-medium transition-colors">
+              Services
+            </Link>
+            <Link href="/#how-it-works" className="text-gray-600 hover:text-blue-700 font-medium transition-colors">
+              How It Works
+            </Link>
+
+            {/* Auth-conditional links */}
+            {!user ? (
               <>
-                <Link href="/#services" className="text-gray-600 hover:text-blue-700 font-medium transition-colors">
-                  Services
-                </Link>
-                <Link href="/#how-it-works" className="text-gray-600 hover:text-blue-700 font-medium transition-colors">
-                  How It Works
-                </Link>
                 <Link href="/login" className="text-gray-600 hover:text-blue-700 font-medium transition-colors">
                   Login
                 </Link>
@@ -46,17 +55,17 @@ export default function Navbar() {
             ) : (
               <>
                 <span className="text-gray-600 font-medium">
-                  Hi, {session.user.name?.split(" ")[0]}
+                  Hi, {user.name.split(" ")[0]}
                 </span>
                 <Link
-                  href={session.user.role === "TRAINER" ? "/trainer/dashboard" : "/dashboard"}
+                  href={user.role === "trainer" ? "/trainer/dashboard" : "/dashboard"}
                   className="flex items-center gap-2 text-gray-600 hover:text-blue-700 font-medium transition-colors"
                 >
                   <LayoutDashboard className="w-4 h-4" />
                   Dashboard
                 </Link>
                 <button
-                  onClick={() => signOut({ callbackUrl: "/" })}
+                  onClick={handleSignOut}
                   className="flex items-center gap-2 text-gray-600 hover:text-red-600 font-medium transition-colors"
                 >
                   <LogOut className="w-4 h-4" />
@@ -81,42 +90,46 @@ export default function Navbar() {
       {/* Mobile menu */}
       {mobileOpen && (
         <div className="md:hidden bg-white border-t border-gray-100 px-4 pt-2 pb-4 space-y-2">
-          {!session ? (
-            <>
-              <Link href="/#services" className="block py-2 text-gray-600 hover:text-blue-700 font-medium">
-                Services
-              </Link>
-              <Link href="/#how-it-works" className="block py-2 text-gray-600 hover:text-blue-700 font-medium">
-                How It Works
-              </Link>
-              <Link href="/login" className="block py-2 text-gray-600 hover:text-blue-700 font-medium">
-                Login
-              </Link>
-              <Link href="/register" className="block py-2 text-orange-500 font-semibold">
-                Get Started
-              </Link>
-            </>
-          ) : (
-            <>
-              <div className="flex items-center gap-2 py-2 text-gray-600">
-                <User className="w-4 h-4" />
-                <span>{session.user.name}</span>
-              </div>
-              <Link
-                href={session.user.role === "TRAINER" ? "/trainer/dashboard" : "/dashboard"}
-                className="block py-2 text-gray-600 hover:text-blue-700 font-medium"
-              >
-                Dashboard
-              </Link>
-              <button
-                onClick={() => signOut({ callbackUrl: "/" })}
-                className="flex items-center gap-2 py-2 text-red-600 font-medium"
-              >
-                <LogOut className="w-4 h-4" />
-                Sign Out
-              </button>
-            </>
-          )}
+          {/* Always-visible mobile links */}
+          <Link href="/#services" className="block py-2 text-gray-600 hover:text-blue-700 font-medium" onClick={() => setMobileOpen(false)}>
+            Services
+          </Link>
+          <Link href="/#how-it-works" className="block py-2 text-gray-600 hover:text-blue-700 font-medium" onClick={() => setMobileOpen(false)}>
+            How It Works
+          </Link>
+          <div className="border-t border-gray-100 pt-2">
+            {!user ? (
+              <>
+                <Link href="/login" className="block py-2 text-gray-600 hover:text-blue-700 font-medium" onClick={() => setMobileOpen(false)}>
+                  Login
+                </Link>
+                <Link href="/register" className="block py-2 text-orange-500 font-semibold" onClick={() => setMobileOpen(false)}>
+                  Get Started
+                </Link>
+              </>
+            ) : (
+              <>
+                <div className="flex items-center gap-2 py-2 text-gray-600">
+                  <User className="w-4 h-4" />
+                  <span>{user.name}</span>
+                </div>
+                <Link
+                  href={user.role === "trainer" ? "/trainer/dashboard" : "/dashboard"}
+                  className="block py-2 text-gray-600 hover:text-blue-700 font-medium"
+                  onClick={() => setMobileOpen(false)}
+                >
+                  Dashboard
+                </Link>
+                <button
+                  onClick={handleSignOut}
+                  className="flex items-center gap-2 py-2 text-red-600 font-medium"
+                >
+                  <LogOut className="w-4 h-4" />
+                  Sign Out
+                </button>
+              </>
+            )}
+          </div>
         </div>
       )}
     </nav>
