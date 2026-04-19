@@ -2,36 +2,43 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
-import { getAssessment, submitAssessment } from "@/lib/db/assessments";
-import { getLocations, getGoalTypes, type Location, type GoalType } from "@/lib/db/master";
-import { notify } from "@/lib/email/notify";
-import DashboardLayout from "@/components/DashboardLayout";
-import { CheckCircle, Loader2, Send } from "lucide-react";
+import { getItems, addItem } from "@/lib/storage";
+import type { Assessment } from "@/lib/mockData";
+import { Dumbbell, CheckCircle, Loader2, Clock, ChevronRight, ChevronLeft } from "lucide-react";
 
-const GOALS_FALLBACK = [
-  "Weight Loss", "Muscle Gain", "Strength Training", "Improved Endurance",
-  "Flexibility & Mobility", "Athletic Performance", "General Fitness", "Rehabilitation",
+const daysMap: Record<string, number> = { "2-3": 2, "4-5": 4, "6-7": 6 };
+
+const GOALS = [
+  { value: "weight_loss",          label: "Weight Loss",          emoji: "🔥" },
+  { value: "muscle_gain",          label: "Muscle Gain",          emoji: "💪" },
+  { value: "general_fitness",      label: "General Fitness",      emoji: "⚡" },
+  { value: "athletic_performance", label: "Athletic Performance", emoji: "🏆" },
 ];
 
-const LOCATIONS_FALLBACK = [
-  "Dubai Sports City Gym", "Abu Dhabi Performance Centre", "JLT Fitness Hub",
-  "Jumeirah Beach Fitness Club", "Mirdif Community Gym", "Other / Online",
+const LEVELS = [
+  { value: "beginner",     label: "Beginner",     desc: "Just starting out" },
+  { value: "intermediate", label: "Intermediate", desc: "Some experience" },
+  { value: "advanced",     label: "Advanced",     desc: "Regular trainer" },
 ];
 
-const EXPERIENCE_LEVELS = ["Beginner", "Intermediate", "Advanced", "Athlete"];
-
-const DAYS = [2, 3, 4, 5, 6];
-
-const TIME_SLOTS = [
-  "6:00 AM", "7:00 AM", "8:00 AM", "9:00 AM", "10:00 AM", "11:00 AM",
-  "12:00 PM", "1:00 PM", "2:00 PM", "3:00 PM", "4:00 PM", "5:00 PM",
-  "6:00 PM", "7:00 PM", "8:00 PM",
+const DAYS = [
+  { value: "2-3", label: "2–3 days" },
+  { value: "4-5", label: "4–5 days" },
+  { value: "6-7", label: "6–7 days" },
 ];
 
-const MEDICAL_CONDITIONS = [
-  "Lower back issues", "Knee problems", "Shoulder injury", "Heart condition",
-  "Diabetes", "Hypertension", "Asthma", "Joint pain / Arthritis",
+const TIMES = [
+  { value: "morning",   label: "Morning",   sub: "5 am – 12 pm" },
+  { value: "afternoon", label: "Afternoon", sub: "12 pm – 5 pm" },
+  { value: "evening",   label: "Evening",   sub: "5 pm – 9 pm" },
+];
+
+const STEPS = [
+  { title: "What's your goal?",        sub: "Pick the one that fits best" },
+  { title: "Your fitness background",  sub: "Level & availability" },
+  { title: "When do you train?",       sub: "Pick a preferred time" },
 ];
 
 type Form = {
@@ -100,295 +107,347 @@ function Input({ label, type = "text", value, onChange, placeholder, min }: {
 }
 
 export default function AssessmentPage() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading } = useAuth();
   const router = useRouter();
-  const [checking, setChecking] = useState(true);
+  const [step, setStep] = useState(0);
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState('');
-  const [locations, setLocations] = useState<Location[]>([]);
-  const [goalTypes, setGoalTypes] = useState<GoalType[]>([]);
-  const [form, setForm] = useState<Form>(blank());
+  const [submitted, setSubmitted] = useState(false);
+  const [existingAssessment, setExistingAssessment] = useState<Assessment | null>(null);
+  const [dataLoaded, setDataLoaded] = useState(false);
+
+  const [form, setForm] = useState({
+    goal: "",
+    experienceLevel: "",
+    daysPerWeek: "",
+    preferredTime: "",
+    healthConditions: "",
+  });
 
   useEffect(() => {
-    if (!authLoading && !user) { router.push("/login"); return; }
-    if (!authLoading && user) {
-      if (user.role !== 'customer') {
-        router.push(user.role === 'admin' ? '/admin/dashboard' : '/trainer/dashboard');
-        return;
-      }
-      const init = async () => {
-        const [existing, locs, goals] = await Promise.all([
-          getAssessment(user.id),
-          getLocations(true),
-          getGoalTypes(true),
-        ]);
-        if (existing) { router.push("/dashboard"); return; }
-        setLocations(locs);
-        setGoalTypes(goals);
-        setChecking(false);
-      };
-      init();
+    if (!loading) {
+      if (!user) { router.push("/login"); return; }
+      if (user.role !== "customer") { router.push("/trainer/dashboard"); return; }
+      const existing = getItems<Assessment>("ishow_assessments").find((a) => a.userId === user.id) ?? null;
+      setExistingAssessment(existing);
+      setDataLoaded(true);
     }
-  }, [authLoading, user, router]);
+  }, [user, loading, router]);
 
-  function set<K extends keyof Form>(field: K, value: Form[K]) {
-    setForm(f => ({ ...f, [field]: value }));
-  }
+  const canNext = [
+    form.goal !== "",
+    form.experienceLevel !== "" && form.daysPerWeek !== "",
+    form.preferredTime !== "",
+  ];
 
-  const goalList = goalTypes.length > 0 ? goalTypes.map(g => g.name) : GOALS_FALLBACK;
-  const locationList = locations.length > 0 ? locations.map(l => l.name) : LOCATIONS_FALLBACK;
-
-  const canSubmit = form.age && form.gender && form.weight && form.height &&
-    form.goals.length > 0 && form.experienceLevel &&
-    form.preferredDate && form.preferredTimeSlot && form.preferredLocation;
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!user || !canSubmit) return;
-    setError('');
+  const handleSubmit = () => {
+    if (!user) return;
     setSubmitting(true);
-    try {
-      await submitAssessment(user.id, {
-        age: parseInt(form.age),
-        gender: form.gender as "male" | "female" | "prefer_not_to_say",
-        weight: form.weight,
-        height: form.height,
-        goals: form.goals,
-        experienceLevel: form.experienceLevel,
-        daysPerWeek: parseInt(form.daysPerWeek),
-        bodyMeasurements: {},
-        preferredDate: form.preferredDate,
-        preferredTimeSlot: form.preferredTimeSlot,
-        preferredLocation: form.preferredLocation,
-        healthConditions: [
-          ...form.medicalConditions,
-          form.otherHealth.trim() ? `Other: ${form.otherHealth.trim()}` : "",
-        ].filter(Boolean).join(", ") || undefined,
-        medicalHistory: {
-          lowerBack: form.medicalConditions.includes("Lower back issues") || undefined,
-          knee: form.medicalConditions.includes("Knee problems") || undefined,
-          shoulder: form.medicalConditions.includes("Shoulder injury") || undefined,
-          heart: form.medicalConditions.includes("Heart condition") || undefined,
-          diabetes: form.medicalConditions.includes("Diabetes") || undefined,
-          hypertension: form.medicalConditions.includes("Hypertension") || undefined,
-          other: [
-            form.medicalConditions.filter(c => !["Lower back issues","Knee problems","Shoulder injury","Heart condition","Diabetes","Hypertension"].includes(c)).join(", "),
-            form.otherHealth.trim(),
-          ].filter(Boolean).join(", ") || undefined,
-        },
-      });
-      // Notify user by email (non-blocking)
-      if (user.email) {
-        notify('assessment-submitted', user.email, { name: user.name ?? user.email });
-      }
-      router.push("/dashboard");
-    } catch {
-      setError("Something went wrong. Please try again.");
-      setSubmitting(false);
-    }
-  }
+    addItem<Assessment>("ishow_assessments", {
+      id: `assessment_${Date.now()}`,
+      userId: user.id,
+      goals: [form.goal],
+      experienceLevel: form.experienceLevel,
+      healthConditions: form.healthConditions || "None",
+      daysPerWeek: daysMap[form.daysPerWeek] ?? 3,
+      preferredTimes: form.preferredTime,
+      status: "pending",
+      submittedAt: new Date().toISOString(),
+    });
+    setSubmitting(false);
+    setSubmitted(true);
+    setTimeout(() => router.push("/dashboard"), 2000);
+  };
 
-  if (checking || authLoading) {
+  // ── Loading ──────────────────────────────────────────────────
+  if (loading || !dataLoaded) {
     return (
-      <DashboardLayout role="CUSTOMER">
-        <div className="flex items-center justify-center h-full min-h-[400px]">
-          <Loader2 className="w-7 h-7 animate-spin text-orange-500" />
-        </div>
-      </DashboardLayout>
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-white" />
+      </div>
     );
   }
 
-  return (
-    <DashboardLayout role="CUSTOMER">
-      <div className="min-h-full bg-zinc-950">
-        <div className="max-w-2xl p-6 lg:p-8">
+  // ── Already submitted ────────────────────────────────────────
+  if (existingAssessment && !submitted) {
+    const reviewed = existingAssessment.status === "reviewed";
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 flex items-center justify-center px-4">
+        <div className="w-full max-w-md">
+          <Link href="/" className="inline-flex items-center gap-2 mb-8">
+            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-orange-500 rounded-lg flex items-center justify-center">
+              <Dumbbell className="w-4 h-4 text-white" />
+            </div>
+            <span className="font-bold text-white">iShow<span className="text-orange-400">Fitness</span></span>
+          </Link>
+          <div className="bg-white rounded-2xl shadow-2xl p-8 text-center">
+            <div className={`w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4 ${reviewed ? "bg-green-100" : "bg-yellow-100"}`}>
+              {reviewed
+                ? <CheckCircle className="w-7 h-7 text-green-600" />
+                : <Clock className="w-7 h-7 text-yellow-600" />}
+            </div>
+            <h2 className="text-xl font-black text-gray-900 mb-2">
+              {reviewed ? "Assessment Reviewed!" : "Under Review"}
+            </h2>
+            <p className="text-gray-500 text-sm mb-6">
+              {reviewed
+                ? "Your trainer has reviewed your assessment and prepared your plan."
+                : "Your trainer will review this and reach out with your personalised plan."}
+            </p>
+            {reviewed && existingAssessment.trainerNotes && (
+              <div className="bg-blue-50 rounded-xl p-4 mb-5 text-left">
+                <p className="text-xs font-semibold text-blue-900 mb-1">Trainer&apos;s Notes</p>
+                <p className="text-sm text-blue-700 italic">&ldquo;{existingAssessment.trainerNotes}&rdquo;</p>
+              </div>
+            )}
+            <div className="grid grid-cols-2 gap-3 text-left mb-6 text-sm">
+              <div className="bg-gray-50 rounded-lg p-3">
+                <p className="text-xs text-gray-400 font-medium mb-0.5">Goal</p>
+                <p className="font-semibold text-gray-900 capitalize">{existingAssessment.goals[0]?.replace(/_/g, " ")}</p>
+              </div>
+              <div className="bg-gray-50 rounded-lg p-3">
+                <p className="text-xs text-gray-400 font-medium mb-0.5">Experience</p>
+                <p className="font-semibold text-gray-900 capitalize">{existingAssessment.experienceLevel}</p>
+              </div>
+              <div className="bg-gray-50 rounded-lg p-3">
+                <p className="text-xs text-gray-400 font-medium mb-0.5">Days / Week</p>
+                <p className="font-semibold text-gray-900">{existingAssessment.daysPerWeek} days</p>
+              </div>
+              <div className="bg-gray-50 rounded-lg p-3">
+                <p className="text-xs text-gray-400 font-medium mb-0.5">Time</p>
+                <p className="font-semibold text-gray-900 capitalize">{existingAssessment.preferredTimes}</p>
+              </div>
+            </div>
+            <Link href="/dashboard" className="inline-block w-full bg-blue-700 hover:bg-blue-800 text-white py-3 rounded-xl font-semibold text-sm transition-colors">
+              Go to Dashboard
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
-          {/* Header */}
-          <div className="mb-8">
-            <p className="text-orange-500 text-xs font-bold tracking-[0.3em] uppercase mb-1.5">New Request</p>
-            <h1 className="text-3xl font-black text-white tracking-tight">Assessment Request</h1>
-            <p className="text-zinc-500 text-sm mt-2">Fill in your details so your trainer can design the perfect plan.</p>
+  // ── Success ──────────────────────────────────────────────────
+  if (submitted) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 flex items-center justify-center px-4">
+        <div className="bg-white rounded-2xl shadow-2xl p-10 text-center max-w-sm w-full">
+          <div className="w-14 h-14 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
+            <CheckCircle className="w-7 h-7 text-green-600" />
+          </div>
+          <h2 className="text-xl font-black text-gray-900 mb-2">All done!</h2>
+          <p className="text-gray-500 text-sm">Your trainer will review and build your plan. Redirecting…</p>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Stepper form ─────────────────────────────────────────────
+  const progress = ((step + 1) / STEPS.length) * 100;
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 flex flex-col items-center justify-center px-4 py-10">
+      <div className="w-full max-w-md">
+
+        {/* Logo */}
+        <Link href="/" className="inline-flex items-center gap-2 mb-8">
+          <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-orange-500 rounded-lg flex items-center justify-center">
+            <Dumbbell className="w-4 h-4 text-white" />
+          </div>
+          <span className="font-bold text-white">iShow<span className="text-orange-400">Fitness</span></span>
+        </Link>
+
+        {/* Progress bar */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-white text-sm font-semibold">Step {step + 1} of {STEPS.length}</span>
+            <span className="text-slate-400 text-xs">{Math.round(progress)}% complete</span>
+          </div>
+          <div className="h-1.5 bg-slate-700 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-gradient-to-r from-blue-500 to-orange-500 rounded-full transition-all duration-500"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+          {/* Step dots */}
+          <div className="flex justify-between mt-3">
+            {STEPS.map((s, i) => (
+              <div key={i} className="flex flex-col items-center gap-1">
+                <div className={`w-2 h-2 rounded-full transition-all ${i <= step ? "bg-orange-400" : "bg-slate-600"}`} />
+                <span className={`text-xs hidden sm:block transition-colors ${i === step ? "text-white font-medium" : "text-slate-500"}`}>
+                  {s.title.split(" ")[0]}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Card */}
+        <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
+          {/* Card header */}
+          <div className="px-6 pt-6 pb-4 border-b border-gray-100">
+            <h1 className="text-xl font-black text-gray-900">{STEPS[step].title}</h1>
+            <p className="text-gray-400 text-sm mt-0.5">{STEPS[step].sub}</p>
           </div>
 
-          {error && (
-            <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400 mb-6">
-              {error}
-            </div>
-          )}
+          {/* Card body */}
+          <div className="px-6 py-5">
 
-          <form onSubmit={handleSubmit} className="space-y-8">
-
-            {/* Personal Info */}
-            <div className="rounded-2xl bg-zinc-900 border border-zinc-800 p-6 space-y-4">
-              <SectionLabel>Personal Info</SectionLabel>
-              <div className="grid grid-cols-2 gap-4">
-                <Input label="Age *" type="number" value={form.age} onChange={v => set("age", v)} placeholder="28" min="13" />
-                <Input label="Weight *" value={form.weight} onChange={v => set("weight", v)} placeholder="75 kg" />
+            {/* ── Step 0: Goal ── */}
+            {step === 0 && (
+              <div className="grid grid-cols-2 gap-3">
+                {GOALS.map((g) => (
+                  <button
+                    key={g.value}
+                    type="button"
+                    onClick={() => setForm((p) => ({ ...p, goal: g.value }))}
+                    className={`p-4 rounded-xl border-2 text-left transition-all ${
+                      form.goal === g.value
+                        ? "border-blue-700 bg-blue-50"
+                        : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
+                    }`}
+                  >
+                    <div className="text-2xl mb-2">{g.emoji}</div>
+                    <p className={`text-sm font-semibold leading-tight ${form.goal === g.value ? "text-blue-700" : "text-gray-800"}`}>
+                      {g.label}
+                    </p>
+                  </button>
+                ))}
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <Input label="Height *" value={form.height} onChange={v => set("height", v)} placeholder="175 cm" />
+            )}
+
+            {/* ── Step 1: Level + Days ── */}
+            {step === 1 && (
+              <div className="space-y-5">
                 <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-1.5">Gender *</label>
-                  <div className="flex flex-col gap-2">
-                    {(["male", "female", "prefer_not_to_say"] as const).map(g => (
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Experience Level</p>
+                  <div className="space-y-2">
+                    {LEVELS.map((l) => (
                       <button
-                        key={g}
+                        key={l.value}
                         type="button"
-                        onClick={() => set("gender", g)}
-                        className={`py-2 px-3 rounded-xl border text-xs font-semibold transition-all text-left ${
-                          form.gender === g
-                            ? "border-orange-500/60 bg-orange-500/15 text-orange-300"
-                            : "border-zinc-700 bg-zinc-800/60 text-zinc-400 hover:border-zinc-600 hover:text-zinc-200"
+                        onClick={() => setForm((p) => ({ ...p, experienceLevel: l.value }))}
+                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border-2 transition-all ${
+                          form.experienceLevel === l.value
+                            ? "border-orange-500 bg-orange-50"
+                            : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
                         }`}
                       >
-                        {g === "prefer_not_to_say" ? "Prefer not to say" : g.charAt(0).toUpperCase() + g.slice(1)}
+                        <div className={`w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${
+                          form.experienceLevel === l.value ? "border-orange-500" : "border-gray-300"
+                        }`}>
+                          {form.experienceLevel === l.value && <div className="w-2 h-2 rounded-full bg-orange-500" />}
+                        </div>
+                        <div className="text-left">
+                          <p className={`text-sm font-semibold ${form.experienceLevel === l.value ? "text-orange-700" : "text-gray-800"}`}>{l.label}</p>
+                          <p className="text-xs text-gray-400">{l.desc}</p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Days per Week</p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {DAYS.map((d) => (
+                      <button
+                        key={d.value}
+                        type="button"
+                        onClick={() => setForm((p) => ({ ...p, daysPerWeek: d.value }))}
+                        className={`py-2.5 rounded-xl border-2 text-sm font-bold transition-all ${
+                          form.daysPerWeek === d.value
+                            ? "border-blue-700 bg-blue-700 text-white"
+                            : "border-gray-200 text-gray-700 hover:border-gray-300"
+                        }`}
+                      >
+                        {d.label}
                       </button>
                     ))}
                   </div>
                 </div>
               </div>
-            </div>
+            )}
 
-            {/* Goals */}
-            <div className="rounded-2xl bg-zinc-900 border border-zinc-800 p-6">
-              <SectionLabel>Fitness Goals * (select all that apply)</SectionLabel>
-              <div className="flex flex-wrap gap-2">
-                {goalList.map(goal => (
-                  <Chip key={goal} active={form.goals.includes(goal)} onClick={() => set("goals", toggle(form.goals, goal))}>
-                    {goal}
-                  </Chip>
-                ))}
-              </div>
-            </div>
+            {/* ── Step 2: Time + Health ── */}
+            {step === 2 && (
+              <div className="space-y-5">
+                <div>
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Preferred Time</p>
+                  <div className="space-y-2">
+                    {TIMES.map((t) => (
+                      <button
+                        key={t.value}
+                        type="button"
+                        onClick={() => setForm((p) => ({ ...p, preferredTime: t.value }))}
+                        className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border-2 transition-all ${
+                          form.preferredTime === t.value
+                            ? "border-blue-700 bg-blue-50"
+                            : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
+                        }`}
+                      >
+                        <span className={`text-sm font-semibold ${form.preferredTime === t.value ? "text-blue-700" : "text-gray-800"}`}>{t.label}</span>
+                        <span className="text-xs text-gray-400">{t.sub}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
 
-            {/* Experience & Schedule */}
-            <div className="rounded-2xl bg-zinc-900 border border-zinc-800 p-6 space-y-5">
-              <SectionLabel>Experience & Schedule</SectionLabel>
-
-              <div>
-                <p className="text-xs font-semibold text-zinc-400 mb-2">Experience Level *</p>
-                <div className="flex flex-wrap gap-2">
-                  {EXPERIENCE_LEVELS.map(l => (
-                    <Chip key={l} active={form.experienceLevel === l} onClick={() => set("experienceLevel", l)}>{l}</Chip>
-                  ))}
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-2">
+                    Injuries / health conditions <span className="normal-case font-normal text-gray-400">(optional)</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={form.healthConditions}
+                    onChange={(e) => setForm((p) => ({ ...p, healthConditions: e.target.value }))}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm text-gray-900 outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="e.g. lower back pain, knee injury"
+                  />
                 </div>
               </div>
+            )}
+          </div>
 
-              <div>
-                <p className="text-xs font-semibold text-zinc-400 mb-2">Training days per week</p>
-                <div className="flex gap-2">
-                  {DAYS.map(d => (
-                    <button
-                      key={d}
-                      type="button"
-                      onClick={() => set("daysPerWeek", String(d))}
-                      className={`w-11 h-11 rounded-xl border text-sm font-bold transition-all ${
-                        form.daysPerWeek === String(d)
-                          ? "border-orange-500/60 bg-orange-500/15 text-orange-300"
-                          : "border-zinc-700 bg-zinc-800/60 text-zinc-400 hover:border-zinc-600"
-                      }`}
-                    >
-                      {d}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
+          {/* Card footer — nav buttons */}
+          <div className="px-6 pb-6 flex items-center gap-3">
+            {step > 0 && (
+              <button
+                type="button"
+                onClick={() => setStep((s) => s - 1)}
+                className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-gray-300 text-gray-600 text-sm font-medium hover:bg-gray-50 transition-colors"
+              >
+                <ChevronLeft className="w-4 h-4" />
+                Back
+              </button>
+            )}
 
-            {/* Session Preferences */}
-            <div className="rounded-2xl bg-zinc-900 border border-zinc-800 p-6 space-y-5">
-              <SectionLabel>Session Preferences</SectionLabel>
-
-              <Input
-                label="Preferred Start Date *"
-                type="date"
-                value={form.preferredDate}
-                onChange={v => set("preferredDate", v)}
-                min={new Date().toISOString().split("T")[0]}
-              />
-
-              <div>
-                <p className="text-xs font-semibold text-zinc-400 mb-2">Preferred Time *</p>
-                <div className="flex flex-wrap gap-2">
-                  {TIME_SLOTS.map(slot => (
-                    <button
-                      key={slot}
-                      type="button"
-                      onClick={() => set("preferredTimeSlot", slot)}
-                      className={`px-3 py-2 rounded-xl border text-xs font-semibold transition-all ${
-                        form.preferredTimeSlot === slot
-                          ? "border-orange-500/60 bg-orange-500/15 text-orange-300"
-                          : "border-zinc-700 bg-zinc-800/60 text-zinc-400 hover:border-zinc-600"
-                      }`}
-                    >
-                      {slot}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <p className="text-xs font-semibold text-zinc-400 mb-2">Location *</p>
-                <div className="flex flex-col gap-2">
-                  {locationList.map(loc => (
-                    <button
-                      key={loc}
-                      type="button"
-                      onClick={() => set("preferredLocation", loc)}
-                      className={`flex items-center gap-2 px-4 py-3 rounded-xl border text-sm font-medium text-left transition-all ${
-                        form.preferredLocation === loc
-                          ? "border-orange-500/60 bg-orange-500/15 text-orange-300"
-                          : "border-zinc-700 bg-zinc-800/60 text-zinc-400 hover:border-zinc-600 hover:text-zinc-200"
-                      }`}
-                    >
-                      {form.preferredLocation === loc && <CheckCircle className="w-4 h-4 shrink-0" />}
-                      {loc}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Health (optional) */}
-            <div className="rounded-2xl bg-zinc-900 border border-zinc-800 p-6 space-y-4">
-              <SectionLabel>Health & Injuries <span className="normal-case font-normal text-zinc-600">(optional)</span></SectionLabel>
-              <div className="flex flex-wrap gap-2">
-                {MEDICAL_CONDITIONS.map(cond => (
-                  <Chip
-                    key={cond}
-                    active={form.medicalConditions.includes(cond)}
-                    onClick={() => set("medicalConditions", toggle(form.medicalConditions, cond))}
-                  >
-                    {cond}
-                  </Chip>
-                ))}
-              </div>
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-1.5">Other notes</label>
-                <textarea
-                  value={form.otherHealth}
-                  onChange={e => set("otherHealth", e.target.value)}
-                  rows={2}
-                  placeholder="Any other conditions your trainer should know about…"
-                  className="w-full rounded-xl bg-zinc-800/60 border border-zinc-700 px-4 py-3 text-sm text-white placeholder-zinc-600 outline-none focus:border-orange-500/60 focus:ring-2 focus:ring-orange-500/10 transition resize-none"
-                />
-              </div>
-            </div>
-
-            {/* Submit */}
-            <button
-              type="submit"
-              disabled={!canSubmit || submitting}
-              className="w-full flex items-center justify-center gap-2 rounded-xl bg-orange-500 hover:bg-orange-400 py-4 text-sm font-black text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-lg shadow-orange-500/20"
-            >
-              {submitting
-                ? <><Loader2 className="w-4 h-4 animate-spin" />Submitting request…</>
-                : <><Send className="w-4 h-4" />Submit Assessment Request</>
-              }
-            </button>
-          </form>
+            {step < STEPS.length - 1 ? (
+              <button
+                type="button"
+                onClick={() => setStep((s) => s + 1)}
+                disabled={!canNext[step]}
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-blue-700 hover:bg-blue-800 text-white rounded-xl text-sm font-bold transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Next
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={handleSubmit}
+                disabled={!canNext[step] || submitting}
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white rounded-xl text-sm font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-sm"
+              >
+                {submitting ? <><Loader2 className="w-4 h-4 animate-spin" /> Submitting…</> : <><CheckCircle className="w-4 h-4" /> Submit</>}
+              </button>
+            )}
+          </div>
         </div>
+
+        <p className="text-center text-slate-500 text-xs mt-4">
+          You can always update details when you meet your trainer.
+        </p>
       </div>
-    </DashboardLayout>
+    </div>
   );
 }

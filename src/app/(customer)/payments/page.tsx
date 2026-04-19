@@ -1,252 +1,216 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
-import { listPayments, type Payment } from "@/lib/db/payments";
 import DashboardLayout from "@/components/DashboardLayout";
+import { getItems } from "@/lib/storage";
+import type { Payment, Plan } from "@/lib/mockData";
 import {
   CreditCard,
   CheckCircle,
   Clock,
   AlertTriangle,
   DollarSign,
+  Loader2,
   Calendar,
-  FileText,
-  TrendingUp,
-  Filter,
 } from "lucide-react";
 
-type StatusFilter = "all" | "paid" | "pending" | "overdue";
-
-const statusConfig = {
-  paid: {
-    label: "Paid",
-    icon: CheckCircle,
-    badge: "bg-green-100 text-green-700",
-    dot: "bg-green-500",
-    row: "",
-  },
-  pending: {
-    label: "Pending",
-    icon: Clock,
-    badge: "bg-yellow-100 text-yellow-700",
-    dot: "bg-yellow-400",
-    row: "bg-yellow-50/40",
-  },
-  overdue: {
-    label: "Overdue",
-    icon: AlertTriangle,
-    badge: "bg-red-100 text-red-700",
-    dot: "bg-red-500",
-    row: "bg-red-50/40",
-  },
-};
-
-function formatDate(dateStr?: string) {
-  if (!dateStr) return "—";
-  return new Date(dateStr + "T00:00:00").toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
+function PaymentStatusBadge({ status }: { status: string }) {
+  const configs: Record<string, { color: string; icon: React.ReactNode }> = {
+    paid: { color: "bg-green-100 text-green-700", icon: <CheckCircle className="w-3 h-3" /> },
+    pending: { color: "bg-yellow-100 text-yellow-700", icon: <Clock className="w-3 h-3" /> },
+    overdue: { color: "bg-red-100 text-red-700", icon: <AlertTriangle className="w-3 h-3" /> },
+  };
+  const config = configs[status.toLowerCase()] || configs.pending;
+  return (
+    <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold capitalize ${config.color}`}>
+      {config.icon}
+      {status}
+    </span>
+  );
 }
 
 export default function PaymentsPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
   const [payments, setPayments] = useState<Payment[]>([]);
-  const [filter, setFilter] = useState<StatusFilter>("all");
+  const [plan, setPlan] = useState<Plan | null>(null);
+  const [dataLoaded, setDataLoaded] = useState(false);
 
   useEffect(() => {
-    if (!loading && !user) { router.push("/login"); return; }
-    const load = async () => {
-      if (!loading && user) {
-        if (user.role === 'admin') { router.push('/admin/dashboard'); return; }
-        if (user.role === 'trainer') { router.push('/trainer/dashboard'); return; }
-        const all = await listPayments(user.id);
-        setPayments(
-          all.sort((a, b) => {
-            const order = { overdue: 0, pending: 1, paid: 2 };
-            return order[a.status] - order[b.status];
-          })
-        );
-      }
-    };
-    load();
-  }, [loading, user, router]);
+    if (!loading) {
+      if (!user) { router.push("/login"); return; }
+      if (user.role !== "customer") { router.push("/trainer/dashboard"); return; }
 
-  if (loading || !user) return null;
+      const allPayments = getItems<Payment>("ishow_payments");
+      const userPayments = allPayments
+        .filter((p) => p.userId === user.id)
+        .sort((a, b) => b.dueDate.localeCompare(a.dueDate));
 
-  const totalPaid = payments.filter((p) => p.status === "paid").reduce((s, p) => s + p.amount, 0);
-  const totalPending = payments.filter((p) => p.status === "pending" || p.status === "overdue").reduce((s, p) => s + p.amount, 0);
-  const overdue = payments.filter((p) => p.status === "overdue");
-  const pending = payments.filter((p) => p.status === "pending");
+      const allPlans = getItems<Plan>("ishow_plans");
+      const activePlan = allPlans.find((p) => p.userId === user.id && p.status === "active") ?? null;
 
-  const filtered = filter === "all" ? payments : payments.filter((p) => p.status === filter);
+      setPayments(userPayments);
+      setPlan(activePlan);
+      setDataLoaded(true);
+    }
+  }, [user, loading, router]);
+
+  if (loading || !dataLoaded) {
+    return (
+      <DashboardLayout role="customer">
+        <div className="flex items-center justify-center h-full">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-700" />
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  const totalPaid = payments.filter((p) => p.status === "paid").reduce((sum, p) => sum + p.amount, 0);
+  const pendingAmount = payments.filter((p) => p.status === "pending" || p.status === "overdue").reduce((sum, p) => sum + p.amount, 0);
+  const overduePayments = payments.filter((p) => p.status === "overdue");
 
   return (
-    <DashboardLayout role="CUSTOMER">
-      <div className="w-full max-w-5xl p-6 lg:p-8">
-        {/* Header */}
+    <DashboardLayout role="customer">
+      <div className="p-6 lg:p-8 max-w-4xl mx-auto">
         <div className="mb-8">
           <h1 className="text-2xl font-black text-gray-900">Payments</h1>
-          <p className="text-gray-500 mt-1">Your billing history and upcoming payments</p>
+          <p className="text-gray-500 mt-1">Payment history and subscription details</p>
         </div>
 
-        {/* Summary cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <div className="bg-gray-900 text-white rounded-2xl p-5">
-            <DollarSign className="w-5 h-5 opacity-75 mb-2" />
-            <p className="text-3xl font-black">AED {totalPaid}</p>
-            <p className="text-sm opacity-60 font-medium mt-0.5">Total Paid</p>
-          </div>
-          <div className="bg-green-600 text-white rounded-2xl p-5">
-            <CheckCircle className="w-5 h-5 opacity-75 mb-2" />
-            <p className="text-3xl font-black">{payments.filter((p) => p.status === "paid").length}</p>
-            <p className="text-sm opacity-75 font-medium mt-0.5">Paid Invoices</p>
-          </div>
-          <div className={`${pending.length > 0 ? "bg-yellow-500" : "bg-gray-100"} ${pending.length > 0 ? "text-white" : "text-gray-500"} rounded-2xl p-5`}>
-            <Clock className="w-5 h-5 opacity-75 mb-2" />
-            <p className="text-3xl font-black">{pending.length}</p>
-            <p className="text-sm opacity-75 font-medium mt-0.5">Pending</p>
-          </div>
-          <div className={`${overdue.length > 0 ? "bg-red-500 text-white" : "bg-gray-100 text-gray-500"} rounded-2xl p-5`}>
-            <AlertTriangle className="w-5 h-5 opacity-75 mb-2" />
-            <p className="text-3xl font-black">{overdue.length}</p>
-            <p className="text-sm opacity-75 font-medium mt-0.5">Overdue</p>
-          </div>
-        </div>
-
-        {/* Overdue alert */}
-        {overdue.length > 0 && (
-          <div className="bg-red-50 border border-red-200 rounded-2xl p-5 mb-6 flex items-start gap-4">
-            <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
-              <AlertTriangle className="w-5 h-5 text-red-600" />
-            </div>
+        {/* Overdue Alert */}
+        {overduePayments.length > 0 && (
+          <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6 flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
             <div>
-              <p className="font-bold text-red-800">You have {overdue.length} overdue payment{overdue.length > 1 ? "s" : ""}</p>
-              <p className="text-red-600 text-sm mt-0.5">
-                Total outstanding: AED {overdue.reduce((s, p) => s + p.amount, 0)} — please contact your trainer to settle.
+              <p className="font-semibold text-red-900">Overdue Payments</p>
+              <p className="text-red-700 text-sm mt-0.5">
+                You have {overduePayments.length} overdue payment{overduePayments.length > 1 ? "s" : ""}.
+                Please contact your trainer to arrange payment.
               </p>
             </div>
           </div>
         )}
 
-        {/* Pending alert */}
-        {pending.length > 0 && overdue.length === 0 && (
-          <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-5 mb-6 flex items-start gap-4">
-            <div className="w-10 h-10 rounded-full bg-yellow-100 flex items-center justify-center flex-shrink-0">
-              <Clock className="w-5 h-5 text-yellow-600" />
-            </div>
-            <div>
-              <p className="font-bold text-yellow-800">Upcoming payment due</p>
-              <p className="text-yellow-700 text-sm mt-0.5">
-                AED {totalPending} due on {formatDate(pending[0].dueDate)} — {pending[0].description}
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* Progress bar */}
-        {totalPaid + totalPending > 0 && (
-          <div className="bg-white rounded-2xl border border-gray-100 p-6 mb-6 shadow-sm">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <TrendingUp className="w-5 h-5 text-green-600" />
-                <span className="font-bold text-gray-900">Payment Progress</span>
+        {/* Summary Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+          <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center">
+                <DollarSign className="w-5 h-5 text-green-600" />
               </div>
-              <span className="text-sm text-gray-500">
-                AED {totalPaid} of AED {totalPaid + totalPending} paid
-              </span>
+              <p className="text-gray-500 text-sm">Total Paid</p>
             </div>
-            <div className="w-full bg-gray-100 rounded-full h-3">
-              <div
-                className="bg-gradient-to-r from-green-500 to-green-400 h-3 rounded-full transition-all"
-                style={{
-                  width: `${Math.round((totalPaid / (totalPaid + totalPending)) * 100)}%`,
-                }}
-              />
+            <p className="text-2xl font-black text-gray-900">${totalPaid.toLocaleString()}</p>
+          </div>
+          <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-lg bg-yellow-100 flex items-center justify-center">
+                <Clock className="w-5 h-5 text-yellow-600" />
+              </div>
+              <p className="text-gray-500 text-sm">Pending</p>
             </div>
-            <p className="text-xs text-gray-400 mt-2">
-              {Math.round((totalPaid / (totalPaid + totalPending)) * 100)}% of total plan cost paid
+            <p className="text-2xl font-black text-gray-900">${pendingAmount.toLocaleString()}</p>
+          </div>
+          <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                <CreditCard className="w-5 h-5 text-blue-600" />
+              </div>
+              <p className="text-gray-500 text-sm">Monthly Rate</p>
+            </div>
+            <p className="text-2xl font-black text-gray-900">
+              {plan ? `$${plan.monthlyRate}` : "—"}
             </p>
           </div>
-        )}
-
-        {/* Filter */}
-        <div className="flex items-center gap-2 mb-5 flex-wrap">
-          <Filter className="w-4 h-4 text-gray-400 mr-1" />
-          {(["all", "paid", "pending", "overdue"] as const).map((f) => (
-            <button
-              key={f}
-              onClick={() => setFilter(f)}
-              className={`px-4 py-1.5 rounded-full text-sm font-semibold transition-all capitalize ${
-                filter === f
-                  ? "bg-gray-900 text-white shadow-sm"
-                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-              }`}
-            >
-              {f === "all" ? "All" : f}
-            </button>
-          ))}
         </div>
 
-        {/* Payment list */}
-        <div className="space-y-3">
-          {filtered.length === 0 ? (
-            <div className="text-center py-16 bg-white rounded-2xl border border-gray-100 text-gray-400">
-              <CreditCard className="w-12 h-12 mx-auto mb-3 opacity-30" />
-              <p className="font-medium">No payments found</p>
+        {/* Subscription Info */}
+        {plan && (
+          <div className="bg-gradient-to-r from-blue-700 to-blue-900 rounded-2xl p-6 text-white mb-6">
+            <h2 className="font-bold text-lg mb-4">Active Subscription</h2>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div>
+                <p className="text-blue-300 text-xs">Plan</p>
+                <p className="font-semibold mt-0.5">{plan.name}</p>
+              </div>
+              <div>
+                <p className="text-blue-300 text-xs">Monthly Rate</p>
+                <p className="font-semibold mt-0.5">${plan.monthlyRate}</p>
+              </div>
+              <div>
+                <p className="text-blue-300 text-xs">Billing</p>
+                <p className="font-semibold mt-0.5 capitalize">{plan.paymentFrequency}</p>
+              </div>
+              <div>
+                <p className="text-blue-300 text-xs">Start Date</p>
+                <p className="font-semibold mt-0.5">
+                  {new Date(plan.startDate + "T00:00:00").toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                  })}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Payment History */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="p-6 border-b border-gray-100">
+            <h2 className="font-bold text-gray-900 text-lg">Payment History</h2>
+          </div>
+          {payments.length === 0 ? (
+            <div className="p-12 text-center">
+              <CreditCard className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+              <p className="text-gray-500">No payment history yet</p>
             </div>
           ) : (
-            filtered.map((payment) => {
-              const cfg = statusConfig[payment.status];
-              const Icon = cfg.icon;
-              return (
-                <div
-                  key={payment.id}
-                  className={`bg-white rounded-2xl border border-gray-100 p-5 flex items-center gap-4 shadow-sm hover:shadow-md transition-shadow ${cfg.row}`}
-                >
-                  <div className="w-12 h-12 rounded-2xl bg-gray-100 flex items-center justify-center flex-shrink-0">
-                    <CreditCard className="w-6 h-6 text-gray-500" />
-                  </div>
-
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-3 flex-wrap">
-                      <div>
-                        <p className="font-bold text-gray-900">{payment.description}</p>
-                        <div className="flex flex-wrap gap-3 mt-1 text-sm text-gray-500">
-                          <span className="flex items-center gap-1">
-                            <FileText className="w-3.5 h-3.5" />
-                            {payment.reference}
-                          </span>
-                          {payment.paidDate && (
-                            <span className="flex items-center gap-1">
-                              <Calendar className="w-3.5 h-3.5" />
-                              {payment.status === "paid" ? "Paid " : "Due "}{formatDate(payment.status === "paid" ? payment.paidDate : payment.dueDate)}
-                            </span>
-                          )}
-                          {payment.status !== "paid" && payment.dueDate && (
-                            <span className="flex items-center gap-1">
-                              <Calendar className="w-3.5 h-3.5 text-orange-400" />
-                              Due {formatDate(payment.dueDate)}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3 flex-shrink-0">
-                        <span className="text-2xl font-black text-gray-900">AED {payment.amount}</span>
-                        <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${cfg.badge}`}>
-                          <Icon className="w-3.5 h-3.5" />
-                          {cfg.label}
+            <div className="divide-y divide-gray-50">
+              {payments.map((payment) => (
+                <div key={payment.id} className="p-5 flex items-center justify-between hover:bg-gray-50 transition-colors flex-wrap gap-3">
+                  <div className="flex items-center gap-4">
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                      payment.status === "paid" ? "bg-green-100" :
+                      payment.status === "overdue" ? "bg-red-100" : "bg-yellow-100"
+                    }`}>
+                      {payment.status === "paid" ? (
+                        <CheckCircle className="w-5 h-5 text-green-600" />
+                      ) : payment.status === "overdue" ? (
+                        <AlertTriangle className="w-5 h-5 text-red-600" />
+                      ) : (
+                        <Clock className="w-5 h-5 text-yellow-600" />
+                      )}
+                    </div>
+                    <div>
+                      <p className="font-semibold text-gray-900">{payment.description}</p>
+                      <div className="flex items-center gap-3 text-sm text-gray-500 mt-0.5 flex-wrap">
+                        <span className="flex items-center gap-1">
+                          <Calendar className="w-3 h-3" />
+                          Due: {new Date(payment.dueDate + "T00:00:00").toLocaleDateString("en-US", {
+                            month: "long", day: "numeric", year: "numeric",
+                          })}
                         </span>
+                        {payment.date && payment.status === "paid" && (
+                          <span className="text-green-600 font-medium">
+                            Paid: {new Date(payment.date + "T00:00:00").toLocaleDateString()}
+                          </span>
+                        )}
+                        {payment.reference && (
+                          <span className="text-gray-400 text-xs">Ref: {payment.reference}</span>
+                        )}
                       </div>
                     </div>
                   </div>
+                  <div className="flex items-center gap-4">
+                    <span className="font-bold text-gray-900 text-lg">${payment.amount}</span>
+                    <PaymentStatusBadge status={payment.status} />
+                  </div>
                 </div>
-              );
-            })
+              ))}
+            </div>
           )}
         </div>
       </div>
