@@ -1,13 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/contexts/AuthContext";
-import { getAssessment, type Assessment } from "@/lib/db/assessments";
-import { getPlan, type Plan } from "@/lib/db/plans";
-import { getProfile } from "@/lib/db/profiles";
-import DashboardLayout from "@/components/DashboardLayout";
 import Link from "next/link";
+import { useAuth } from "@/contexts/AuthContext";
+import DashboardLayout from "@/components/DashboardLayout";
+import { getItems } from "@/lib/storage";
+import type { Plan, Assessment } from "@/lib/mockData";
 import {
   Target,
   Calendar,
@@ -17,37 +16,46 @@ import {
   Clock,
   ArrowRight,
   Zap,
+  Loader2,
 } from "lucide-react";
 
 export default function MyPlanPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
   const [plan, setPlan] = useState<Plan | null>(null);
-  const [trainerName, setTrainerName] = useState('');
   const [assessment, setAssessment] = useState<Assessment | null>(null);
+  const [dataLoaded, setDataLoaded] = useState(false);
 
   useEffect(() => {
-    if (!loading && !user) { router.push("/login"); return; }
-    const load = async () => {
-      if (!loading && user) {
-        if (user.role === 'admin') { router.push('/admin/dashboard'); return; }
-        if (user.role === 'trainer') { router.push('/trainer/dashboard'); return; }
-        const [p, a] = await Promise.all([getPlan(user.id), getAssessment(user.id)]);
-        setPlan(p);
-        setAssessment(a);
-        if (p?.trainerId) {
-          getProfile(p.trainerId).then(tp => setTrainerName(tp?.name ?? 'Your Trainer'));
-        }
-      }
-    };
-    load();
-  }, [loading, user, router]);
+    if (!loading) {
+      if (!user) { router.push("/login"); return; }
+      if (user.role !== "customer") { router.push("/trainer/dashboard"); return; }
 
-  if (loading || !user) return null;
+      const plans = getItems<Plan>("ishow_plans");
+      const activePlan = plans.find((p) => p.userId === user.id && p.status === "active") ?? null;
+
+      const assessments = getItems<Assessment>("ishow_assessments");
+      const userAssessment = assessments.find((a) => a.userId === user.id) ?? null;
+
+      setPlan(activePlan);
+      setAssessment(userAssessment);
+      setDataLoaded(true);
+    }
+  }, [user, loading, router]);
+
+  if (loading || !dataLoaded) {
+    return (
+      <DashboardLayout role="customer">
+        <div className="flex items-center justify-center h-full">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-700" />
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
-    <DashboardLayout role="CUSTOMER">
-      <div className="w-full max-w-4xl p-6 lg:p-8">
+    <DashboardLayout role="customer">
+      <div className="p-6 lg:p-8 max-w-4xl mx-auto">
         <div className="mb-8">
           <h1 className="text-2xl font-black text-gray-900">My Training Plan</h1>
           <p className="text-gray-500 mt-1">Your personalized fitness program</p>
@@ -64,13 +72,11 @@ export default function MyPlanPage() {
                     Active Plan
                   </div>
                   <h2 className="text-3xl font-black mb-2">{plan.name}</h2>
-                  {plan.description && (
-                    <p className="text-blue-200 leading-relaxed max-w-xl">{plan.description}</p>
-                  )}
+                  <p className="text-blue-200 leading-relaxed max-w-xl">{plan.description}</p>
                 </div>
                 <div className="bg-white/20 rounded-xl p-4 text-center backdrop-blur">
                   <p className="text-blue-200 text-sm">Monthly Rate</p>
-                  <p className="text-3xl font-black">AED {plan.monthlyRate}</p>
+                  <p className="text-3xl font-black">${plan.monthlyRate}</p>
                   <p className="text-blue-300 text-xs capitalize">{plan.paymentFrequency} billing</p>
                 </div>
               </div>
@@ -78,17 +84,22 @@ export default function MyPlanPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Goals */}
-              {plan.goals && plan.goals.length > 0 && (
-                <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center">
-                      <Target className="w-5 h-5 text-orange-600" />
-                    </div>
-                    <h3 className="font-bold text-gray-900">Training Goals</h3>
+              <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center">
+                    <Target className="w-5 h-5 text-orange-600" />
                   </div>
-                  <p className="text-gray-600 leading-relaxed">{plan.goals.join(", ")}</p>
+                  <h3 className="font-bold text-gray-900">Training Goals</h3>
                 </div>
-              )}
+                <div className="space-y-2">
+                  {plan.goals.map((goal, i) => (
+                    <div key={i} className="flex items-start gap-2">
+                      <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                      <span className="text-gray-700 text-sm">{goal}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
 
               {/* Trainer Info */}
               <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
@@ -100,10 +111,12 @@ export default function MyPlanPage() {
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center text-white font-bold text-lg">
-                    {(trainerName || 'T').charAt(0)}
+                    {plan.trainerName.charAt(0)}
                   </div>
                   <div>
-                    <p className="font-semibold text-gray-900">{trainerName || 'Your Trainer'}</p>
+                    <p className="font-semibold text-gray-900">{plan.trainerName}</p>
+                    <p className="text-gray-500 text-sm">Personal Trainer</p>
+                    <p className="text-green-600 text-xs font-medium mt-0.5">Available for sessions</p>
                   </div>
                 </div>
               </div>
@@ -120,23 +133,19 @@ export default function MyPlanPage() {
                   <div className="flex items-center justify-between">
                     <span className="text-gray-500">Start Date</span>
                     <span className="font-medium text-gray-900">
-                      {new Date(plan.startDate!).toLocaleDateString("en-US", {
-                        month: "long",
-                        day: "numeric",
-                        year: "numeric",
+                      {new Date(plan.startDate + "T00:00:00").toLocaleDateString("en-US", {
+                        month: "long", day: "numeric", year: "numeric",
                       })}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-gray-500">Status</span>
-                    <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded-full text-sm font-semibold">
-                      {plan.status.charAt(0).toUpperCase() + plan.status.slice(1)}
-                    </span>
+                    <span className="text-gray-500">Duration</span>
+                    <span className="font-medium text-gray-900">{plan.duration}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-gray-500">Billing</span>
-                    <span className="font-medium text-gray-900 capitalize">
-                      {plan.paymentFrequency}
+                    <span className="text-gray-500">Status</span>
+                    <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded-full text-sm font-semibold capitalize">
+                      {plan.status}
                     </span>
                   </div>
                 </div>
@@ -157,18 +166,8 @@ export default function MyPlanPage() {
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-gray-500">Payment Frequency</span>
-                    <span className="font-medium text-gray-900 capitalize">
-                      {plan.paymentFrequency}
-                    </span>
+                    <span className="font-medium text-gray-900 capitalize">{plan.paymentFrequency}</span>
                   </div>
-                  {plan.paymentFrequency === "weekly" && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-gray-500">Weekly Rate</span>
-                      <span className="font-medium text-gray-900">
-                        AED {((plan.monthlyRate ?? 0) / 4.33).toFixed(2)}
-                      </span>
-                    </div>
-                  )}
                 </div>
                 <Link
                   href="/payments"
@@ -187,24 +186,15 @@ export default function MyPlanPage() {
                 Quick Actions
               </h3>
               <div className="flex flex-wrap gap-3">
-                <Link
-                  href="/sessions"
-                  className="flex items-center gap-2 bg-white border border-orange-200 text-orange-700 px-4 py-2 rounded-lg font-medium text-sm hover:bg-orange-50 transition-colors"
-                >
+                <Link href="/sessions" className="flex items-center gap-2 bg-white border border-orange-200 text-orange-700 px-4 py-2 rounded-lg font-medium text-sm hover:bg-orange-50 transition-colors">
                   <Calendar className="w-4 h-4" />
                   View Sessions
                 </Link>
-                <Link
-                  href="/programs"
-                  className="flex items-center gap-2 bg-white border border-orange-200 text-orange-700 px-4 py-2 rounded-lg font-medium text-sm hover:bg-orange-50 transition-colors"
-                >
+                <Link href="/programs" className="flex items-center gap-2 bg-white border border-orange-200 text-orange-700 px-4 py-2 rounded-lg font-medium text-sm hover:bg-orange-50 transition-colors">
                   <Target className="w-4 h-4" />
                   View Programs
                 </Link>
-                <Link
-                  href="/payments"
-                  className="flex items-center gap-2 bg-white border border-orange-200 text-orange-700 px-4 py-2 rounded-lg font-medium text-sm hover:bg-orange-50 transition-colors"
-                >
+                <Link href="/payments" className="flex items-center gap-2 bg-white border border-orange-200 text-orange-700 px-4 py-2 rounded-lg font-medium text-sm hover:bg-orange-50 transition-colors">
                   <DollarSign className="w-4 h-4" />
                   Payment History
                 </Link>
@@ -222,10 +212,7 @@ export default function MyPlanPage() {
                 <p className="text-gray-500 mb-6 max-w-md mx-auto">
                   Start by completing your fitness assessment. Your trainer will then create a personalized plan for you.
                 </p>
-                <Link
-                  href="/assessment"
-                  className="inline-flex items-center gap-2 bg-orange-500 text-white px-6 py-3 rounded-xl font-semibold hover:bg-orange-600 transition-colors"
-                >
+                <Link href="/assessment" className="inline-flex items-center gap-2 bg-orange-500 text-white px-6 py-3 rounded-xl font-semibold hover:bg-orange-600 transition-colors">
                   Start Assessment
                   <ArrowRight className="w-4 h-4" />
                 </Link>

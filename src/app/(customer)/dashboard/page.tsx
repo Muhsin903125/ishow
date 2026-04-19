@@ -1,15 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/contexts/AuthContext";
-import { getAssessment, type Assessment } from "@/lib/db/assessments";
-import { getActivePlan, type Plan } from "@/lib/db/plans";
-import { listSessions, type TrainingSession } from "@/lib/db/sessions";
-import { listPayments, type Payment } from "@/lib/db/payments";
-import { getProfile } from "@/lib/db/profiles";
-import DashboardLayout from "@/components/DashboardLayout";
 import Link from "next/link";
+import { useAuth } from "@/contexts/AuthContext";
+import DashboardLayout from "@/components/DashboardLayout";
+import { getItems } from "@/lib/storage";
+import type { Assessment, Plan, Session, Payment } from "@/lib/mockData";
 import {
   Target,
   Calendar,
@@ -23,7 +20,7 @@ import {
   Flame,
   Zap,
   TrendingUp,
-  ChevronRight,
+  Loader2,
 } from "lucide-react";
 
 export default function CustomerDashboard() {
@@ -31,59 +28,137 @@ export default function CustomerDashboard() {
   const router = useRouter();
   const [assessment, setAssessment] = useState<Assessment | null>(null);
   const [plan, setPlan] = useState<Plan | null>(null);
-  const [trainerName, setTrainerName] = useState<string>('');
-  const [sessions, setSessions] = useState<TrainingSession[]>([]);
+  const [upcomingSessions, setUpcomingSessions] = useState<Session[]>([]);
   const [pendingPayments, setPendingPayments] = useState<Payment[]>([]);
+  const [todaySession, setTodaySession] = useState<Session | null>(null);
+  const [dataLoaded, setDataLoaded] = useState(false);
 
   useEffect(() => {
-    if (!loading && !user) { router.push("/login"); return; }
-    const load = async () => {
-      if (!loading && user) {
-        if (user.role === 'admin') { router.push('/admin/dashboard'); return; }
-        if (user.role === 'trainer') { router.push('/trainer/dashboard'); return; }
-
-        const [a, p, allSessions, payments] = await Promise.all([
-          getAssessment(user.id),
-          getActivePlan(user.id),
-          listSessions(user.id),
-          listPayments(user.id),
-        ]);
-
-        setAssessment(a);
-        setPlan(p);
-
-        if (p?.trainerId) {
-          getProfile(p.trainerId).then(tp => setTrainerName(tp?.name ?? 'Your Trainer'));
-        }
-
-        const today = new Date().toISOString().split("T")[0];
-        setSessions(
-          allSessions
-            .filter(s => s.status === "scheduled" && s.scheduledDate >= today)
-            .slice(0, 3)
-        );
-        setPendingPayments(payments.filter(p => p.status === "pending" || p.status === "overdue"));
+    if (!loading) {
+      if (!user) {
+        router.push("/login");
+        return;
       }
-    };
-    load();
-  }, [loading, user, router]);
+      if (user.role !== "customer") {
+        router.push("/trainer/dashboard");
+        return;
+      }
 
-  if (loading || !user) return null;
+      const today = new Date().toISOString().split("T")[0];
+      const allAssessments = getItems<Assessment>("ishow_assessments");
+      const userAssessment = allAssessments.find((a) => a.userId === user.id) ?? null;
 
-  const firstName = user?.name?.split(" ")[0];
-  const today = new Date().toLocaleDateString("en-AE", { weekday: "long", month: "long", day: "numeric" });
+      const allPlans = getItems<Plan>("ishow_plans");
+      const activePlan = allPlans.find((p) => p.userId === user.id && p.status === "active") ?? null;
+
+      const allSessions = getItems<Session>("ishow_sessions");
+      const todaySess = allSessions.find((s) => s.userId === user.id && s.date === today && s.status === "scheduled") ?? null;
+      const upcoming = allSessions
+        .filter((s) => s.userId === user.id && s.date >= today && s.status === "scheduled")
+        .sort((a, b) => a.date.localeCompare(b.date))
+        .slice(0, 3);
+
+      const allPayments = getItems<Payment>("ishow_payments");
+      const pending = allPayments.filter(
+        (p) => p.userId === user.id && (p.status === "pending" || p.status === "overdue")
+      );
+
+      // Gate: new customers must complete assessment before accessing dashboard
+      if (!userAssessment) {
+        router.push("/assessment");
+        return;
+      }
+
+      setAssessment(userAssessment);
+      setPlan(activePlan);
+      setUpcomingSessions(upcoming);
+      setTodaySession(todaySess);
+      setPendingPayments(pending);
+      setDataLoaded(true);
+    }
+  }, [user, loading, router]);
+
+  if (loading || !dataLoaded) {
+    return (
+      <DashboardLayout role="customer">
+        <div className="flex items-center justify-center h-full">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-700" />
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  const formatDate = (dateStr: string) => {
+    return new Date(dateStr + "T00:00:00").toLocaleDateString("en-US", {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+    });
+  };
 
   return (
-    <DashboardLayout role="CUSTOMER">
-      <div className="min-h-full bg-zinc-950 relative overflow-hidden">
-        {/* Background glows */}
-        <div className="pointer-events-none absolute -top-40 right-0 w-[500px] h-[500px] rounded-full bg-orange-500/6 blur-[120px]" />
-        <div className="pointer-events-none absolute bottom-0 left-0 w-[400px] h-[400px] rounded-full bg-blue-600/5 blur-[100px]" />
+    <DashboardLayout role="customer">
+      <div className="p-6 lg:p-8 max-w-6xl mx-auto">
+        {/* Welcome Header */}
+        <div className="mb-8">
+          <h1 className="text-2xl font-black text-gray-900">
+            Welcome back, {user?.name?.split(" ")[0]}!
+          </h1>
+          <p className="text-gray-500 mt-1">
+            {todaySession
+              ? "You have a session today — let's crush it!"
+              : "Here's your fitness overview"}
+          </p>
+        </div>
 
-        <div className="relative z-10 p-6 lg:p-8 max-w-6xl">
+        {/* Today's Session Alert */}
+        {todaySession && (
+          <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl p-5 mb-6 flex items-center gap-4 shadow-lg">
+            <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
+              <Calendar className="w-6 h-6 text-white" />
+            </div>
+            <div className="flex-1">
+              <p className="font-bold text-lg">Today&apos;s Session: {todaySession.title}</p>
+              <p className="text-blue-100 text-sm mt-0.5">
+                {todaySession.time} · {todaySession.duration} minutes · with {todaySession.trainerName}
+              </p>
+            </div>
+            <Link
+              href="/sessions"
+              className="bg-white text-blue-700 px-4 py-2 rounded-lg text-sm font-bold hover:bg-blue-50 transition-colors whitespace-nowrap"
+            >
+              View Details
+            </Link>
+          </div>
+        )}
 
-          {/* Header */}
-          <div className="mb-8 flex items-start justify-between gap-4">
+        {/* Alert: No assessment */}
+        {!assessment && (
+          <div className="bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 rounded-xl p-5 mb-6 flex items-start gap-4">
+            <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
+              <AlertCircle className="w-5 h-5 text-orange-600" />
+            </div>
+            <div className="flex-1">
+              <p className="font-semibold text-orange-900">Complete Your Assessment</p>
+              <p className="text-orange-700 text-sm mt-1">
+                Fill out your fitness assessment to get started with a personalized plan.
+              </p>
+              <Link
+                href="/assessment"
+                className="inline-flex items-center gap-1 mt-3 bg-orange-500 text-white px-4 py-1.5 rounded-lg text-sm font-semibold hover:bg-orange-600 transition-colors"
+              >
+                Start Assessment <ArrowRight className="w-3 h-3" />
+              </Link>
+            </div>
+          </div>
+        )}
+
+        {/* Alert: Assessment pending */}
+        {assessment && assessment.status === "pending" && !plan && (
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-5 mb-6 flex items-start gap-4">
+            <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+              <Clock className="w-5 h-5 text-blue-600" />
+            </div>
             <div>
               <p className="text-orange-500 text-xs font-bold tracking-[0.3em] uppercase mb-1.5">Member Portal</p>
               <h1 className="text-3xl lg:text-4xl font-black text-white tracking-tight leading-none">
@@ -95,7 +170,26 @@ export default function CustomerDashboard() {
               <p className="text-zinc-600 text-xs uppercase tracking-widest mb-1">Today</p>
               <p className="text-zinc-300 font-semibold text-sm">{today}</p>
             </div>
+            <p className="text-2xl font-black text-gray-900">{upcomingSessions.length}</p>
+            <p className="text-gray-500 text-sm mt-1">Upcoming Sessions</p>
           </div>
+          <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+            <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center mb-3">
+              <CheckCircle className="w-5 h-5 text-green-600" />
+            </div>
+            <p className="text-2xl font-black text-gray-900">
+              {assessment ? (assessment.status === "reviewed" ? "Done" : "Pending") : "None"}
+            </p>
+            <p className="text-gray-500 text-sm mt-1">Assessment</p>
+          </div>
+          <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+            <div className="w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center mb-3">
+              <CreditCard className="w-5 h-5 text-red-600" />
+            </div>
+            <p className="text-2xl font-black text-gray-900">{pendingPayments.length}</p>
+            <p className="text-gray-500 text-sm mt-1">Pending Payments</p>
+          </div>
+        </div>
 
           {/* Alerts */}
           {!assessment && (
@@ -114,118 +208,28 @@ export default function CustomerDashboard() {
                 </Link>
               </div>
             </div>
-          )}
-
-          {assessment && assessment.status === "pending" && !plan && (
-            <div className="rounded-2xl border border-blue-500/20 bg-blue-500/8 p-5 mb-6 flex items-start gap-4">
-              <div className="w-10 h-10 rounded-xl bg-blue-500/15 border border-blue-500/20 flex items-center justify-center shrink-0">
-                <Clock className="w-5 h-5 text-blue-400" />
-              </div>
-              <div>
-                <p className="font-bold text-white text-sm">Assessment Under Review</p>
-                <p className="text-zinc-400 text-sm mt-0.5">Your trainer will review it and assign your plan soon.</p>
-              </div>
-            </div>
-          )}
-
-          {/* Stats row */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
-            {[
-              {
-                label: "Training Plan",
-                value: plan ? "Active" : "None",
-                icon: Target,
-                color: "orange",
-                href: "/my-plan",
-              },
-              {
-                label: "Upcoming Sessions",
-                value: String(sessions.length),
-                icon: Calendar,
-                color: "blue",
-                href: "/sessions",
-              },
-              {
-                label: "Assessment",
-                value: assessment ? (assessment.status === "reviewed" ? "Done" : "Pending") : "None",
-                icon: CheckCircle,
-                color: "green",
-                href: "/assessment",
-              },
-              {
-                label: "Pending Payments",
-                value: String(pendingPayments.length),
-                icon: CreditCard,
-                color: pendingPayments.length > 0 ? "red" : "zinc",
-                href: "/payments",
-              },
-            ].map(({ label, value, icon: Icon, color, href }) => {
-              const colorMap: Record<string, string> = {
-                orange: "text-orange-400 bg-orange-500/10 border-orange-500/20",
-                blue: "text-blue-400 bg-blue-500/10 border-blue-500/20",
-                green: "text-green-400 bg-green-500/10 border-green-500/20",
-                red: "text-red-400 bg-red-500/10 border-red-500/20",
-                zinc: "text-zinc-500 bg-zinc-800 border-zinc-700",
-              };
-              const accentMap: Record<string, string> = {
-                orange: "bg-orange-500",
-                blue: "bg-blue-500",
-                green: "bg-green-500",
-                red: "bg-red-500",
-                zinc: "bg-zinc-700",
-              };
-              return (
-                <Link key={label} href={href}
-                  className="group rounded-2xl bg-zinc-900 border border-zinc-800 p-5 hover:border-zinc-700 transition-all relative overflow-hidden"
-                >
-                  <div className={`absolute top-0 left-0 right-0 h-0.5 ${accentMap[color]}`} />
-                  <div className={`w-9 h-9 rounded-xl border flex items-center justify-center mb-3 ${colorMap[color]}`}>
-                    <Icon className="w-4 h-4" />
-                  </div>
-                  <p className="text-2xl font-black text-white">{value}</p>
-                  <p className="text-zinc-500 text-xs mt-1">{label}</p>
-                </Link>
-              );
-            })}
-          </div>
-
-          {/* Main grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-5">
-
-            {/* Current Plan */}
-            <div className="lg:col-span-2 rounded-2xl bg-zinc-900 border border-zinc-800 overflow-hidden">
-              <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-zinc-800">
-                <div className="flex items-center gap-2">
-                  <TrendingUp className="w-4 h-4 text-orange-400" />
-                  <h2 className="font-bold text-white text-sm">Current Plan</h2>
+            {plan ? (
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center flex-shrink-0">
+                  <TrendingUp className="w-6 h-6 text-white" />
                 </div>
-                <Link href="/my-plan" className="text-xs text-zinc-500 hover:text-orange-400 flex items-center gap-1 transition-colors font-medium">
-                  View details <ChevronRight className="w-3 h-3" />
-                </Link>
-              </div>
-              <div className="p-6">
-                {plan ? (
-                  <div className="relative rounded-xl border border-orange-500/20 bg-gradient-to-br from-orange-500/10 via-orange-500/5 to-transparent p-5 overflow-hidden">
-                    <Flame className="absolute bottom-2 right-3 w-24 h-24 text-orange-500/10" />
-                    <div className="relative">
-                      <span className="inline-flex items-center gap-1.5 rounded-full border border-green-500/30 bg-green-500/10 px-2.5 py-0.5 text-[10px] font-bold text-green-400 tracking-widest uppercase mb-3">
-                        <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-                        Active
+                <div className="flex-1">
+                  <p className="font-bold text-gray-900 text-lg">{plan.name}</p>
+                  <p className="text-gray-500 text-sm">Trainer: {plan.trainerName}</p>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {plan.goals.slice(0, 2).map((goal, i) => (
+                      <span key={i} className="bg-blue-50 text-blue-700 text-xs px-2 py-1 rounded-full">
+                        {goal.length > 30 ? goal.slice(0, 30) + "..." : goal}
                       </span>
-                      <p className="font-black text-white text-xl leading-tight">{plan.name}</p>
-                      <p className="text-zinc-400 text-sm mt-1">Coach: {trainerName || 'Your Trainer'}</p>
-                      {plan.goals && plan.goals.length > 0 && (
-                        <div className="flex flex-wrap gap-2 mt-3">
-                          {plan.goals.map((g) => (
-                            <span key={g} className="text-xs bg-zinc-800 text-zinc-300 px-2.5 py-1 rounded-lg border border-zinc-700">{g}</span>
-                          ))}
-                        </div>
-                      )}
-                      <div className="flex items-end gap-1 mt-4">
-                        <p className="text-orange-400 font-black text-2xl">AED {plan.monthlyRate}</p>
-                        <p className="text-zinc-500 text-sm mb-0.5">/month</p>
-                      </div>
-                    </div>
+                    ))}
+                  </div>
+                  <div className="flex items-center gap-4 mt-3">
+                    <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-semibold">
+                      Active
+                    </span>
+                    <span className="text-gray-900 font-bold">
+                      ${plan.monthlyRate}/month
+                    </span>
                   </div>
                 ) : (
                   <div className="text-center py-10">
@@ -277,26 +281,27 @@ export default function CustomerDashboard() {
             </div>
           </div>
 
-          {/* Quick links */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            {[
-              { href: "/assessment", icon: ClipboardList, label: "Assessment", color: "orange" },
-              { href: "/programs", icon: Dumbbell, label: "Programs", color: "blue" },
-              { href: "/payments", icon: CreditCard, label: "Payments", color: "green" },
-              { href: "/sessions", icon: Zap, label: "Sessions", color: "violet" },
-            ].map(({ href, icon: Icon, label, color }) => {
-              const colorMap: Record<string, string> = {
-                orange: "text-orange-400 bg-orange-500/10 border-orange-500/20 group-hover:border-orange-500/40",
-                blue: "text-blue-400 bg-blue-500/10 border-blue-500/20 group-hover:border-blue-500/40",
-                green: "text-green-400 bg-green-500/10 border-green-500/20 group-hover:border-green-500/40",
-                violet: "text-violet-400 bg-violet-500/10 border-violet-500/20 group-hover:border-violet-500/40",
-              };
-              return (
-                <Link key={href} href={href}
-                  className="group flex items-center gap-3 p-4 rounded-2xl border border-zinc-800 bg-zinc-900 hover:border-zinc-700 hover:bg-zinc-800/50 transition-all"
-                >
-                  <div className={`w-9 h-9 rounded-xl border flex items-center justify-center shrink-0 transition-colors ${colorMap[color]}`}>
-                    <Icon className="w-4 h-4" />
+          {/* Upcoming Sessions */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-bold text-gray-900 text-lg">Upcoming Sessions</h2>
+              <Link href="/sessions" className="text-blue-700 text-sm font-medium hover:underline">
+                All
+              </Link>
+            </div>
+            {upcomingSessions.length > 0 ? (
+              <div className="space-y-3">
+                {upcomingSessions.map((sess) => (
+                  <div key={sess.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                    <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center flex-shrink-0">
+                      <Calendar className="w-4 h-4 text-white" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-gray-900 text-sm truncate">{sess.title}</p>
+                      <p className="text-gray-500 text-xs">
+                        {formatDate(sess.date)} at {sess.time}
+                      </p>
+                    </div>
                   </div>
                   <span className="font-semibold text-zinc-300 group-hover:text-white text-sm transition-colors">{label}</span>
                   <ChevronRight className="w-4 h-4 text-zinc-700 ml-auto group-hover:text-zinc-500 transition-colors" />
@@ -305,6 +310,25 @@ export default function CustomerDashboard() {
             })}
           </div>
 
+        {/* Quick Links */}
+        <div className="mt-6 grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {[
+            { href: "/assessment", icon: ClipboardList, label: "Assessment", bg: "bg-orange-100", color: "text-orange-600" },
+            { href: "/programs", icon: Dumbbell, label: "Programs", bg: "bg-blue-100", color: "text-blue-700" },
+            { href: "/payments", icon: CreditCard, label: "Payments", bg: "bg-green-100", color: "text-green-600" },
+            { href: "/sessions", icon: Calendar, label: "Sessions", bg: "bg-purple-100", color: "text-purple-600" },
+          ].map(({ href, icon: Icon, label, bg, color }) => (
+            <Link
+              key={href}
+              href={href}
+              className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:shadow-md transition-all hover:-translate-y-0.5 flex items-center gap-3"
+            >
+              <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${bg}`}>
+                <Icon className={`w-5 h-5 ${color}`} />
+              </div>
+              <span className="font-medium text-gray-700">{label}</span>
+            </Link>
+          ))}
         </div>
       </div>
     </DashboardLayout>
