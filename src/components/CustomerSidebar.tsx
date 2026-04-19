@@ -49,7 +49,7 @@ export default function CustomerSidebar({ onClose }: Props) {
         </Link>
         {onClose && (
           <button onClick={onClose} className="lg:hidden p-1">
-            <X className="w-5 h-5 text-gray-500" />
+            <X className="w-5 h-5 text-zinc-500" />
           </button>
         )}
       </div>
@@ -67,8 +67,7 @@ export default function CustomerSidebar({ onClose }: Props) {
         </div>
       </div>
 
-      {/* Navigation */}
-      <nav className="flex-1 px-4 py-4 space-y-1 overflow-y-auto">
+      <nav className="flex-1 px-4 pb-4 space-y-0.5 overflow-y-auto">
         {navItems.map(({ href, icon: Icon, label }) => {
           const isActive = pathname === href;
           return (
@@ -76,26 +75,25 @@ export default function CustomerSidebar({ onClose }: Props) {
               key={href}
               href={href}
               onClick={onClose}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium transition-all ${
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${
                 isActive
-                  ? "bg-blue-700 text-white shadow-sm"
-                  : "text-gray-600 hover:bg-gray-50 hover:text-blue-700"
+                  ? "bg-orange-500 text-white shadow-lg shadow-orange-500/20"
+                  : "text-zinc-400 hover:bg-zinc-800/70 hover:text-white"
               }`}
             >
-              <Icon className="w-5 h-5 flex-shrink-0" />
+              <Icon className="w-4.5 h-4.5 w-[18px] h-[18px] shrink-0" />
               {label}
             </Link>
           );
         })}
       </nav>
 
-      {/* Sign out */}
-      <div className="p-4 border-t border-gray-100">
+      <div className="px-4 pb-5 border-t border-zinc-800/60 pt-4">
         <button
           onClick={handleSignOut}
           className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-600 hover:bg-red-50 hover:text-red-600 w-full font-medium transition-all"
         >
-          <LogOut className="w-5 h-5" />
+          <LogOut className="w-[18px] h-[18px] shrink-0" />
           Sign Out
         </button>
       </div>

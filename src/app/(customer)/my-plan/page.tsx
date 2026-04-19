@@ -162,7 +162,7 @@ export default function MyPlanPage() {
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="text-gray-500">Monthly Rate</span>
-                    <span className="text-xl font-black text-gray-900">${plan.monthlyRate}</span>
+                    <span className="text-xl font-black text-gray-900">AED {plan.monthlyRate}</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-gray-500">Payment Frequency</span>

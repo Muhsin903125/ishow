@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
 import { Dumbbell, Menu, X, User, LogOut, LayoutDashboard } from "lucide-react";
@@ -8,6 +8,20 @@ import { Dumbbell, Menu, X, User, LogOut, LayoutDashboard } from "lucide-react";
 export default function Navbar() {
   const { user, logout } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 40);
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  const navLinks = [
+    { href: "/#services", label: "Services" },
+    { href: "/#how-it-works", label: "How It Works" },
+    { href: "/#videos", label: "Videos" },
+    { href: "/#trainer", label: "Coach" },
+  ];
 
   const handleSignOut = () => {
     logout();
@@ -16,18 +30,24 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="bg-white shadow-sm border-b border-gray-100 sticky top-0 z-50">
+    <nav
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+        scrolled
+          ? "bg-gray-950/95 backdrop-blur-xl shadow-2xl shadow-black/30 border-b border-white/5"
+          : "bg-transparent"
+      }`}
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16">
-          <div className="flex items-center">
-            <Link href="/" className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-gradient-to-br from-blue-700 to-orange-500 rounded-lg flex items-center justify-center">
-                <Dumbbell className="w-5 h-5 text-white" />
-              </div>
-              <span className="font-bold text-xl text-gray-900">iShow</span>
-              <span className="text-orange-500 font-bold text-xl">Fitness</span>
-            </Link>
-          </div>
+        <div className="flex justify-between items-center h-20">
+
+          {/* Logo */}
+          <Link href="/" className="group whitespace-nowrap">
+            <div className="leading-none">
+              <span className="font-black text-base text-white tracking-tight sm:text-lg">iShow</span>
+              <span className="font-black text-base text-orange-400 tracking-tight sm:text-lg">Transformation</span>
+            </div>
+            <div className="mt-1 h-px w-0 bg-orange-400 transition-all duration-300 group-hover:w-full" />
+          </Link>
 
           {/* Desktop nav */}
           <div className="hidden md:flex items-center gap-6">
@@ -47,9 +67,10 @@ export default function Navbar() {
                 </Link>
                 <Link
                   href="/register"
-                  className="bg-orange-500 hover:bg-orange-600 text-white px-5 py-2 rounded-full font-semibold transition-colors shadow-sm"
+                  className="ml-2 inline-flex items-center gap-2 bg-orange-500 hover:bg-orange-400 text-white px-5 py-2.5 rounded-full text-sm font-bold transition-all shadow-lg shadow-orange-500/25 hover:shadow-orange-500/40 hover:-translate-y-0.5 group"
                 >
-                  Get Started
+                  <Flame className="w-4 h-4" />
+                  Start Free
                 </Link>
               </>
             ) : (
@@ -76,14 +97,12 @@ export default function Navbar() {
           </div>
 
           {/* Mobile menu button */}
-          <div className="md:hidden flex items-center">
-            <button
-              onClick={() => setMobileOpen(!mobileOpen)}
-              className="p-2 rounded-md text-gray-600 hover:text-gray-900"
-            >
-              {mobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-            </button>
-          </div>
+          <button
+            onClick={() => setMobileOpen(!mobileOpen)}
+            className="p-2 rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition-all lg:hidden"
+          >
+            {mobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          </button>
         </div>
       </div>
 

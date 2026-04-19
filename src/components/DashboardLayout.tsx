@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Menu, Dumbbell } from "lucide-react";
 import CustomerSidebar from "./CustomerSidebar";
 import TrainerSidebar from "./TrainerSidebar";
+import AdminSidebar from "./AdminSidebar";
 
 interface Props {
   children: React.ReactNode;
@@ -13,8 +14,14 @@ interface Props {
 export default function DashboardLayout({ children, role }: Props) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  function Sidebar({ onClose }: { onClose?: () => void }) {
+    if (role === "TRAINER") return <TrainerSidebar onClose={onClose} />;
+    if (role === "ADMIN") return <AdminSidebar onClose={onClose} />;
+    return <CustomerSidebar onClose={onClose} />;
+  }
+
   return (
-    <div className="flex h-screen bg-gray-50 overflow-hidden">
+    <div className="flex h-screen bg-zinc-950 overflow-hidden">
       {/* Desktop Sidebar */}
       <div className="hidden lg:flex lg:w-64 lg:flex-shrink-0">
         {role === "trainer" ? (
@@ -28,7 +35,7 @@ export default function DashboardLayout({ children, role }: Props) {
       {sidebarOpen && (
         <div className="fixed inset-0 z-40 lg:hidden">
           <div
-            className="fixed inset-0 bg-black/50"
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm"
             onClick={() => setSidebarOpen(false)}
           />
           <div className="fixed left-0 top-0 h-full w-64 z-50">
@@ -42,12 +49,12 @@ export default function DashboardLayout({ children, role }: Props) {
       )}
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
         {/* Mobile Header */}
-        <div className="lg:hidden flex items-center gap-4 px-4 py-3 bg-white border-b border-gray-200 sticky top-0 z-30">
+        <div className="lg:hidden flex items-center gap-4 px-4 py-3 bg-zinc-950 border-b border-zinc-800/60 sticky top-0 z-30">
           <button
             onClick={() => setSidebarOpen(true)}
-            className="p-2 rounded-md text-gray-600 hover:bg-gray-100"
+            className="p-2 rounded-lg text-zinc-500 hover:bg-zinc-800 hover:text-white transition-colors"
           >
             <Menu className="w-5 h-5" />
           </button>
@@ -62,7 +69,7 @@ export default function DashboardLayout({ children, role }: Props) {
         </div>
 
         {/* Page Content */}
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto min-w-0">
           {children}
         </main>
       </div>

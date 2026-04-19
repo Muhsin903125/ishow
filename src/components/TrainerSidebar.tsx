@@ -8,6 +8,11 @@ import {
   Users,
   Calendar,
   Dumbbell,
+  ClipboardList,
+  Layers,
+  MapPin,
+  Target,
+  FileText,
   LogOut,
   X,
   UserPlus,
@@ -19,6 +24,13 @@ const navItems = [
   { href: "/trainer/sessions",     icon: Calendar,        label: "Sessions" },
   { href: "/trainer/programs",     icon: Dumbbell,        label: "Programs" },
   { href: "/trainer/team",         icon: UserPlus,        label: "Team" },
+];
+
+const masterItems = [
+  { href: "/admin/master/exercises", icon: Dumbbell, label: "Exercises" },
+  { href: "/admin/master/locations", icon: MapPin, label: "Locations" },
+  { href: "/admin/master/goals", icon: Target, label: "Goals" },
+  { href: "/admin/master/plan-templates", icon: FileText, label: "Plan Templates" },
 ];
 
 interface Props {
@@ -65,8 +77,7 @@ export default function TrainerSidebar({ onClose }: Props) {
         </div>
       </div>
 
-      {/* Navigation */}
-      <nav className="flex-1 px-4 py-4 space-y-1 overflow-y-auto">
+      <nav className="flex-1 px-4 pb-4 space-y-0.5 overflow-y-auto">
         {navItems.map(({ href, icon: Icon, label }) => {
           const isActive = pathname === href || pathname.startsWith(href + "/");
           return (
@@ -74,17 +85,42 @@ export default function TrainerSidebar({ onClose }: Props) {
               key={href}
               href={href}
               onClick={onClose}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium transition-all ${
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${
                 isActive
                   ? "bg-blue-700 text-white shadow-sm"
                   : "text-gray-600 hover:bg-gray-50 hover:text-blue-700"
               }`}
             >
-              <Icon className="w-5 h-5 flex-shrink-0" />
+              <Icon className="w-[18px] h-[18px] shrink-0" />
               {label}
             </Link>
           );
         })}
+
+        <div className="pt-5">
+          <div className="flex items-center gap-2 px-3 pb-2">
+            <Layers className="w-3 h-3 text-zinc-600" />
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-600">Master Data</p>
+          </div>
+          {masterItems.map(({ href, icon: Icon, label }) => {
+            const isActive = pathname === href;
+            return (
+              <Link
+                key={href}
+                href={href}
+                onClick={onClose}
+                className={`flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition-all ${
+                  isActive
+                    ? "bg-zinc-800 text-white"
+                    : "text-zinc-500 hover:bg-zinc-800/70 hover:text-zinc-300"
+                }`}
+              >
+                <Icon className="w-[16px] h-[16px] shrink-0" />
+                {label}
+              </Link>
+            );
+          })}
+        </div>
       </nav>
 
       {/* Sign out */}
@@ -93,7 +129,7 @@ export default function TrainerSidebar({ onClose }: Props) {
           onClick={handleSignOut}
           className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-500 hover:bg-red-50 hover:text-red-600 w-full font-medium transition-all"
         >
-          <LogOut className="w-5 h-5" />
+          <LogOut className="w-[18px] h-[18px] shrink-0" />
           Sign Out
         </button>
       </div>

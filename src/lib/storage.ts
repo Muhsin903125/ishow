@@ -7,7 +7,7 @@ export function getItems<T>(key: string): T[] {
     return [];
   }
 }
-
+ 
 export function setItems<T>(key: string, items: T[]): void {
   if (typeof window === 'undefined') return;
   localStorage.setItem(key, JSON.stringify(items));

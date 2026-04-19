@@ -41,6 +41,71 @@ const STEPS = [
   { title: "When do you train?",       sub: "Pick a preferred time" },
 ];
 
+type Form = {
+  age: string;
+  gender: "male" | "female" | "prefer_not_to_say" | "";
+  weight: string;
+  height: string;
+  goals: string[];
+  experienceLevel: string;
+  daysPerWeek: string;
+  preferredDate: string;
+  preferredTimeSlot: string;
+  preferredLocation: string;
+  medicalConditions: string[];
+  otherHealth: string;
+};
+
+function blank(): Form {
+  return {
+    age: "", gender: "", weight: "", height: "", goals: [],
+    experienceLevel: "", daysPerWeek: "3",
+    preferredDate: "", preferredTimeSlot: "", preferredLocation: "",
+    medicalConditions: [], otherHealth: "",
+  };
+}
+
+function toggle(arr: string[], v: string) {
+  return arr.includes(v) ? arr.filter(x => x !== v) : [...arr, v];
+}
+
+function Chip({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl border text-sm font-medium transition-all ${
+        active
+          ? "border-orange-500/60 bg-orange-500/15 text-orange-300"
+          : "border-zinc-700 bg-zinc-800/60 text-zinc-400 hover:border-zinc-600 hover:text-zinc-200"
+      }`}
+    >
+      {active && <CheckCircle className="w-3.5 h-3.5 shrink-0" />}
+      {children}
+    </button>
+  );
+}
+
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return <p className="text-xs font-bold uppercase tracking-wider text-zinc-500 mb-3">{children}</p>;
+}
+
+function Input({ label, type = "text", value, onChange, placeholder, min }: {
+  label: string; type?: string; value: string;
+  onChange: (v: string) => void; placeholder?: string; min?: string;
+}) {
+  return (
+    <div>
+      <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-1.5">{label}</label>
+      <input
+        type={type} value={value} onChange={e => onChange(e.target.value)}
+        placeholder={placeholder} min={min}
+        className="w-full rounded-xl bg-zinc-800/60 border border-zinc-700 px-4 py-3 text-sm text-white placeholder-zinc-600 outline-none focus:border-orange-500/60 focus:ring-2 focus:ring-orange-500/10 transition"
+      />
+    </div>
+  );
+}
+
 export default function AssessmentPage() {
   const { user, loading } = useAuth();
   const router = useRouter();

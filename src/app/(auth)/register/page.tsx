@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { useState } from "react";
 import Link from "next/link";
@@ -18,25 +18,19 @@ export default function RegisterPage() {
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [gLoading, setGLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [emailSent, setEmailSent] = useState(false);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
+  useEffect(() => {
+    if (!authLoading && user) router.push('/assessment');
+  }, [authLoading, router, user]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
-
-    if (formData.password !== formData.confirmPassword) {
-      setError("Passwords do not match");
-      return;
-    }
-
-    if (formData.password.length < 6) {
-      setError("Password must be at least 6 characters");
-      return;
-    }
-
+    setError('');
+    if (!name.trim()) { setError('Please enter your name.'); return; }
+    if (password.length < 8) { setError('Password must be at least 8 characters.'); return; }
     setLoading(true);
 
     const user = await register({
@@ -47,6 +41,10 @@ export default function RegisterPage() {
     });
 
     setLoading(false);
+    if (err) { setError(err); return; }
+    if (needsConfirmation) { setEmailSent(true); return; }
+    router.push('/assessment');
+  };
 
     if (!user) {
       setError("An account with this email already exists");
@@ -56,60 +54,74 @@ export default function RegisterPage() {
     router.push("/assessment");
   };
 
-  const benefits = [
-    "Personalized training program",
-    "1-on-1 sessions with expert trainer",
-    "Daily workout activities",
-    "Progress tracking dashboard",
-  ];
+  if (!authLoading && user) return null;
+
+  if (emailSent) {
+    return (
+      <div className="min-h-screen bg-zinc-950 flex items-center justify-center px-5">
+        <div className="w-full max-w-sm text-center">
+          <div className="w-16 h-16 rounded-2xl bg-green-500/10 border border-green-500/20 flex items-center justify-center mx-auto mb-5">
+            <CheckCircle className="w-8 h-8 text-green-400" />
+          </div>
+          <h2 className="text-2xl font-black text-white mb-2">Check your inbox</h2>
+          <p className="text-zinc-400 text-sm leading-relaxed mb-1">A confirmation link was sent to</p>
+          <p className="font-semibold text-white text-sm mb-5">{email}</p>
+          <p className="text-xs text-zinc-600 mb-6">Click the link to activate your account, then sign in.</p>
+          <Link href="/login" className="inline-flex items-center gap-2 rounded-xl bg-orange-500 hover:bg-orange-400 px-6 py-3 text-sm font-black text-white transition-colors shadow-lg shadow-orange-500/20">
+            Back to sign in
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 flex flex-col items-center justify-center px-4 py-12">
-      <div className="w-full max-w-4xl grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
-        {/* Left side - benefits */}
-        <div className="hidden lg:block">
-          <Link href="/" className="inline-flex items-center gap-2 mb-8">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-orange-500 rounded-xl flex items-center justify-center">
-              <Dumbbell className="w-6 h-6 text-white" />
-            </div>
-            <span className="font-bold text-xl text-white">iShow<span className="text-orange-400">Fitness</span></span>
-          </Link>
-          <h2 className="text-4xl font-black text-white mb-4">
-            Start Your
-            <span className="block text-orange-400">Fitness Journey</span>
-            Today
-          </h2>
-          <p className="text-blue-200 text-lg mb-8 leading-relaxed">
-            Join our community and get a personalized training experience designed just for you.
+    <div className="min-h-screen bg-zinc-950 flex items-center justify-center px-5 py-12">
+      <div className="w-full max-w-sm">
+        <Link href="/" className="inline-flex items-baseline gap-0 mb-10">
+          <span className="font-black text-xl text-white tracking-tight">iShow</span>
+          <span className="font-black text-xl text-orange-500 tracking-tight">Transformation</span>
+        </Link>
+
+        <div className="mb-7">
+          <h1 className="text-3xl font-black text-white tracking-tight">Create account</h1>
+          <p className="text-zinc-500 text-sm mt-1.5">
+            Already have one?{' '}
+            <Link href="/login" className="text-orange-400 font-semibold hover:text-orange-300 transition-colors">Sign in</Link>
           </p>
-          <div className="space-y-3">
-            {benefits.map((benefit) => (
-              <div key={benefit} className="flex items-center gap-3">
-                <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0">
-                  <CheckCircle className="w-3 h-3 text-white" />
-                </div>
-                <span className="text-blue-100">{benefit}</span>
-              </div>
-            ))}
-          </div>
         </div>
 
-        {/* Registration form */}
-        <div>
-          <div className="lg:hidden text-center mb-6">
-            <Link href="/" className="inline-flex items-center gap-2 justify-center">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-orange-500 rounded-xl flex items-center justify-center">
-                <Dumbbell className="w-6 h-6 text-white" />
-              </div>
-            </Link>
-            <h1 className="text-2xl font-black text-white mt-3">Create Account</h1>
-          </div>
+        <button type="button" onClick={handleGoogle} disabled={gLoading}
+          className="w-full flex items-center justify-center gap-2.5 rounded-xl border border-zinc-700 bg-zinc-800/50 hover:bg-zinc-800 py-3 px-4 text-sm font-semibold text-zinc-200 transition-all mb-5 disabled:opacity-50"
+        >
+          {gLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <GoogleIcon />}
+          Continue with Google
+        </button>
 
-          <div className="bg-white rounded-2xl shadow-2xl p-8">
-            <div className="hidden lg:block mb-6">
-              <h3 className="text-2xl font-black text-gray-900">Create Account</h3>
-              <p className="text-gray-500 mt-1">Fill in your details to get started</p>
+        <div className="flex items-center gap-3 mb-5">
+          <div className="flex-1 h-px bg-zinc-800" />
+          <span className="text-xs text-zinc-600 font-medium">or with email</span>
+          <div className="flex-1 h-px bg-zinc-800" />
+        </div>
+
+        {error && (
+          <div className="flex items-start gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400 mb-4">
+            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />{error}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-1.5">Full Name</label>
+            <div className="relative">
+              <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+              <input
+                type="text" value={name} onChange={e => setName(e.target.value)}
+                placeholder="Your full name" required autoComplete="name"
+                className="w-full rounded-xl bg-zinc-800/60 border border-zinc-700 pl-10 pr-4 py-3 text-sm text-white placeholder-zinc-600 outline-none focus:border-orange-500/70 focus:ring-2 focus:ring-orange-500/15 transition"
+              />
             </div>
+          </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               {error && (
@@ -201,38 +213,31 @@ export default function RegisterPage() {
                 </div>
               </div>
 
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white py-3 rounded-lg font-bold text-base transition-all shadow-md hover:shadow-lg disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-2"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Creating account...
-                  </>
-                ) : (
-                  "Create Account"
-                )}
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-1.5">Password</label>
+            <div className="relative">
+              <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+              <input
+                type={showPw ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)}
+                placeholder="Min. 8 characters" required autoComplete="new-password"
+                className="w-full rounded-xl bg-zinc-800/60 border border-zinc-700 pl-10 pr-10 py-3 text-sm text-white placeholder-zinc-600 outline-none focus:border-orange-500/70 focus:ring-2 focus:ring-orange-500/15 transition"
+              />
+              <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors">
+                {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
-            </form>
-
-            <div className="mt-5 text-center">
-              <p className="text-gray-600 text-sm">
-                Already have an account?{" "}
-                <Link href="/login" className="text-blue-700 font-semibold hover:text-blue-800">
-                  Sign in
-                </Link>
-              </p>
             </div>
           </div>
 
-          <p className="text-center text-blue-300/60 text-sm mt-4">
-            <Link href="/" className="hover:text-blue-300 transition-colors">
-              ← Back to home
-            </Link>
-          </p>
-        </div>
+          <button type="submit" disabled={loading}
+            className="w-full flex items-center justify-center gap-2 rounded-xl bg-orange-500 hover:bg-orange-400 active:bg-orange-600 py-3.5 text-sm font-black text-white transition-all disabled:opacity-50 shadow-lg shadow-orange-500/20 mt-2"
+          >
+            {loading ? <><Loader2 className="w-4 h-4 animate-spin" />Creating account…</> : <>Create account <ArrowRight className="w-4 h-4" /></>}
+          </button>
+        </form>
+
+        <p className="text-center text-xs text-zinc-600 mt-8">
+          <Link href="/" className="hover:text-zinc-400 transition-colors">← Back to home</Link>
+        </p>
       </div>
     </div>
   );

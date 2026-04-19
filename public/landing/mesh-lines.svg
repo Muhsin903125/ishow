@@ -1,0 +1,27 @@
+<svg width="1600" height="900" viewBox="0 0 1600 900" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="mesh-orange" x1="266" y1="112" x2="1302" y2="795" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F97316" stop-opacity="0.55" />
+      <stop offset="1" stop-color="#3B82F6" stop-opacity="0.45" />
+    </linearGradient>
+  </defs>
+  <path d="M-96 692C76 638 194 587 349 609C512 632 591 740 762 734C940 728 1047 603 1214 585C1367 569 1500 623 1696 700" stroke="url(#mesh-orange)" stroke-width="2" stroke-linecap="round" opacity="0.38" />
+  <path d="M-34 480C136 447 276 369 429 389C590 410 674 541 833 553C1009 567 1145 467 1306 443C1455 420 1554 453 1701 533" stroke="white" stroke-opacity="0.12" stroke-width="2" stroke-linecap="round" />
+  <path d="M42 238C201 281 314 372 470 354C617 337 712 212 866 194C1035 174 1151 281 1308 304C1445 325 1539 292 1679 216" stroke="white" stroke-opacity="0.08" stroke-width="2" stroke-linecap="round" />
+  <g opacity="0.1" stroke="white">
+    <path d="M184 0V900" />
+    <path d="M418 0V900" />
+    <path d="M652 0V900" />
+    <path d="M886 0V900" />
+    <path d="M1120 0V900" />
+    <path d="M1354 0V900" />
+    <path d="M0 180H1600" />
+    <path d="M0 392H1600" />
+    <path d="M0 604H1600" />
+    <path d="M0 816H1600" />
+  </g>
+  <circle cx="276" cy="186" r="88" fill="#F97316" fill-opacity="0.08" />
+  <circle cx="1328" cy="672" r="138" fill="#3B82F6" fill-opacity="0.08" />
+  <circle cx="1038" cy="238" r="18" fill="#F97316" fill-opacity="0.35" />
+  <circle cx="440" cy="715" r="12" fill="#3B82F6" fill-opacity="0.45" />
+</svg>

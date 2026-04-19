@@ -17,6 +17,8 @@ import {
   CheckCircle,
   Clock,
   AlertCircle,
+  Flame,
+  Zap,
   TrendingUp,
   Loader2,
 } from "lucide-react";
@@ -158,26 +160,15 @@ export default function CustomerDashboard() {
               <Clock className="w-5 h-5 text-blue-600" />
             </div>
             <div>
-              <p className="font-semibold text-blue-900">Assessment Under Review</p>
-              <p className="text-blue-700 text-sm mt-1">
-                Your fitness assessment has been submitted. Your trainer will review it and assign your plan soon.
-              </p>
+              <p className="text-orange-500 text-xs font-bold tracking-[0.3em] uppercase mb-1.5">Member Portal</p>
+              <h1 className="text-3xl lg:text-4xl font-black text-white tracking-tight leading-none">
+                Hey, {firstName}
+              </h1>
+              <p className="text-zinc-500 mt-2 text-sm">Keep pushing — your transformation continues.</p>
             </div>
-          </div>
-        )}
-
-        {/* Stats Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
-            <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center mb-3">
-              <Target className="w-5 h-5 text-blue-700" />
-            </div>
-            <p className="text-2xl font-black text-gray-900">{plan ? "Active" : "None"}</p>
-            <p className="text-gray-500 text-sm mt-1">Training Plan</p>
-          </div>
-          <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
-            <div className="w-10 h-10 rounded-lg bg-orange-100 flex items-center justify-center mb-3">
-              <Calendar className="w-5 h-5 text-orange-600" />
+            <div className="hidden sm:block text-right shrink-0 mt-1">
+              <p className="text-zinc-600 text-xs uppercase tracking-widest mb-1">Today</p>
+              <p className="text-zinc-300 font-semibold text-sm">{today}</p>
             </div>
             <p className="text-2xl font-black text-gray-900">{upcomingSessions.length}</p>
             <p className="text-gray-500 text-sm mt-1">Upcoming Sessions</p>
@@ -200,14 +191,22 @@ export default function CustomerDashboard() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Plan Overview */}
-          <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="font-bold text-gray-900 text-lg">Current Plan</h2>
-              <Link href="/my-plan" className="text-blue-700 text-sm font-medium hover:underline flex items-center gap-1">
-                View details <ArrowRight className="w-3 h-3" />
-              </Link>
+          {/* Alerts */}
+          {!assessment && (
+            <div className="rounded-2xl border border-orange-500/20 bg-orange-500/8 p-5 mb-6 flex items-start gap-4">
+              <div className="w-10 h-10 rounded-xl bg-orange-500/15 border border-orange-500/20 flex items-center justify-center shrink-0">
+                <AlertCircle className="w-5 h-5 text-orange-400" />
+              </div>
+              <div className="flex-1">
+                <p className="font-bold text-white text-sm">Complete Your Assessment</p>
+                <p className="text-zinc-400 text-sm mt-0.5">Fill out your fitness assessment to get a personalised plan.</p>
+                <Link
+                  href="/assessment"
+                  className="inline-flex items-center gap-1.5 mt-3 bg-orange-500 text-white px-4 py-1.5 rounded-lg text-xs font-bold hover:bg-orange-400 transition-colors shadow-lg shadow-orange-500/20"
+                >
+                  Start Assessment <ArrowRight className="w-3 h-3" />
+                </Link>
+              </div>
             </div>
             {plan ? (
               <div className="flex items-start gap-4">
@@ -232,15 +231,54 @@ export default function CustomerDashboard() {
                       ${plan.monthlyRate}/month
                     </span>
                   </div>
+                ) : (
+                  <div className="text-center py-10">
+                    <div className="w-14 h-14 rounded-2xl bg-zinc-800 border border-zinc-700 flex items-center justify-center mx-auto mb-3">
+                      <Target className="w-6 h-6 text-zinc-600" />
+                    </div>
+                    <p className="text-zinc-400 font-semibold text-sm">No plan assigned yet</p>
+                    <p className="text-zinc-600 text-xs mt-1">Complete your assessment to get started</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Sessions */}
+            <div className="rounded-2xl bg-zinc-900 border border-zinc-800 overflow-hidden">
+              <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-zinc-800">
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-blue-400" />
+                  <h2 className="font-bold text-white text-sm">Sessions</h2>
                 </div>
+                <Link href="/sessions" className="text-xs text-zinc-500 hover:text-blue-400 font-medium transition-colors">All</Link>
               </div>
-            ) : (
-              <div className="text-center py-8 text-gray-400">
-                <Target className="w-10 h-10 mx-auto mb-2 opacity-50" />
-                <p>No plan assigned yet</p>
-                <p className="text-sm mt-1">Complete your assessment to get started</p>
+              <div className="p-5">
+                {sessions.length > 0 ? (
+                  <div className="space-y-2.5">
+                    {sessions.map((sess) => (
+                      <div key={sess.id} className="flex items-center gap-3 p-3 bg-zinc-800/60 rounded-xl border border-zinc-700/50 hover:border-zinc-600 transition-colors">
+                        <div className="w-9 h-9 rounded-xl bg-blue-500/15 border border-blue-500/20 flex items-center justify-center shrink-0">
+                          <Calendar className="w-4 h-4 text-blue-400" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-white text-sm truncate">{sess.title}</p>
+                          <p className="text-zinc-500 text-xs">
+                            {new Date(sess.scheduledDate).toLocaleDateString("en-AE", { month: "short", day: "numeric" })} · {sess.scheduledTime}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <div className="w-12 h-12 rounded-2xl bg-zinc-800 border border-zinc-700 flex items-center justify-center mx-auto mb-3">
+                      <Calendar className="w-5 h-5 text-zinc-600" />
+                    </div>
+                    <p className="text-zinc-500 text-sm font-medium">No upcoming sessions</p>
+                  </div>
+                )}
               </div>
-            )}
+            </div>
           </div>
 
           {/* Upcoming Sessions */}
@@ -265,16 +303,12 @@ export default function CustomerDashboard() {
                       </p>
                     </div>
                   </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-6 text-gray-400">
-                <Calendar className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                <p className="text-sm">No upcoming sessions</p>
-              </div>
-            )}
+                  <span className="font-semibold text-zinc-300 group-hover:text-white text-sm transition-colors">{label}</span>
+                  <ChevronRight className="w-4 h-4 text-zinc-700 ml-auto group-hover:text-zinc-500 transition-colors" />
+                </Link>
+              );
+            })}
           </div>
-        </div>
 
         {/* Quick Links */}
         <div className="mt-6 grid grid-cols-2 lg:grid-cols-4 gap-4">

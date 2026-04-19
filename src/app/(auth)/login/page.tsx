@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { useState } from "react";
 import Link from "next/link";
@@ -13,14 +13,25 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [gLoading, setGLoading] = useState(false);
+
+  useEffect(() => {
+    if (!authLoading && user) {
+      if (user.role === 'admin') router.push('/admin/dashboard');
+      else if (user.role === 'trainer') router.push('/trainer/dashboard');
+      else router.push('/dashboard');
+    }
+  }, [authLoading, router, user]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
+    setError('');
     setLoading(true);
 
     const user = await login(email, password);
     setLoading(false);
+    if (err) setError('Invalid email or password. Please try again.');
+  };
 
     if (!user) {
       setError("Invalid email or password. Please try again.");
@@ -44,84 +55,57 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 flex flex-col items-center justify-center px-4">
-      <div className="w-full max-w-md">
-        {/* Logo */}
-        <div className="text-center mb-8">
-          <Link href="/" className="inline-flex items-center gap-2 justify-center">
-            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-orange-500 rounded-xl flex items-center justify-center shadow-lg">
-              <Dumbbell className="w-7 h-7 text-white" />
-            </div>
+    <div className="min-h-screen bg-zinc-950 flex">
+      {/* Left — brand panel */}
+      <div className="hidden lg:flex flex-col justify-between w-[520px] xl:w-[580px] shrink-0 relative overflow-hidden bg-[#0D0D0F] px-12 py-14">
+        {/* decorative glow */}
+        <div className="pointer-events-none absolute -top-40 -left-40 w-[600px] h-[600px] rounded-full bg-orange-500/10 blur-[120px]" />
+        <div className="pointer-events-none absolute bottom-0 right-0 w-80 h-80 rounded-full bg-blue-600/8 blur-[80px]" />
+
+        <div className="relative">
+          <Link href="/" className="inline-flex items-baseline gap-0 mb-16">
+            <span className="font-black text-xl text-white tracking-tight">iShow</span>
+            <span className="font-black text-xl text-orange-500 tracking-tight">Transformation</span>
           </Link>
           <h1 className="text-3xl font-black text-white mt-4">Welcome Back</h1>
           <p className="text-blue-300 mt-2">Sign in to continue your fitness journey</p>
         </div>
 
-        {/* Card */}
-        <div className="bg-white rounded-2xl shadow-2xl p-8">
-          <form onSubmit={handleSubmit} className="space-y-5">
-            {error && (
-              <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
-                <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                {error}
-              </div>
-            )}
+          <p className="text-zinc-400 text-base leading-relaxed max-w-sm">
+            Your programs, sessions, and progress — all in one place. Sign in to pick up where you left off.
+          </p>
+        </div>
 
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                Email Address
-              </label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-gray-900"
-                  placeholder="you@example.com"
-                  required
-                />
-              </div>
+        {/* Stats strip */}
+        <div className="relative grid grid-cols-3 gap-4">
+          {[
+            { value: '1-on-1', label: 'Coaching' },
+            { value: '100%', label: 'Personalised' },
+            { value: 'UAE', label: 'Based' },
+          ].map((s) => (
+            <div key={s.label} className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-5 backdrop-blur-sm">
+              <p className="text-xl font-black text-white mb-0.5">{s.value}</p>
+              <p className="text-xs text-zinc-500 font-medium">{s.label}</p>
             </div>
+          ))}
+        </div>
+      </div>
 
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                Password
-              </label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-gray-900"
-                  placeholder="••••••••"
-                  required
-                />
-              </div>
-            </div>
+      {/* Right — form */}
+      <div className="flex-1 flex flex-col items-center justify-center px-5 py-12 sm:px-10">
+        {/* Mobile logo */}
+        <Link href="/" className="inline-flex items-baseline gap-0 mb-10 lg:hidden">
+          <span className="font-black text-xl text-white tracking-tight">iShow</span>
+          <span className="font-black text-xl text-orange-500 tracking-tight">Transformation</span>
+        </Link>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-gradient-to-r from-blue-700 to-blue-800 hover:from-blue-800 hover:to-blue-900 text-white py-3 rounded-lg font-bold text-base transition-all shadow-md hover:shadow-lg disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Signing in...
-                </>
-              ) : (
-                "Sign In"
-              )}
-            </button>
-          </form>
-
-          <div className="mt-6 text-center">
-            <p className="text-gray-600 text-sm">
-              Don&apos;t have an account?{" "}
-              <Link href="/register" className="text-orange-500 font-semibold hover:text-orange-600">
-                Register here
+        <div className="w-full max-w-md">
+          <div className="mb-8">
+            <h2 className="text-3xl font-black text-white tracking-tight">Sign in</h2>
+            <p className="text-zinc-500 text-sm mt-1.5">
+              New here?{' '}
+              <Link href="/register" className="text-orange-400 font-semibold hover:text-orange-300 transition-colors">
+                Create an account
               </Link>
             </p>
           </div>
@@ -149,13 +133,44 @@ export default function LoginPage() {
               </button>
             </div>
           </div>
-        </div>
 
-        <p className="text-center text-blue-300/60 text-sm mt-6">
-          <Link href="/" className="hover:text-blue-300 transition-colors">
-            ← Back to home
-          </Link>
-        </p>
+          {error && (
+            <div className="flex items-center gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400 mb-4">
+              <AlertCircle className="w-4 h-4 shrink-0" />{error}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <InputField label="Email" type="email" value={email} onChange={e => setEmail(e.target.value)}
+              placeholder="you@example.com" autoComplete="email" icon={Mail} />
+
+            <InputField label="Password" type={showPw ? 'text' : 'password'} value={password}
+              onChange={e => setPassword(e.target.value)} placeholder="Your password"
+              autoComplete="current-password" icon={Lock}
+              rightEl={
+                <button type="button" onClick={() => setShowPw(!showPw)} className="text-zinc-500 hover:text-zinc-300 transition-colors">
+                  {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              }
+            />
+
+            <div className="flex justify-end">
+              <Link href="/forgot-password" className="text-xs text-zinc-500 hover:text-orange-400 transition-colors font-medium">
+                Forgot password?
+              </Link>
+            </div>
+
+            <button type="submit" disabled={loading || authLoading}
+              className="w-full flex items-center justify-center gap-2 rounded-xl bg-orange-500 hover:bg-orange-400 active:bg-orange-600 py-3.5 text-sm font-black text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-orange-500/20"
+            >
+              {loading ? <><Loader2 className="w-4 h-4 animate-spin" />Signing in…</> : <>Sign in<ArrowRight className="w-4 h-4" /></>}
+            </button>
+          </form>
+
+          <p className="text-center text-xs text-zinc-600 mt-8">
+            <Link href="/" className="hover:text-zinc-400 transition-colors">← Back to home</Link>
+          </p>
+        </div>
       </div>
     </div>
   );
