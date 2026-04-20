@@ -4,14 +4,18 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import DashboardLayout from "@/components/DashboardLayout";
-import { getItems } from "@/lib/storage";
-import type { Session } from "@/lib/mockData";
+import { listSessions, updateSession, type TrainingSession } from "@/lib/db/sessions";
+import { getActivePlan } from "@/lib/db/plans";
+import { getProfile } from "@/lib/db/profiles";
+import { notify } from "@/lib/email/notify";
 import {
   Calendar,
   Clock,
   CheckCircle,
   XCircle,
   AlertCircle,
+  X,
+  RefreshCw,
   Loader2,
   User,
 } from "lucide-react";
@@ -43,22 +47,40 @@ function StatusBadge({ status }: { status: string }) {
 export default function SessionsPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
-  const [sessions, setSessions] = useState<Session[]>([]);
+  const [sessions, setSessions] = useState<TrainingSession[]>([]);
   const [dataLoaded, setDataLoaded] = useState(false);
+  const [trainerEmail, setTrainerEmail] = useState("");
+
+  // Reschedule modal state
+  const [showRescheduleModal, setShowRescheduleModal] = useState(false);
+  const [rescheduleSession, setRescheduleSession] = useState<TrainingSession | null>(null);
+  const [rescheduleDate, setRescheduleDate] = useState("");
+  const [rescheduleNote, setRescheduleNote] = useState("");
+  const [rescheduleSending, setRescheduleSending] = useState(false);
+  const [rescheduleSuccess, setRescheduleSuccess] = useState(false);
+
+  const loadData = async () => {
+    if (!user) return;
+    const userSessions = await listSessions({ userId: user.id });
+    setSessions(userSessions);
+
+    // Get trainer email for reschedule notifications
+    const activePlan = await getActivePlan(user.id);
+    if (activePlan?.trainerId) {
+      const trainerProfile = await getProfile(activePlan.trainerId);
+      if (trainerProfile?.email) setTrainerEmail(trainerProfile.email);
+    }
+
+    setDataLoaded(true);
+  };
 
   useEffect(() => {
     if (!loading) {
       if (!user) { router.push("/login"); return; }
       if (user.role !== "customer") { router.push("/trainer/dashboard"); return; }
-
-      const allSessions = getItems<Session>("ishow_sessions");
-      const userSessions = allSessions
-        .filter((s) => s.userId === user.id)
-        .sort((a, b) => a.date.localeCompare(b.date));
-      setSessions(userSessions);
-      setDataLoaded(true);
+      loadData();
     }
-  }, [user, loading, router]);
+  }, [user, loading, router]); // eslint-disable-line
 
   if (loading || !dataLoaded) {
     return (
@@ -71,8 +93,8 @@ export default function SessionsPage() {
   }
 
   const today = new Date().toISOString().split("T")[0];
-  const upcomingSessions = sessions.filter((s) => s.date >= today && s.status === "scheduled");
-  const pastSessions = sessions.filter((s) => s.date < today || s.status !== "scheduled");
+  const upcomingSessions = sessions.filter((s) => s.scheduledDate >= today && s.status === "scheduled");
+  const pastSessions = sessions.filter((s) => s.scheduledDate < today || s.status !== "scheduled");
   const completedCount = sessions.filter((s) => s.status === "completed").length;
 
   const formatDate = (dateStr: string) => {
@@ -81,6 +103,42 @@ export default function SessionsPage() {
       month: "long",
       day: "numeric",
     });
+  };
+
+  const handleCancelSession = async (sessionId: string) => {
+    const confirmed = window.confirm(
+      "Are you sure you want to cancel this session? Your trainer will be notified."
+    );
+    if (!confirmed) return;
+    await updateSession(sessionId, { status: "cancelled" });
+    await loadData();
+  };
+
+  const handleRescheduleRequest = async () => {
+    if (!rescheduleDate || !rescheduleSession) return;
+    setRescheduleSending(true);
+    try {
+      if (trainerEmail) {
+        await notify("session-rescheduled", trainerEmail, {
+          name: user?.name ?? "A client",
+          title: rescheduleSession.title,
+          date: rescheduleDate,
+          time: rescheduleSession.scheduledTime,
+          duration: String(rescheduleSession.duration),
+          oldDate: rescheduleSession.scheduledDate,
+          oldTime: rescheduleSession.scheduledTime,
+        });
+      }
+      setRescheduleSuccess(true);
+      setTimeout(() => {
+        setShowRescheduleModal(false);
+        setRescheduleNote("");
+        setRescheduleDate("");
+        setRescheduleSuccess(false);
+      }, 2000);
+    } finally {
+      setRescheduleSending(false);
+    }
   };
 
   return (
@@ -136,18 +194,14 @@ export default function SessionsPage() {
                           </div>
                           <div>
                             <p className="font-bold text-gray-900 text-lg">{s.title}</p>
-                            <div className="flex items-center gap-2 mt-1 text-sm text-gray-500">
-                              <User className="w-3.5 h-3.5" />
-                              <span>{s.trainerName}</span>
-                            </div>
                             <div className="flex items-center gap-4 mt-2 text-sm text-gray-600 flex-wrap">
                               <span className="flex items-center gap-1">
                                 <Calendar className="w-3.5 h-3.5" />
-                                {formatDate(s.date)}
+                                {formatDate(s.scheduledDate)}
                               </span>
                               <span className="flex items-center gap-1">
                                 <Clock className="w-3.5 h-3.5" />
-                                {s.time}
+                                {s.scheduledTime}
                               </span>
                               <span className="bg-gray-100 px-2 py-0.5 rounded-full text-xs font-medium">
                                 {s.duration} min
@@ -155,6 +209,30 @@ export default function SessionsPage() {
                             </div>
                             {s.notes && (
                               <p className="text-gray-500 text-sm mt-2 italic bg-gray-50 rounded-lg px-3 py-2">{s.notes}</p>
+                            )}
+
+                            {/* C3 & C4: Action buttons */}
+                            {s.status === "scheduled" && (
+                              <div className="flex items-center gap-3 mt-3">
+                                <button
+                                  onClick={() => handleCancelSession(s.id)}
+                                  className="flex items-center gap-1.5 text-xs text-red-500 hover:text-red-700 font-medium transition-colors"
+                                >
+                                  <X className="w-3.5 h-3.5" /> Cancel Session
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setRescheduleSession(s);
+                                    setRescheduleDate("");
+                                    setRescheduleNote("");
+                                    setRescheduleSuccess(false);
+                                    setShowRescheduleModal(true);
+                                  }}
+                                  className="flex items-center gap-1.5 text-xs text-blue-500 hover:text-blue-700 font-medium transition-colors"
+                                >
+                                  <RefreshCw className="w-3.5 h-3.5" /> Request Reschedule
+                                </button>
+                              </div>
                             )}
                           </div>
                         </div>
@@ -190,9 +268,9 @@ export default function SessionsPage() {
                           <div>
                             <p className="font-bold text-gray-900">{s.title}</p>
                             <div className="flex items-center gap-3 mt-1 text-sm text-gray-500 flex-wrap">
-                              <span>{formatDate(s.date)}</span>
+                              <span>{formatDate(s.scheduledDate)}</span>
                               <span>•</span>
-                              <span>{s.time}</span>
+                              <span>{s.scheduledTime}</span>
                               <span>•</span>
                               <span>{s.duration} min</span>
                             </div>
@@ -211,6 +289,62 @@ export default function SessionsPage() {
           </div>
         )}
       </div>
+
+      {/* Reschedule Request Modal (C4) */}
+      {showRescheduleModal && rescheduleSession && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl">
+            {rescheduleSuccess ? (
+              <div className="text-center py-4">
+                <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-3" />
+                <p className="font-bold text-gray-900 text-lg">Request Sent!</p>
+                <p className="text-gray-500 text-sm mt-1">Your trainer will review your reschedule request.</p>
+              </div>
+            ) : (
+              <>
+                <h2 className="text-base font-bold mb-1">Request Reschedule</h2>
+                <p className="text-sm text-gray-500 mb-4">
+                  Current: {rescheduleSession.title} on {formatDate(rescheduleSession.scheduledDate)}
+                </p>
+
+                <label className="block text-sm font-medium mb-1">Preferred new date</label>
+                <input
+                  type="date"
+                  value={rescheduleDate}
+                  onChange={e => setRescheduleDate(e.target.value)}
+                  min={new Date().toISOString().split("T")[0]}
+                  className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm mb-3 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                />
+
+                <label className="block text-sm font-medium mb-1">Note (optional)</label>
+                <textarea
+                  value={rescheduleNote}
+                  onChange={e => setRescheduleNote(e.target.value)}
+                  rows={3}
+                  placeholder="e.g., I'm travelling on that day"
+                  className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                />
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={handleRescheduleRequest}
+                    disabled={rescheduleSending || !rescheduleDate}
+                    className="flex-1 bg-orange-500 text-white py-2.5 rounded-xl text-sm font-semibold disabled:opacity-50 hover:bg-orange-400 transition-colors"
+                  >
+                    {rescheduleSending ? "Sending…" : "Send Request"}
+                  </button>
+                  <button
+                    onClick={() => setShowRescheduleModal(false)}
+                    className="flex-1 border border-gray-200 py-2.5 rounded-xl text-sm font-semibold hover:bg-gray-50 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </DashboardLayout>
   );
 }

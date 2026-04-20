@@ -209,20 +209,20 @@ export default function ExercisesPage() {
     await loadData();
   }
 
-  const role = user.role === "admin" ? "ADMIN" : "TRAINER";
-  const masterBase = role === "ADMIN" ? "/admin/master" : "/trainer/master";
+  const role = user.role === "admin" ? "admin" : "trainer";
+  const masterBase = role === "admin" ? "/admin/master" : "/trainer/master";
 
   const hasVideo = !!videoFile || (!removeExisting && !!form.existingVideoUrl);
   const localVideoUrl = videoFile ? URL.createObjectURL(videoFile) : null;
 
   return (
-    <DashboardLayout role={role as "ADMIN" | "TRAINER"}>
+    <DashboardLayout role={role}>
       <div className="min-h-full bg-zinc-950">
         <div className="max-w-5xl p-6 lg:p-8">
 
           {/* Header */}
           <div className="mb-6 flex items-center gap-3">
-            <Link href={masterBase} className="p-2 rounded-xl text-zinc-500 hover:bg-zinc-800 hover:text-white transition-colors">
+            <Link href={role === "admin" ? "/admin/master" : "/trainer/master"} className="p-2 rounded-xl text-zinc-500 hover:bg-zinc-800 hover:text-white transition-colors">
               <ArrowLeft className="w-4 h-4" />
             </Link>
             <div>

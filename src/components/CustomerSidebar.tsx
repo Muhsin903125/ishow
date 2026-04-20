@@ -10,6 +10,8 @@ import {
   Calendar,
   Dumbbell,
   CreditCard,
+  TrendingUp,
+  User,
   LogOut,
   X,
 } from "lucide-react";
@@ -20,7 +22,9 @@ const navItems = [
   { href: "/my-plan", icon: Target, label: "My Plan" },
   { href: "/sessions", icon: Calendar, label: "Sessions" },
   { href: "/programs", icon: Dumbbell, label: "Programs" },
+  { href: "/progress", icon: TrendingUp, label: "Progress" },
   { href: "/payments", icon: CreditCard, label: "Payments" },
+  { href: "/profile", icon: User, label: "Profile" },
 ];
 
 interface Props {
@@ -31,8 +35,8 @@ export default function CustomerSidebar({ onClose }: Props) {
   const pathname = usePathname();
   const { user, logout } = useAuth();
 
-  const handleSignOut = () => {
-    logout();
+  const handleSignOut = async () => {
+    await logout();
     if (onClose) onClose();
     window.location.href = "/";
   };

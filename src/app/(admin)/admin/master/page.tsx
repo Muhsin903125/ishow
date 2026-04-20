@@ -26,7 +26,7 @@ export default function AdminMasterPage() {
   if (loading || !user) return null;
 
   return (
-    <DashboardLayout role="ADMIN">
+    <DashboardLayout role="admin">
       <div className="w-full max-w-4xl p-6 lg:p-8">
         <div className="mb-8">
           <h1 className="text-2xl font-black text-gray-900">Master Data</h1>

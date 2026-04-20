@@ -10,6 +10,8 @@ import {
   UserCog,
   Database,
   ClipboardList,
+  CreditCard,
+  BarChart2,
   LogOut,
   X,
 } from "lucide-react";
@@ -19,6 +21,8 @@ const navItems = [
   { href: "/admin/assessments", icon: ClipboardList, label: "Assessments" },
   { href: "/admin/trainers", icon: UserCog, label: "Trainers" },
   { href: "/admin/clients", icon: Users, label: "Clients" },
+  { href: "/admin/payments", icon: CreditCard, label: "Payments" },
+  { href: "/admin/reports", icon: BarChart2, label: "Reports" },
   { href: "/admin/master", icon: Database, label: "Master Data" },
 ];
 
@@ -80,7 +84,7 @@ export default function AdminSidebar({ onClose }: Props) {
 
       <div className="px-4 pb-5 border-t border-zinc-800/60 pt-4">
         <button
-          onClick={() => { logout(); router.push("/"); }}
+          onClick={async () => { await logout(); router.push("/"); }}
           className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-zinc-500 hover:bg-red-500/10 hover:text-red-400 w-full font-semibold transition-all"
         >
           <LogOut className="w-[18px] h-[18px] shrink-0" />

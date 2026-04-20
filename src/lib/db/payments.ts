@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/client';
+import { createNotification } from './notifications';
 
 export interface Payment {
   id: string;
@@ -28,16 +29,23 @@ function mapPayment(row: Record<string, unknown>): Payment {
   };
 }
 
-export async function listPayments(userId?: string): Promise<Payment[]> {
+export async function listPayments(filters?: { userId?: string }): Promise<Payment[]> {
   const supabase = createClient();
   let query = supabase
     .from('payments')
     .select('*')
     .order('created_at', { ascending: false });
-  if (userId) query = query.eq('user_id', userId);
+  if (filters?.userId) query = query.eq('user_id', filters.userId);
   const { data, error } = await query;
   if (error || !data) return [];
-  return data.map(mapPayment);
+  const today = new Date().toISOString().split("T")[0];
+  return data.map(row => {
+    const payment = mapPayment(row);
+    if (payment.status === "pending" && payment.dueDate && payment.dueDate < today) {
+      payment.status = "overdue";
+    }
+    return payment;
+  });
 }
 
 export async function createPayment(
@@ -59,6 +67,16 @@ export async function createPayment(
     .select()
     .single();
   if (error || !data) return null;
+
+  // RT2: Notification
+  await createNotification({
+    userId: payload.userId,
+    type: 'payment_due',
+    title: 'New Payment Due',
+    body: `AED ${payload.amount} is due on ${new Date((payload.dueDate || "") + "T00:00:00").toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}.`,
+    href: '/payments',
+  });
+
   return mapPayment(data);
 }
 

@@ -1,4 +1,4 @@
-import { getItems, setItems, addItem } from './storage';
+import { getItems, addItem } from './storage';
 
 export type CustomerStatus = 'request' | 'client';
 

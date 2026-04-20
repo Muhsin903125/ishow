@@ -6,7 +6,7 @@ import DashboardLayout from "@/components/DashboardLayout";
 import { useAuth } from "@/contexts/AuthContext";
 import { listCustomers, listTrainers, updateProfile, type Profile } from "@/lib/db/profiles";
 import { listAssessments, type Assessment } from "@/lib/db/assessments";
-import { listAllPlans, type Plan } from "@/lib/db/plans";
+import { listAllPlans, updatePlan, type Plan } from "@/lib/db/plans";
 import { Mail, Phone, CheckCircle, Clock, ChevronDown, ChevronUp } from "lucide-react";
 
 function formatDate(iso: string) {
@@ -23,6 +23,26 @@ export default function AdminClientsPage() {
   const [plans, setPlans] = useState<Plan[]>([]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [assigningId, setAssigningId] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [globalMessage, setGlobalMessage] = useState("");
+
+  const handleAssignTrainer = async (customerId: string, trainerId: string) => {
+    const activePlan = plans.find(
+      (p) => p.userId === customerId && p.status === "active"
+    );
+
+    if (activePlan) {
+      await updatePlan(activePlan.id, { trainerId });
+    } else {
+      // No active plan — show a warning toast
+      setGlobalMessage("This client has no active plan. Assign a plan first.");
+      setAssigningId(null);
+      return;
+    }
+
+    setAssigningId(null);
+    await loadData();
+  };
 
   const loadData = async () => {
     const [c, t, a, p] = await Promise.all([
@@ -51,12 +71,19 @@ export default function AdminClientsPage() {
   const activePlanByUserId = Object.fromEntries(plans.filter((p) => p.status === "active").map((p) => [p.userId, p]));
 
   return (
-    <DashboardLayout role="ADMIN">
+    <DashboardLayout role="admin">
       <div className="w-full max-w-5xl p-6 lg:p-8">
         <div className="mb-8">
           <h1 className="text-2xl font-black text-gray-900">Clients</h1>
           <p className="text-gray-500 mt-1">All registered clients across trainers.</p>
         </div>
+
+        {globalMessage && (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-xl px-4 py-3 mb-4 text-yellow-800 text-sm flex justify-between">
+            {globalMessage}
+            <button onClick={() => setGlobalMessage("")}>✕</button>
+          </div>
+        )}
 
         <div className="grid grid-cols-3 gap-4 mb-7">
           <div className="rounded-2xl bg-white border border-gray-100 p-4 shadow-sm text-center">
@@ -158,31 +185,54 @@ export default function AdminClientsPage() {
                       )}
                       {/* Assign trainer */}
                       {trainers.length > 0 && (
-                        <div className="flex items-center gap-2">
-                          {assigningId === customer.id ? (
-                            <>
-                              <select
-                                defaultValue=""
-                                onChange={async (e) => {
-                                  if (!e.target.value) return;
-                                  // trainer assignment would go on plans/sessions — for now just update status
-                                  setAssigningId(null);
-                                }}
-                                className="rounded-xl border border-gray-200 px-3 py-2 text-sm"
-                              >
-                                <option value="">Select trainer…</option>
-                                {trainers.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
-                              </select>
-                              <button onClick={() => setAssigningId(null)} className="text-sm text-gray-400 hover:text-gray-600">Cancel</button>
-                            </>
-                          ) : (
-                            <button
-                              onClick={() => setAssigningId(customer.id)}
-                              className="rounded-xl border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-100"
-                            >
-                              Assign Trainer
-                            </button>
-                          )}
+                        <div className="flex flex-col gap-2">
+                          {(() => {
+                            const activePlan = plans.find((p) => p.userId === customer.id && p.status === "active");
+                            const assignedTrainer = activePlan?.trainerId
+                              ? trainers.find(t => t.id === activePlan.trainerId)
+                              : null;
+
+                            return (
+                              <>
+                                {assignedTrainer ? (
+                                  <p className="text-sm text-gray-600 mb-2">
+                                    Trainer: <span className="font-semibold">{assignedTrainer.name}</span>
+                                  </p>
+                                ) : (
+                                  <p className="text-sm text-gray-400 mb-2">No trainer assigned</p>
+                                )}
+                                
+                                <div className="flex items-center gap-2">
+                                  {assigningId === customer.id ? (
+                                    <>
+                                      <select
+                                        defaultValue={activePlan?.trainerId ?? ""}
+                                        onChange={async (e) => {
+                                          if (!e.target.value) return;
+                                          setSaving(true);
+                                          await handleAssignTrainer(customer.id, e.target.value);
+                                          setSaving(false);
+                                        }}
+                                        disabled={saving}
+                                        className="rounded-xl border border-gray-200 px-3 py-2 text-sm"
+                                      >
+                                        <option value="">Select trainer…</option>
+                                        {trainers.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+                                      </select>
+                                      <button onClick={() => setAssigningId(null)} className="text-sm text-gray-400 hover:text-gray-600">Cancel</button>
+                                    </>
+                                  ) : (
+                                    <button
+                                      onClick={() => setAssigningId(customer.id)}
+                                      className="rounded-xl border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-100 flex items-center justify-center"
+                                    >
+                                      Assign Trainer
+                                    </button>
+                                  )}
+                                </div>
+                              </>
+                            );
+                          })()}
                         </div>
                       )}
                     </div>

@@ -96,7 +96,7 @@ export default function AdminTrainersPage() {
   }
 
   return (
-    <DashboardLayout role="ADMIN">
+    <DashboardLayout role="admin">
       <div className="w-full max-w-4xl p-6 lg:p-8">
         <div className="mb-8 flex items-center justify-between gap-4">
           <div>

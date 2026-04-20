@@ -42,7 +42,7 @@ export default function GoalTypesPage() {
   if (loading || !user) return null;
 
   const visible = showAll ? goals : goals.filter((g) => g.isActive);
-  const role = user.role === "admin" ? "ADMIN" : "TRAINER";
+  const role = user.role === "admin" ? "admin" : "trainer";
 
   function startEdit(g: GoalType) { setForm(fromGoal(g)); setEditing(true); setError(""); setSuccess(""); }
   function cancelEdit() { setForm(blankForm()); setEditing(false); setError(""); }
@@ -78,10 +78,10 @@ export default function GoalTypesPage() {
   }
 
   return (
-    <DashboardLayout role={role as "ADMIN" | "TRAINER"}>
+    <DashboardLayout role={role}>
       <div className="w-full max-w-3xl p-6 lg:p-8">
         <div className="mb-6 flex items-center gap-3">
-          <Link href={role === "ADMIN" ? "/admin/master" : "/trainer/master"} className="text-sm text-gray-400 hover:text-gray-600">
+          <Link href={role === "admin" ? "/admin/master" : "/trainer/master"} className="text-sm text-gray-400 hover:text-gray-600">
             <ArrowLeft className="w-4 h-4" />
           </Link>
           <div>

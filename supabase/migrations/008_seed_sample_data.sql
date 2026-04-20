@@ -25,9 +25,11 @@ CREATE TABLE IF NOT EXISTS public.meal_suggestions (
 
 ALTER TABLE public.meal_suggestions ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "meal_suggestions_read" ON public.meal_suggestions;
 CREATE POLICY "meal_suggestions_read" ON public.meal_suggestions
   FOR SELECT USING (auth.role() = 'authenticated');
 
+DROP POLICY IF EXISTS "meal_suggestions_trainer_admin_write" ON public.meal_suggestions;
 CREATE POLICY "meal_suggestions_trainer_admin_write" ON public.meal_suggestions
   FOR ALL USING (public.current_user_role() IN ('trainer', 'admin'));
 

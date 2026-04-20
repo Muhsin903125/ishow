@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/client';
+import { createNotification } from './notifications';
 
 export interface BodyMeasurements {
   chest?: string;
@@ -128,7 +129,8 @@ export async function submitAssessment(
 export async function reviewAssessment(
   assessmentId: string,
   trainerNotes: string,
-  status: 'reviewed' | 'rejected' = 'reviewed'
+  status: 'reviewed' | 'rejected' = 'reviewed',
+  assignedTrainerId?: string
 ): Promise<Assessment | null> {
   const supabase = createClient();
   const { data, error } = await supabase
@@ -138,10 +140,21 @@ export async function reviewAssessment(
       trainer_notes: trainerNotes,
       reviewed_at: new Date().toISOString(),
       converted_to_client_at: status === 'reviewed' ? new Date().toISOString() : null,
+      assigned_trainer_id: assignedTrainerId ?? null,
     })
     .eq('id', assessmentId)
     .select()
     .single();
   if (error || !data) return null;
+
+  // RT2: Notification
+  await createNotification({
+    userId: data.user_id,
+    type: 'assessment_reviewed',
+    title: 'Assessment Reviewed',
+    body: 'Your fitness assessment has been reviewed. Your trainer will be in touch soon.',
+    href: '/dashboard',
+  });
+
   return mapAssessment(data);
 }

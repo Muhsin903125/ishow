@@ -2,13 +2,27 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
-import { Dumbbell, Menu, X, User, LogOut, LayoutDashboard } from "lucide-react";
+import { Menu, X, User, LogOut, LayoutDashboard, Flame, ChevronRight } from "lucide-react";
 
 export default function Navbar() {
   const { user, logout } = useAuth();
+  const pathname = usePathname();
+  const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+
+  const handleSmoothScroll = (e: React.MouseEvent<HTMLAnchorElement>, targetId: string) => {
+    if (pathname === "/") {
+      e.preventDefault();
+      const element = document.querySelector(targetId);
+      if (element) {
+        element.scrollIntoView({ behavior: "smooth" });
+      }
+      setMobileOpen(false);
+    }
+  };
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 40);
@@ -16,141 +30,171 @@ export default function Navbar() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const navLinks = [
-    { href: "/#services", label: "Services" },
-    { href: "/#how-it-works", label: "How It Works" },
-    { href: "/#videos", label: "Videos" },
-    { href: "/#trainer", label: "Coach" },
-  ];
-
-  const handleSignOut = () => {
-    logout();
+  const handleSignOut = async () => {
+    await logout();
     setMobileOpen(false);
     window.location.href = "/";
   };
 
+  const navLinks = [
+    // { label: "Home", href: "/", id: null },
+    { label: "Services", href: "/#services", id: "#services" },
+    // { label: "Methodology", href: "/#how-it-works", id: "#how-it-works" },
+    { label: "Results", href: "/#results", id: "#results" },
+    { label: "Coach", href: "/#coach", id: "#coach" },
+  ];
+
+  const isDark = pathname === "/" || pathname.startsWith("/login") || pathname.startsWith("/register");
+
   return (
     <nav
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+      className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-500 ${
         scrolled
-          ? "bg-gray-950/95 backdrop-blur-xl shadow-2xl shadow-black/30 border-b border-white/5"
-          : "bg-transparent"
+          ? "bg-zinc-950/80 backdrop-blur-2xl border-b border-zinc-800/50 py-3"
+          : "bg-transparent py-5"
       }`}
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-20">
-
-          {/* Logo */}
-          <Link href="/" className="group whitespace-nowrap">
-            <div className="leading-none">
-              <span className="font-black text-base text-white tracking-tight sm:text-lg">iShow</span>
-              <span className="font-black text-base text-orange-400 tracking-tight sm:text-lg">Transformation</span>
+      <div className="max-w-7xl mx-auto px-6 md:px-10">
+        <div className="flex justify-between items-center bg-transparent gap-8">
+          
+          {/* Logo Section */}
+          <Link href="/" className="group flex items-center gap-2">
+            <div className="w-7 h-7 bg-orange-500 rounded flex items-center justify-center group-hover:scale-110 transition-transform">
+              <Flame className="w-4 h-4 text-white fill-white" />
             </div>
-            <div className="mt-1 h-px w-0 bg-orange-400 transition-all duration-300 group-hover:w-full" />
+            <span className="font-[family-name:var(--font-barlow)] font-black text-lg text-white tracking-widest uppercase italic">
+              iShow<span className="text-orange-500">Transformation</span>
+            </span>
           </Link>
 
-          {/* Desktop nav */}
-          <div className="hidden md:flex items-center gap-6">
-            {/* Always-visible nav links */}
-            <Link href="/#services" className="text-gray-600 hover:text-blue-700 font-medium transition-colors">
-              Services
-            </Link>
-            <Link href="/#how-it-works" className="text-gray-600 hover:text-blue-700 font-medium transition-colors">
-              How It Works
-            </Link>
+          {/* Desktop Navigation - Right Aligned & Minimal */}
+          <div className="hidden lg:flex items-center gap-10">
+            <div className="flex items-center gap-8">
+              {navLinks.map((link) => (
+                <Link
+                  key={link.label}
+                  href={link.href}
+                  onClick={(e) => link.id && handleSmoothScroll(e, link.id)}
+                  className={`text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-300 relative group/link ${
+                    pathname === link.href || (link.id && pathname === "/")
+                      ? "text-orange-500"
+                      : "text-zinc-500 hover:text-white"
+                  }`}
+                >
+                  {link.label}
+                  {/* <span className={`absolute -bottom-1 left-0 h-[2px] bg-orange-500 transition-all duration-300 ${
+                    pathname === link.href || (link.id && pathname === "/") ? "w-full" : "w-0 group-hover/link:w-full"
+                  }`} /> */}
+                </Link>
+              ))}
+            </div>
 
-            {/* Auth-conditional links */}
+            <div className="h-4 w-[1px] bg-zinc-800/50" />
+
             {!user ? (
-              <>
-                <Link href="/login" className="text-gray-600 hover:text-blue-700 font-medium transition-colors">
+              <div className="flex items-center gap-6">
+                <Link 
+                  href="/login" 
+                  className="text-white text-[10px] font-black uppercase tracking-[0.2em] hover:text-orange-500 transition-colors"
+                >
                   Login
                 </Link>
                 <Link
                   href="/register"
-                  className="ml-2 inline-flex items-center gap-2 bg-orange-500 hover:bg-orange-400 text-white px-5 py-2.5 rounded-full text-sm font-bold transition-all shadow-lg shadow-orange-500/25 hover:shadow-orange-500/40 hover:-translate-y-0.5 group"
+                  className="px-6 py-2.5 bg-orange-500 text-white rounded-md text-[10px] font-black uppercase tracking-[0.2em] hover:bg-orange-600 transition-all shadow-lg active:scale-95"
                 >
-                  <Flame className="w-4 h-4" />
-                  Start Free
+                  Get Started
                 </Link>
-              </>
+              </div>
             ) : (
-              <>
-                <span className="text-gray-600 font-medium">
-                  Hi, {user.name.split(" ")[0]}
-                </span>
-                <Link
+              <div className="flex items-center gap-6">
+                 <Link
                   href={user.role === "trainer" ? "/trainer/dashboard" : "/dashboard"}
-                  className="flex items-center gap-2 text-gray-600 hover:text-blue-700 font-medium transition-colors"
+                  className="flex items-center gap-2 group"
                 >
-                  <LayoutDashboard className="w-4 h-4" />
-                  Dashboard
+                  <LayoutDashboard className="w-4 h-4 text-zinc-500 group-hover:text-orange-500 transition-colors" />
+                  <span className="text-zinc-400 group-hover:text-white text-[10px] font-black uppercase tracking-[0.2em] transition-colors">Dashboard</span>
                 </Link>
                 <button
                   onClick={handleSignOut}
-                  className="flex items-center gap-2 text-gray-600 hover:text-red-600 font-medium transition-colors"
+                  className="p-2 text-zinc-600 hover:text-red-500 transition-colors"
+                  title="Sign Out"
                 >
-                  <LogOut className="w-4 h-4" />
-                  Sign Out
+                  <LogOut className="w-5 h-5" />
                 </button>
-              </>
+              </div>
             )}
           </div>
 
-          {/* Mobile menu button */}
+          {/* Mobile Menu Trigger */}
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
-            className="p-2 rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition-all lg:hidden"
+            className="lg:hidden w-10 h-10 flex items-center justify-center bg-zinc-900 border border-zinc-800 rounded-xl text-white"
           >
-            {mobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
         </div>
       </div>
 
-      {/* Mobile menu */}
-      {mobileOpen && (
-        <div className="md:hidden bg-white border-t border-gray-100 px-4 pt-2 pb-4 space-y-2">
-          {/* Always-visible mobile links */}
-          <Link href="/#services" className="block py-2 text-gray-600 hover:text-blue-700 font-medium" onClick={() => setMobileOpen(false)}>
-            Services
-          </Link>
-          <Link href="/#how-it-works" className="block py-2 text-gray-600 hover:text-blue-700 font-medium" onClick={() => setMobileOpen(false)}>
-            How It Works
-          </Link>
-          <div className="border-t border-gray-100 pt-2">
-            {!user ? (
-              <>
-                <Link href="/login" className="block py-2 text-gray-600 hover:text-blue-700 font-medium" onClick={() => setMobileOpen(false)}>
-                  Login
-                </Link>
-                <Link href="/register" className="block py-2 text-orange-500 font-semibold" onClick={() => setMobileOpen(false)}>
-                  Get Started
-                </Link>
-              </>
-            ) : (
-              <>
-                <div className="flex items-center gap-2 py-2 text-gray-600">
-                  <User className="w-4 h-4" />
-                  <span>{user.name}</span>
-                </div>
-                <Link
-                  href={user.role === "trainer" ? "/trainer/dashboard" : "/dashboard"}
-                  className="block py-2 text-gray-600 hover:text-blue-700 font-medium"
-                  onClick={() => setMobileOpen(false)}
-                >
-                  Dashboard
-                </Link>
-                <button
-                  onClick={handleSignOut}
-                  className="flex items-center gap-2 py-2 text-red-600 font-medium"
-                >
-                  <LogOut className="w-4 h-4" />
-                  Sign Out
-                </button>
-              </>
-            )}
+      {/* Mobile Menu Drawer */}
+      <div 
+        className={`fixed inset-0 z-[-1] bg-zinc-950 transition-all duration-500 lg:hidden ${
+          mobileOpen ? "translate-y-0 opacity-100" : "-translate-y-full opacity-0"
+        }`}
+      >
+        <div className="pt-32 px-8 flex flex-col gap-8">
+          <div className="flex flex-col gap-4">
+            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-orange-500 mb-2">Navigation</p>
+            {navLinks.map((link) => (
+              <Link
+                key={link.label}
+                href={link.href}
+                onClick={(e) => {
+                  link.id && handleSmoothScroll(e, link.id);
+                  setMobileOpen(false);
+                }}
+                className="flex items-center justify-between text-3xl font-[family-name:var(--font-barlow)] font-extrabold uppercase text-white group"
+              >
+                {link.label}
+                <ChevronRight className="w-6 h-6 text-orange-500 opacity-0 group-hover:opacity-100 -translate-x-4 group-hover:translate-x-0 transition-all" />
+              </Link>
+            ))}
           </div>
+
+          <div className="h-px w-full bg-zinc-900 my-4" />
+
+          {!user ? (
+            <div className="flex flex-col gap-4">
+              <Link href="/login" className="text-white font-bold" onClick={() => setMobileOpen(false)}>Login</Link>
+              <Link
+                href="/register"
+                className="w-full py-5 bg-orange-500 text-white text-center rounded-2xl font-black uppercase tracking-[0.2em] shadow-2xl"
+                onClick={() => setMobileOpen(false)}
+              >
+                Join The Movement
+              </Link>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-4">
+               <Link
+                href={user.role === "trainer" ? "/trainer/dashboard" : "/dashboard"}
+                className="flex items-center gap-4 py-4 px-6 bg-zinc-900 rounded-2xl border border-zinc-800"
+                onClick={() => setMobileOpen(false)}
+              >
+                <LayoutDashboard className="w-5 h-5 text-orange-500" />
+                <span className="text-white font-bold uppercase tracking-widest">Active Dashboard</span>
+              </Link>
+              <button
+                onClick={handleSignOut}
+                className="flex items-center gap-4 py-4 px-6 text-red-500 font-bold uppercase tracking-widest"
+              >
+                <LogOut className="w-5 h-5" />
+                Sign Out
+              </button>
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </nav>
   );
 }

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useAuth } from "@/contexts/AuthContext";
 import { listAssessments, reviewAssessment, type Assessment } from "@/lib/db/assessments";
-import { listCustomers, updateProfile, type Profile } from "@/lib/db/profiles";
+import { listCustomers, listTrainers, updateProfile, type Profile } from "@/lib/db/profiles";
 import { listSessions, createSession, updateSession, type TrainingSession } from "@/lib/db/sessions";
 import { createClient } from "@/lib/supabase/client";
 import { notify } from "@/lib/email/notify";
@@ -72,11 +72,16 @@ export default function AdminAssessmentsPage() {
   // Actions
   const [convertingId, setConvertingId] = useState<string | null>(null);
 
+  // TD7: Trainer assignment state
+  const [trainers, setTrainers] = useState<Profile[]>([]);
+  const [assignedTrainerId, setAssignedTrainerId] = useState<Record<string, string>>({});
+
   const loadData = async () => {
-    const [a, c, s] = await Promise.all([listAssessments(), listCustomers(), listSessions()]);
+    const [a, c, s, t] = await Promise.all([listAssessments(), listCustomers(), listSessions(), listTrainers()]);
     setAssessments(a);
     setCustomers(c);
     setSessions(s);
+    setTrainers(t);
   };
 
   useEffect(() => {
@@ -196,7 +201,8 @@ export default function AdminAssessmentsPage() {
 
   async function handleMarkReviewed(assessmentId: string) {
     const a = assessments.find(x => x.id === assessmentId);
-    await reviewAssessment(assessmentId, a?.trainerNotes ?? "", "reviewed");
+    const trainerId = assignedTrainerId[assessmentId];
+    await reviewAssessment(assessmentId, a?.trainerNotes ?? "", "reviewed", trainerId || undefined);
     const client = customerById[a?.userId ?? ''];
     if (client?.email) {
       notify('assessment-reviewed', client.email, {
@@ -210,9 +216,10 @@ export default function AdminAssessmentsPage() {
   async function handleConvert(customerId: string, assessmentId: string) {
     setConvertingId(customerId);
     const a = assessments.find(x => x.id === assessmentId);
+    const trainerId = assignedTrainerId[assessmentId];
     await Promise.all([
       updateProfile(customerId, { customerStatus: "client" }),
-      reviewAssessment(assessmentId, a?.trainerNotes ?? "", "reviewed"),
+      reviewAssessment(assessmentId, a?.trainerNotes ?? "", "reviewed", trainerId || undefined),
     ]);
     const client = customerById[customerId];
     if (client?.email) {
@@ -226,7 +233,7 @@ export default function AdminAssessmentsPage() {
   }
 
   return (
-    <DashboardLayout role="ADMIN">
+    <DashboardLayout role="admin">
       <div className="min-h-full bg-zinc-950">
         <div className="max-w-5xl p-6 lg:p-8">
 
@@ -454,6 +461,24 @@ export default function AdminAssessmentsPage() {
                             <Pencil className="w-3.5 h-3.5 shrink-0" />
                             {assessment.trainerNotes || "Click to add notes…"}
                           </div>
+                        )}
+                      </div>
+
+                      {/* TD7: Assign Trainer */}
+                      <div className="mt-4 pt-4 border-t border-zinc-800">
+                        <label className="block text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-2">Assign Trainer</label>
+                        <select
+                          value={assignedTrainerId[assessment.id] ?? assessment.assignedTrainerId ?? ""}
+                          onChange={e => setAssignedTrainerId(prev => ({ ...prev, [assessment.id]: e.target.value }))}
+                          className="w-full sm:w-64 rounded-xl bg-zinc-800/60 border border-zinc-700 px-3 py-2.5 text-sm text-white outline-none focus:border-violet-500/60 transition"
+                        >
+                          <option value="">Unassigned</option>
+                          {trainers.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                        </select>
+                        {assessment.assignedTrainerId && !assignedTrainerId[assessment.id] && (
+                          <p className="text-xs text-zinc-500 mt-1">
+                            Currently assigned: {trainers.find(t => t.id === assessment.assignedTrainerId)?.name ?? "Unknown"}
+                          </p>
                         )}
                       </div>
 

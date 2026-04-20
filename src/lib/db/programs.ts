@@ -52,13 +52,14 @@ function mapProgram(row: Record<string, unknown>, activities?: ProgramActivity[]
   };
 }
 
-export async function listPrograms(userId?: string): Promise<Program[]> {
+export async function listPrograms(filters?: { userId?: string; trainerId?: string }): Promise<Program[]> {
   const supabase = createClient();
   let query = supabase
     .from('programs')
     .select('*, program_activities(*)')
     .order('week_number', { ascending: true });
-  if (userId) query = query.eq('user_id', userId);
+  if (filters?.userId) query = query.eq('user_id', filters.userId);
+  if (filters?.trainerId) query = query.eq('trainer_id', filters.trainerId);
   const { data, error } = await query;
   if (error || !data) return [];
   return data.map((row: Record<string, unknown>) => {
@@ -102,7 +103,7 @@ export async function createProgram(
     if (actErr) console.error('Failed to insert activities:', actErr);
   }
 
-  const programs = await listPrograms(payload.userId);
+  const programs = await listPrograms({ userId: payload.userId });
   return programs.find(p => p.id === prog.id) ?? mapProgram(prog);
 }
 

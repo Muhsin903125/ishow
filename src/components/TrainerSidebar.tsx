@@ -8,22 +8,25 @@ import {
   Users,
   Calendar,
   Dumbbell,
-  ClipboardList,
   Layers,
   MapPin,
   Target,
   FileText,
   LogOut,
-  X,
   UserPlus,
+  CreditCard,
+  Settings,
+  X,
 } from "lucide-react";
 
 const navItems = [
   { href: "/trainer/dashboard",    icon: LayoutDashboard, label: "Dashboard" },
   { href: "/trainer/clients",      icon: Users,           label: "Clients" },
   { href: "/trainer/sessions",     icon: Calendar,        label: "Sessions" },
+  { href: "/trainer/payments",     icon: CreditCard,      label: "Payments" },
   { href: "/trainer/programs",     icon: Dumbbell,        label: "Programs" },
   { href: "/trainer/team",         icon: UserPlus,        label: "Team" },
+  { href: "/trainer/settings",     icon: Settings,        label: "Settings" },
 ];
 
 const masterItems = [
@@ -41,8 +44,8 @@ export default function TrainerSidebar({ onClose }: Props) {
   const pathname = usePathname();
   const { user, logout } = useAuth();
 
-  const handleSignOut = () => {
-    logout();
+  const handleSignOut = async () => {
+    await logout();
     if (onClose) onClose();
     window.location.href = "/";
   };

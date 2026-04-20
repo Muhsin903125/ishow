@@ -94,6 +94,7 @@ export default function TrainerTeamPage() {
               <p className="text-gray-500 text-sm">Manage trainer accounts</p>
             </div>
           </div>
+          {user?.role === "admin" && (
           <button
             onClick={() => { setShowForm((v) => !v); setError(""); setSuccess(""); }}
             className="flex items-center gap-2 bg-blue-700 hover:bg-blue-800 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors"
@@ -101,7 +102,18 @@ export default function TrainerTeamPage() {
             <UserPlus className="w-4 h-4" />
             {showForm ? "Cancel" : "Add Trainer"}
           </button>
+          )}
         </div>
+
+        {/* TD6: Admin-only gate message */}
+        {user?.role !== "admin" && (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-5 mb-6">
+            <p className="text-yellow-800 text-sm font-medium">
+              New trainers must be invited by an admin.
+              Please contact your platform administrator to add a new team member.
+            </p>
+          </div>
+        )}
 
         {/* Success banner */}
         {success && (

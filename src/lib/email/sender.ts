@@ -8,7 +8,10 @@ export type EmailType =
   | 'assessment-submitted'
   | 'assessment-reviewed'
   | 'session-scheduled'
-  | 'session-rescheduled';
+  | 'session-rescheduled'
+  | 'session-cancelled'
+  | 'payment-due-reminder'
+  | 'session-reschedule-request';
 
 export interface SendEmailPayload {
   type: EmailType;
@@ -44,6 +47,21 @@ function buildEmail(type: EmailType, data: Record<string, string | number | unde
       return {
         subject: 'Session rescheduled – iShowTransformation',
         html: sessionRescheduledHtml(data),
+      };
+    case 'session-cancelled':
+      return {
+        subject: 'Session cancelled – iShowTransformation',
+        html: sessionRescheduledHtml(data), // reuse rescheduled template layout
+      };
+    case 'payment-due-reminder':
+      return {
+        subject: `Reminder: Payment due on ${data.dueDate ?? ''} – iShowTransformation`,
+        html: paymentDueReminderHtml(data),
+      };
+    case 'session-reschedule-request':
+      return {
+        subject: `Reschedule request from ${data.clientName ?? 'a client'} – iShowTransformation`,
+        html: sessionRescheduleRequestHtml(data),
       };
   }
 }
@@ -287,7 +305,6 @@ function sessionScheduledHtml(d: Record<string, string | number | undefined>) {
 /* ------------------------------------------------------------------ */
 function sessionRescheduledHtml(d: Record<string, string | number | undefined>) {
   const name = String(d.name ?? 'there');
-  const title = String(d.title ?? 'Training Session');
   const date = String(d.date ?? '');
   const time = String(d.time ?? '');
   const duration = String(d.duration ?? '60');
@@ -346,6 +363,113 @@ function sessionRescheduledHtml(d: Record<string, string | number | undefined>) 
 
     <tr><td style="padding-top:0;text-align:center;">
       ${orangeBtn('View My Sessions', `${siteUrl}/sessions`)}
+    </td></tr>
+  `);
+}
+
+/* ------------------------------------------------------------------ */
+/*  Payment Due Reminder (AU2)                                          */
+/* ------------------------------------------------------------------ */
+function paymentDueReminderHtml(d: Record<string, string | number | undefined>) {
+  const name = String(d.clientName ?? d.name ?? 'there');
+  const amount = String(d.amount ?? '0');
+  const dueDate = String(d.dueDate ?? '');
+  const planName = String(d.planName ?? 'Training Plan');
+  const siteUrl = String(d.siteUrl ?? 'https://ishowtransformation.com');
+
+  return layout(`
+    <tr><td style="padding-bottom:24px;">
+      <div style="width:52px;height:52px;background:rgba(249,115,22,0.12);border:1px solid rgba(249,115,22,0.25);border-radius:14px;text-align:center;line-height:52px;">
+        <span style="font-size:24px;">💳</span>
+      </div>
+    </td></tr>
+
+    <tr><td style="padding-bottom:10px;">
+      <h1 style="margin:0;font-size:26px;font-weight:900;color:#fafafa;letter-spacing:-0.5px;line-height:1.2;">
+        Payment reminder, ${name}
+      </h1>
+    </td></tr>
+
+    <tr><td style="padding-bottom:28px;">
+      <p style="margin:0;font-size:15px;color:#a1a1aa;line-height:1.7;">
+        This is a friendly reminder that your payment for <strong style="color:#f4f4f5;">${planName}</strong> is coming up soon.
+      </p>
+    </td></tr>
+
+    <tr><td style="padding-bottom:28px;">
+      <div style="background:#09090b;border:1px solid #27272a;border-radius:12px;overflow:hidden;">
+        <div style="background:linear-gradient(135deg,rgba(249,115,22,0.15),rgba(249,115,22,0.05));border-bottom:1px solid #27272a;padding:16px 24px;">
+          <p style="margin:0;font-size:15px;font-weight:800;color:#fafafa;">Payment Details</p>
+        </div>
+        <div style="padding:20px 24px;">
+          <table width="100%" cellpadding="0" cellspacing="0" border="0">
+            ${metaRow('💰 Amount', 'AED ' + amount)}
+            ${metaRow('📅 Due Date', dueDate)}
+            ${metaRow('📋 Plan', planName)}
+          </table>
+        </div>
+      </div>
+    </td></tr>
+
+    <tr><td style="padding-bottom:16px;">
+      <p style="margin:0;font-size:13px;color:#71717a;line-height:1.6;">
+        Please ensure your payment is made on time to avoid any interruption to your training. If you have already paid, please ignore this email.
+      </p>
+    </td></tr>
+
+    ${divider()}
+
+    <tr><td style="padding-top:0;text-align:center;">
+      ${orangeBtn('View Payments', `${siteUrl}/payments`)}
+    </td></tr>
+  `);
+}
+
+/* ------------------------------------------------------------------ */
+/*  Session Reschedule Request (C4)                                     */
+/* ------------------------------------------------------------------ */
+function sessionRescheduleRequestHtml(d: Record<string, string | number | undefined>) {
+  const clientName = String(d.clientName ?? 'A client');
+  const sessionTitle = String(d.sessionTitle ?? d.title ?? 'Training Session');
+  const currentDate = String(d.currentDate ?? d.oldDate ?? '');
+  const preferredDate = String(d.preferredDate ?? d.date ?? '');
+  const note = d.note ? String(d.note) : '';
+  const siteUrl = String(d.siteUrl ?? 'https://ishowtransformation.com');
+
+  return layout(`
+    <tr><td style="padding-bottom:24px;">
+      <div style="width:52px;height:52px;background:rgba(59,130,246,0.12);border:1px solid rgba(59,130,246,0.25);border-radius:14px;text-align:center;line-height:52px;">
+        <span style="font-size:24px;">🔄</span>
+      </div>
+    </td></tr>
+
+    <tr><td style="padding-bottom:10px;">
+      <h1 style="margin:0;font-size:26px;font-weight:900;color:#fafafa;letter-spacing:-0.5px;line-height:1.2;">
+        Reschedule request from ${clientName}
+      </h1>
+    </td></tr>
+
+    <tr><td style="padding-bottom:28px;">
+      <p style="margin:0;font-size:15px;color:#a1a1aa;line-height:1.7;">
+        ${clientName} has requested to reschedule their training session. Please review and update the session accordingly.
+      </p>
+    </td></tr>
+
+    <tr><td style="padding-bottom:28px;">
+      <div style="background:#09090b;border:1px solid #27272a;border-radius:12px;padding:20px 24px;">
+        <table width="100%" cellpadding="0" cellspacing="0" border="0">
+          ${metaRow('📋 Session', sessionTitle)}
+          ${metaRow('📅 Current Date', currentDate)}
+          ${metaRow('🆕 Preferred Date', preferredDate)}
+          ${note ? metaRow('📝 Note', note) : ''}
+        </table>
+      </div>
+    </td></tr>
+
+    ${divider()}
+
+    <tr><td style="padding-top:0;text-align:center;">
+      ${orangeBtn('Manage Sessions', `${siteUrl}/trainer/sessions`)}
     </td></tr>
   `);
 }

@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/client';
+import { createNotification } from './notifications';
 
 export interface TrainingSession {
   id: string;
@@ -28,14 +29,16 @@ function mapSession(row: Record<string, unknown>): TrainingSession {
   };
 }
 
-export async function listSessions(userId?: string): Promise<TrainingSession[]> {
+export async function listSessions(filters?: { userId?: string; trainerId?: string; status?: string }): Promise<TrainingSession[]> {
   const supabase = createClient();
   let query = supabase
     .from('sessions')
     .select('*')
     .order('scheduled_date', { ascending: true })
     .order('scheduled_time', { ascending: true });
-  if (userId) query = query.eq('user_id', userId);
+  if (filters?.userId) query = query.eq('user_id', filters.userId);
+  if (filters?.trainerId) query = query.eq('trainer_id', filters.trainerId);
+  if (filters?.status) query = query.eq('status', filters.status);
   const { data, error } = await query;
   if (error || !data) return [];
   return data.map(mapSession);
@@ -60,6 +63,16 @@ export async function createSession(
     .select()
     .single();
   if (error || !data) return null;
+
+  // RT2: Notification
+  await createNotification({
+    userId: payload.userId,
+    type: 'session_booked',
+    title: 'Session Scheduled',
+    body: `Your session "${payload.title}" is scheduled for ${new Date(payload.scheduledDate + "T00:00:00").toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} at ${payload.scheduledTime}.`,
+    href: '/sessions',
+  });
+
   return mapSession(data);
 }
 

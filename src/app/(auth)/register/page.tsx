@@ -1,39 +1,72 @@
-'use client';
+"use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
-import { Dumbbell, Mail, Lock, User, Phone, AlertCircle, CheckCircle, Loader2 } from "lucide-react";
+import { Mail, Lock, User, Phone, AlertCircle, Loader2, ArrowRight, Eye, EyeOff, CheckCircle2, Flame } from "lucide-react";
+import AutoPlayVideo from "@/components/AutoPlayVideo";
+import { DM_Sans, Barlow_Condensed } from "next/font/google";
+
+const dm = DM_Sans({
+  subsets: ["latin"],
+  variable: "--font-dm",
+  weight: ["400", "500", "600", "700"],
+});
+
+const barlow = Barlow_Condensed({
+  subsets: ["latin"],
+  variable: "--font-barlow",
+  weight: ["700", "800"],
+});
 
 export default function RegisterPage() {
   const router = useRouter();
-  const { register } = useAuth();
+  const { register, loginWithGoogle, user, loading: authLoading } = useAuth();
+  
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     phone: "",
     password: "",
-    confirmPassword: "",
   });
+  
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [gLoading, setGLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [emailSent, setEmailSent] = useState(false);
+  const [showPw, setShowPw] = useState(false);
 
   useEffect(() => {
-    if (!authLoading && user) router.push('/assessment');
+    if (!authLoading && user) {
+      router.push('/dashboard');
+    }
   }, [authLoading, router, user]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+  };
+
+  const handleGoogle = async () => {
+    setGLoading(true);
+    try {
+      const { error: err } = await loginWithGoogle();
+      if (err) throw new Error(err);
+    } catch {
+      setError("Google sign-in failed. Please try again.");
+      setGLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    if (!name.trim()) { setError('Please enter your name.'); return; }
-    if (password.length < 8) { setError('Password must be at least 8 characters.'); return; }
+    
+    if (!formData.name.trim()) { setError('Please enter your name.'); return; }
+    if (!formData.phone.trim()) { setError('Mobile number is mandatory for your assessment.'); return; }
+    if (formData.password.length < 8) { setError('Password must be at least 8 characters.'); return; }
+    
     setLoading(true);
-
-    const user = await register({
+    const { error: err } = await register({
       name: formData.name,
       email: formData.email,
       phone: formData.phone,
@@ -42,203 +75,198 @@ export default function RegisterPage() {
 
     setLoading(false);
     if (err) { setError(err); return; }
-    if (needsConfirmation) { setEmailSent(true); return; }
-    router.push('/assessment');
-  };
-
-    if (!user) {
-      setError("An account with this email already exists");
-      return;
-    }
-
-    router.push("/assessment");
   };
 
   if (!authLoading && user) return null;
 
-  if (emailSent) {
-    return (
-      <div className="min-h-screen bg-zinc-950 flex items-center justify-center px-5">
-        <div className="w-full max-w-sm text-center">
-          <div className="w-16 h-16 rounded-2xl bg-green-500/10 border border-green-500/20 flex items-center justify-center mx-auto mb-5">
-            <CheckCircle className="w-8 h-8 text-green-400" />
-          </div>
-          <h2 className="text-2xl font-black text-white mb-2">Check your inbox</h2>
-          <p className="text-zinc-400 text-sm leading-relaxed mb-1">A confirmation link was sent to</p>
-          <p className="font-semibold text-white text-sm mb-5">{email}</p>
-          <p className="text-xs text-zinc-600 mb-6">Click the link to activate your account, then sign in.</p>
-          <Link href="/login" className="inline-flex items-center gap-2 rounded-xl bg-orange-500 hover:bg-orange-400 px-6 py-3 text-sm font-black text-white transition-colors shadow-lg shadow-orange-500/20">
-            Back to sign in
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-zinc-950 flex items-center justify-center px-5 py-12">
-      <div className="w-full max-w-sm">
-        <Link href="/" className="inline-flex items-baseline gap-0 mb-10">
-          <span className="font-black text-xl text-white tracking-tight">iShow</span>
-          <span className="font-black text-xl text-orange-500 tracking-tight">Transformation</span>
-        </Link>
-
-        <div className="mb-7">
-          <h1 className="text-3xl font-black text-white tracking-tight">Create account</h1>
-          <p className="text-zinc-500 text-sm mt-1.5">
-            Already have one?{' '}
-            <Link href="/login" className="text-orange-400 font-semibold hover:text-orange-300 transition-colors">Sign in</Link>
-          </p>
+    <div className={`${dm.variable} ${barlow.variable} font-[family-name:var(--font-dm)] min-h-screen bg-zinc-950 flex flex-col lg:flex-row overflow-hidden`}>
+      
+      {/* LEFT SIDE: PERSUASIVE CONTENT & MEDIA */}
+      <section className="hidden lg:flex lg:w-1/2 relative flex-col justify-end p-20 overflow-hidden">
+        <div className="absolute inset-0 z-0">
+          <AutoPlayVideo
+            src="/landing/14711435_2560_1440_25fps.mp4"
+            className="w-full h-full object-cover grayscale opacity-40 mix-blend-luminosity"
+            poster="https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=1200&q=80"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/40 to-transparent" />
+          <div className="absolute inset-0 bg-orange-600/5 mix-blend-overlay" />
         </div>
 
-        <button type="button" onClick={handleGoogle} disabled={gLoading}
-          className="w-full flex items-center justify-center gap-2.5 rounded-xl border border-zinc-700 bg-zinc-800/50 hover:bg-zinc-800 py-3 px-4 text-sm font-semibold text-zinc-200 transition-all mb-5 disabled:opacity-50"
-        >
-          {gLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <GoogleIcon />}
-          Continue with Google
-        </button>
-
-        <div className="flex items-center gap-3 mb-5">
-          <div className="flex-1 h-px bg-zinc-800" />
-          <span className="text-xs text-zinc-600 font-medium">or with email</span>
-          <div className="flex-1 h-px bg-zinc-800" />
-        </div>
-
-        {error && (
-          <div className="flex items-start gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400 mb-4">
-            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />{error}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-3">
-          <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-1.5">Full Name</label>
-            <div className="relative">
-              <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
-              <input
-                type="text" value={name} onChange={e => setName(e.target.value)}
-                placeholder="Your full name" required autoComplete="name"
-                className="w-full rounded-xl bg-zinc-800/60 border border-zinc-700 pl-10 pr-4 py-3 text-sm text-white placeholder-zinc-600 outline-none focus:border-orange-500/70 focus:ring-2 focus:ring-orange-500/15 transition"
-              />
+        <div className="relative z-10">
+          <Link href="/" className="group flex items-center gap-3 mb-12">
+            <div className="w-10 h-10 bg-orange-500 rounded-xl flex items-center justify-center shadow-2xl shadow-orange-500/20 group-hover:scale-110 transition-transform">
+               <Flame className="w-6 h-6 text-white fill-white" />
             </div>
+            <span className="font-[family-name:var(--font-barlow)] font-black text-2xl text-white tracking-widest uppercase italic">
+              iShow<span className="text-orange-500">Transformation</span>
+            </span>
+          </Link>
+
+          <h1 className="font-[family-name:var(--font-barlow)] font-extrabold uppercase text-white leading-[0.85] tracking-tight mb-8" style={{ fontSize: "clamp(40px, 5vw, 90px)" }}>
+            Elite <br/> Transformation <br/> <span className="text-orange-500">Awaits.</span>
+          </h1>
+
+          <div className="space-y-6 max-w-md">
+            {[
+              "Bespoke Programming built for your baseline",
+              "Granular Metric Tracking & Analytics",
+              "1-on-1 Direct Coach Accountability"
+            ].map((text, i) => (
+              <div key={i} className="flex items-center gap-4 group">
+                <div className="w-6 h-6 rounded-full bg-orange-500/10 flex items-center justify-center border border-orange-500/20 group-hover:bg-orange-500 group-hover:border-orange-500 transition-colors">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-orange-500 group-hover:text-white transition-colors" />
+                </div>
+                <span className="text-zinc-300 font-bold tracking-wide uppercase text-xs">{text}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+        
+        {/* Decorative elements */}
+        <div className="absolute top-1/2 -right-1/4 w-[500px] h-[500px] bg-orange-500/10 rounded-full blur-[150px] pointer-events-none" />
+      </section>
+
+      {/* RIGHT SIDE: REGISTRATION FORM */}
+      <section className="flex-1 flex items-center justify-center p-6 md:p-12 relative overflow-y-auto">
+        {/* Mobile Background (only visible on small screens) */}
+        <div className="lg:hidden absolute inset-0 z-0">
+          <img 
+            src="https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?auto=format&fit=crop&w=1200&q=80" 
+            className="w-full h-full object-cover opacity-20 grayscale" 
+            alt="Background"
+          />
+          <div className="absolute inset-0 bg-zinc-950/80 backdrop-blur-sm" />
+        </div>
+
+        <div className="w-full max-w-md relative z-10">
+          {/* Logo for mobile */}
+          <div className="lg:hidden flex justify-center mb-10">
+            <Link href="/" className="inline-flex items-center gap-2">
+              <span className="font-[family-name:var(--font-barlow)] font-black text-2xl text-white tracking-widest uppercase italic">
+                iShow<span className="text-orange-500">Transformation</span>
+              </span>
+            </Link>
           </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {error && (
-                <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
-                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                  {error}
-                </div>
+          <div className="bg-zinc-900/40 backdrop-blur-2xl p-8 md:p-10 rounded-[2.5rem] border border-zinc-800 shadow-2xl">
+            <div className="mb-10 text-center lg:text-left">
+              <h1 className="font-[family-name:var(--font-barlow)] font-black uppercase text-4xl text-white mb-3">Create account</h1>
+              <p className="text-zinc-500 font-medium">
+                Already have one?{' '}
+                <Link href="/login" className="text-orange-500 font-bold hover:text-orange-400 transition-colors underline underline-offset-4 decoration-2">Sign in</Link>
+              </p>
+            </div>
+
+            {error && (
+              <div className="flex items-start gap-2 rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-4 text-sm text-red-400 mb-8 font-medium border-l-4 border-l-red-500">
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />{error}
+              </div>
+            )}
+
+            <button type="button" onClick={handleGoogle} disabled={gLoading || authLoading}
+              className="w-full flex items-center justify-center gap-3 rounded-2xl border border-zinc-800 bg-zinc-950/50 hover:bg-zinc-800 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-white transition-all disabled:opacity-50 mb-8"
+            >
+              {gLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : (
+                <svg className="w-4 h-4" viewBox="0 0 24 24">
+                  <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                  <path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                  <path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                  <path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                </svg>
               )}
+              Continue with Google
+            </button>
+
+            <div className="flex items-center gap-4 mb-8">
+              <div className="flex-1 h-px bg-zinc-800/50" />
+              <span className="text-[10px] text-zinc-600 font-extrabold uppercase tracking-widest whitespace-nowrap">or with email</span>
+              <div className="flex-1 h-px bg-zinc-800/50" />
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-5">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div>
+                  <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 mb-2 px-1">Full Name</label>
+                  <div className="relative group">
+                    <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600 group-focus-within:text-orange-500 transition-colors" />
+                    <input
+                      type="text" name="name" value={formData.name} onChange={handleChange}
+                      placeholder="John Doe" required autoComplete="name"
+                      className="w-full rounded-2xl bg-zinc-950/50 border border-zinc-800 pl-11 pr-4 py-4 text-sm text-white placeholder-zinc-700 outline-none focus:border-orange-500/50 focus:bg-zinc-950 focus:ring-4 focus:ring-orange-500/5 transition-all font-medium"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 mb-2 px-1">Phone Number</label>
+                  <div className="relative group">
+                    <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600 group-focus-within:text-orange-500 transition-colors" />
+                    <input
+                      type="tel" name="phone" value={formData.phone} onChange={handleChange}
+                      placeholder="+971 50 123 4567" required autoComplete="tel"
+                      className="w-full rounded-2xl bg-zinc-950/50 border border-zinc-800 pl-11 pr-4 py-4 text-sm text-white placeholder-zinc-700 outline-none focus:border-orange-500/50 focus:bg-zinc-950 focus:ring-4 focus:ring-orange-500/5 transition-all font-medium"
+                    />
+                  </div>
+                </div>
+              </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Full Name</label>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 mb-2 px-1">Email Address</label>
+                <div className="relative group">
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600 group-focus-within:text-orange-500 transition-colors" />
                   <input
-                    type="text"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleChange}
-                    className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-gray-900"
-                    placeholder="John Doe"
-                    required
+                    type="email" name="email" value={formData.email} onChange={handleChange}
+                    placeholder="you@example.com" required autoComplete="email"
+                    className="w-full rounded-2xl bg-zinc-950/50 border border-zinc-800 pl-11 pr-4 py-4 text-sm text-white placeholder-zinc-700 outline-none focus:border-orange-500/50 focus:bg-zinc-950 focus:ring-4 focus:ring-orange-500/5 transition-all font-medium"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Email Address</label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 mb-2 px-1">Password</label>
+                <div className="relative group">
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600 group-focus-within:text-orange-500 transition-colors" />
                   <input
-                    type="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-gray-900"
-                    placeholder="you@example.com"
-                    required
+                    type={showPw ? 'text' : 'password'} name="password" value={formData.password} onChange={handleChange}
+                    placeholder="Min. 8 characters" required autoComplete="new-password"
+                    className="w-full rounded-2xl bg-zinc-950/50 border border-zinc-800 pl-11 pr-12 py-4 text-sm text-white placeholder-zinc-700 outline-none focus:border-orange-500/50 focus:bg-zinc-950 focus:ring-4 focus:ring-orange-500/5 transition-all font-medium"
                   />
+                  <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-600 hover:text-white transition-colors">
+                    {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                  Phone Number <span className="text-gray-400 font-normal">(optional)</span>
-                </label>
-                <div className="relative">
-                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <input
-                    type="tel"
-                    name="phone"
-                    value={formData.phone}
-                    onChange={handleChange}
-                    className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-gray-900"
-                    placeholder="+1 (555) 000-0000"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Password</label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <input
-                    type="password"
-                    name="password"
-                    value={formData.password}
-                    onChange={handleChange}
-                    className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-gray-900"
-                    placeholder="••••••••"
-                    required
-                    minLength={6}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Confirm Password</label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <input
-                    type="password"
-                    name="confirmPassword"
-                    value={formData.confirmPassword}
-                    onChange={handleChange}
-                    className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-gray-900"
-                    placeholder="••••••••"
-                    required
-                  />
-                </div>
-              </div>
-
-          <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-1.5">Password</label>
-            <div className="relative">
-              <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
-              <input
-                type={showPw ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)}
-                placeholder="Min. 8 characters" required autoComplete="new-password"
-                className="w-full rounded-xl bg-zinc-800/60 border border-zinc-700 pl-10 pr-10 py-3 text-sm text-white placeholder-zinc-600 outline-none focus:border-orange-500/70 focus:ring-2 focus:ring-orange-500/15 transition"
-              />
-              <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors">
-                {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              <button type="submit" disabled={loading || authLoading}
+                className="w-full flex items-center justify-center gap-3 rounded-2xl bg-orange-500 hover:bg-orange-600 active:scale-95 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-white transition-all disabled:opacity-50 mt-10 shadow-2xl shadow-orange-500/20"
+              >
+                {loading ? <><Loader3 className="w-4 h-4 animate-spin" />Processing...</> : <>Build Your Protocol <ArrowRight className="w-4 h-4" /></>}
               </button>
+            </form>
+
+            <div className="text-center mt-10">
+              <Link href="/" className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-600 hover:text-white transition-colors flex items-center justify-center gap-2">
+                <span className="w-4 h-px bg-zinc-800" /> Return to launchpad <span className="w-4 h-px bg-zinc-800" />
+              </Link>
             </div>
           </div>
+        </div>
+      </section>
 
-          <button type="submit" disabled={loading}
-            className="w-full flex items-center justify-center gap-2 rounded-xl bg-orange-500 hover:bg-orange-400 active:bg-orange-600 py-3.5 text-sm font-black text-white transition-all disabled:opacity-50 shadow-lg shadow-orange-500/20 mt-2"
-          >
-            {loading ? <><Loader2 className="w-4 h-4 animate-spin" />Creating account…</> : <>Create account <ArrowRight className="w-4 h-4" /></>}
-          </button>
-        </form>
-
-        <p className="text-center text-xs text-zinc-600 mt-8">
-          <Link href="/" className="hover:text-zinc-400 transition-colors">← Back to home</Link>
-        </p>
-      </div>
     </div>
+  );
+}
+
+function Loader3(props: any) {
+  return (
+    <svg 
+      {...props} 
+      xmlns="http://www.w3.org/2000/svg" 
+      width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"
+    >
+      <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+    </svg>
   );
 }

@@ -68,7 +68,7 @@ export default function AdminDashboardPage() {
   ];
 
   return (
-    <DashboardLayout role="ADMIN">
+    <DashboardLayout role="admin">
       <div className="min-h-full bg-zinc-950 relative overflow-hidden">
         <div className="pointer-events-none absolute -top-40 right-0 w-[500px] h-[500px] rounded-full bg-violet-500/5 blur-[120px]" />
 

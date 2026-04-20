@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/client';
+import { createNotification } from './notifications';
 
 export interface Plan {
   id: string;
@@ -93,6 +94,16 @@ export async function createPlan(
     .select()
     .single();
   if (error || !data) return null;
+
+  // RT2: Notification
+  await createNotification({
+    userId: payload.userId,
+    type: 'plan_assigned',
+    title: 'Training Plan Assigned',
+    body: `Your trainer has assigned the "${payload.name}" plan. Check it out!`,
+    href: '/my-plan',
+  });
+
   return mapPlan(data);
 }
 
