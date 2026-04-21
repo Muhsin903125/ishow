@@ -17,6 +17,8 @@ import {
   Settings,
   X,
   Zap,
+  Activity,
+  LogOut,
 } from "lucide-react";
 
 const navItems = [

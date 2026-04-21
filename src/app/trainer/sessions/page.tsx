@@ -592,7 +592,7 @@ export default function TrainerOperationsPage() {
               
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
                  <div className="lg:col-span-4 space-y-6">
-                    <select value={programForm.userId} onChange={(e) => setSessionForm({...programForm, userId: e.target.value})} className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl px-6 py-5 text-sm text-white font-black uppercase focus:border-orange-500 outline-none appearance-none">
+                    <select value={programForm.userId} onChange={(e) => setProgramForm({...programForm, userId: e.target.value})} className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl px-6 py-5 text-sm text-white font-black uppercase focus:border-orange-500 outline-none appearance-none">
                        <option value="">TARGET ASSET...</option>
                        {clients.map(c => <option key={c.id} value={c.id}>{c.name?.toUpperCase()}</option>)}
                     </select>
