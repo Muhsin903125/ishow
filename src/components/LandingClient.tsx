@@ -5,7 +5,7 @@ import { useRef } from "react";
 import Link from "next/link";
 import { 
   Instagram, ArrowRight, Target, Dumbbell, TrendingUp, 
-  Calendar, Utensils, MessageSquare, Play, Star, MapPin
+  Calendar, Utensils, MessageSquare, Play, Star, MapPin, CheckCheck
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import AutoPlayVideo from "@/components/AutoPlayVideo";
@@ -57,7 +57,7 @@ export default function LandingClient({ testimonials, fonts }: LandingClientProp
       opacity: 1, 
       scale: 1, 
       y: 0,
-      transition: { duration: 0.8, ease: [0.22, 1, 0.36, 1] }
+      transition: { duration: 0.8, ease: [0.22, 1, 0.36, 1] as any }
     },
     viewport: { once: true, margin: "-100px" }
   };
@@ -77,7 +77,7 @@ export default function LandingClient({ testimonials, fonts }: LandingClientProp
     whileInView: { 
       opacity: 1, 
       y: 0,
-      transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] }
+      transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] as any }
     }
   };
 
@@ -395,7 +395,7 @@ export default function LandingClient({ testimonials, fonts }: LandingClientProp
                       className="flex gap-4 items-start"
                     >
                       <div className="mt-1 flex-shrink-0 w-6 h-6 rounded-full bg-orange-500/10 flex items-center justify-center">
-                        <CheckCheckIcon className="w-3.5 h-3.5 text-orange-500" />
+                        <CheckCheck className="w-3.5 h-3.5 text-orange-500" />
                       </div>
                       <span className="text-zinc-300 font-bold">{item}</span>
                     </motion.li>
@@ -651,25 +651,5 @@ export default function LandingClient({ testimonials, fonts }: LandingClientProp
         </footer>
       </div>
     </SmoothScroll>
-  );
-}
-
-function CheckCheckIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="3"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M18 6 7 17l-5-5" />
-      <path d="m22 10-7.5 7.5L13 16" />
-    </svg>
   );
 }

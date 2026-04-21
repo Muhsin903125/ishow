@@ -9,7 +9,7 @@ import { listTrainers, listCustomers, type Profile } from "@/lib/db/profiles";
 import { listAssessments, type Assessment } from "@/lib/db/assessments";
 import { listSessions, type TrainingSession } from "@/lib/db/sessions";
 import { listPayments, type Payment } from "@/lib/db/payments";
-import { Users, UserCog, Calendar, CreditCard, ChevronRight, AlertCircle, Clock, Database } from "lucide-react";
+import { Users, UserCog, Calendar, CreditCard, ChevronRight, AlertCircle, Clock, Database, MessageSquare } from "lucide-react";
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
