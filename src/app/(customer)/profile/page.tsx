@@ -53,7 +53,7 @@ export default function CustomerProfilePage() {
   if (loading || !dataLoaded || !user) {
     return (
       <DashboardLayout role="customer">
-        <div className="p-8 max-w-2xl mx-auto space-y-8">
+        <div className="p-8 max-w-full space-y-8">
            <div className="h-10 w-48 bg-zinc-900 rounded-lg animate-pulse" />
            <div className="h-64 bg-zinc-900 rounded-[2.5rem] animate-pulse" />
            <div className="h-64 bg-zinc-900 rounded-[2.5rem] animate-pulse" />
@@ -110,8 +110,8 @@ export default function CustomerProfilePage() {
 
   return (
     <DashboardLayout role="customer">
-      <div className="min-h-screen bg-zinc-950 p-6 lg:p-8">
-        <div className="max-w-2xl mx-auto">
+      <div className="min-h-screen bg-zinc-950 p-6 lg:p-10">
+        <div className="max-w-full">
           
           <motion.div 
             initial={{ opacity: 0, y: 20 }}

@@ -46,7 +46,7 @@ export default function DashboardLayout({ children, role }: Props) {
   return (
     <div data-role={role} className="flex h-screen bg-zinc-950 overflow-hidden">
       {/* Desktop Sidebar */}
-      <div className="hidden lg:flex lg:w-64 lg:flex-shrink-0">
+      <div className="hidden lg:flex lg:w-80 lg:flex-shrink-0">
         <SidebarComponent />
       </div>
 
@@ -57,7 +57,7 @@ export default function DashboardLayout({ children, role }: Props) {
             className="fixed inset-0 bg-black/70 backdrop-blur-sm"
             onClick={() => setSidebarOpen(false)}
           />
-          <div className="fixed inset-y-0 left-0 flex w-72">
+          <div className="fixed inset-y-0 left-0 flex w-80">
             <SidebarComponent onClose={() => setSidebarOpen(false)} />
           </div>
         </div>
@@ -66,7 +66,7 @@ export default function DashboardLayout({ children, role }: Props) {
       {/* Main Content */}
       <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
         {/* Top Header */}
-        <header className="flex items-center justify-between px-4 lg:px-6 py-3.5 bg-zinc-900/80 backdrop-blur-md border-b border-zinc-800/60 sticky top-0 z-30">
+        <header className="flex items-center justify-between px-4 lg:px-8 py-3.5 bg-zinc-900/80 backdrop-blur-md border-b border-zinc-800/60 sticky top-0 z-30">
           {/* Left: mobile menu toggle + page title */}
           <div className="flex items-center gap-3">
             <button
@@ -87,20 +87,24 @@ export default function DashboardLayout({ children, role }: Props) {
             </div>
 
             {/* Desktop breadcrumb / page title */}
-            <div className="hidden lg:flex items-center gap-2">
-              <span className={`w-2 h-2 rounded-full ${dot}`} />
-              <span className="text-sm font-semibold text-zinc-300">{pageTitle}</span>
+            <div className="hidden lg:flex items-center gap-3">
+              <div className="flex items-center gap-2 px-3 py-1 bg-zinc-900 rounded-lg border border-zinc-800">
+                <span className={`w-1.5 h-1.5 rounded-full ${dot}`} />
+                <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">{role}</span>
+              </div>
+              <span className="text-zinc-700 font-bold">/</span>
+              <span className="text-sm font-black text-white uppercase italic tracking-wider">{pageTitle}</span>
             </div>
           </div>
 
           {/* Right: actions */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <NotificationBell />
           </div>
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 overflow-y-auto min-w-0 bg-zinc-950">
+        <main className="flex-1 overflow-y-auto min-w-0 bg-zinc-950 scrollbar-hide">
           {children}
         </main>
       </div>

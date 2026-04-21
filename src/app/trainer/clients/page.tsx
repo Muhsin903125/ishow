@@ -69,7 +69,7 @@ export default function TrainerClientsPage() {
   if (loading || !dataLoaded) {
     return (
       <DashboardLayout role="trainer">
-        <div className="p-8 max-w-6xl mx-auto space-y-8 animate-pulse">
+        <div className="p-8 max-w-full space-y-8 animate-pulse">
            <div className="h-10 w-48 bg-zinc-900 rounded-lg" />
            <div className="h-14 bg-zinc-900 rounded-2xl w-full" />
            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -113,8 +113,8 @@ export default function TrainerClientsPage() {
 
   return (
     <DashboardLayout role="trainer">
-      <div className="min-h-screen bg-zinc-950 p-6 lg:p-8">
-        <div className="max-w-6xl mx-auto">
+      <div className="min-h-screen bg-zinc-950 p-6 lg:p-10">
+        <div className="max-w-full">
           
           <motion.div 
             initial={{ opacity: 0, y: 20 }}

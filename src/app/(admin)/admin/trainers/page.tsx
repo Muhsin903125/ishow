@@ -68,7 +68,7 @@ export default function AdminTrainersPage() {
   if (loading || !dataLoaded || !user) {
     return (
       <DashboardLayout role="admin">
-        <div className="p-8 max-w-5xl mx-auto space-y-8 animate-pulse">
+        <div className="p-8 max-w-full space-y-8 animate-pulse">
            <div className="h-12 w-64 bg-zinc-900 rounded-2xl" />
            <div className="grid grid-cols-1 gap-4">
               {[1,2,3].map(i => <div key={i} className="h-32 bg-zinc-900 rounded-3xl" />)}
@@ -136,7 +136,7 @@ export default function AdminTrainersPage() {
   return (
     <DashboardLayout role="admin">
       <div className="min-h-screen bg-zinc-950 p-6 lg:p-10">
-        <div className="max-w-5xl mx-auto space-y-10">
+        <div className="max-w-full space-y-10">
           
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
             <motion.div 

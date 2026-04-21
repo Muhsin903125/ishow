@@ -138,7 +138,7 @@ export default function TrainerPaymentsPage() {
   if (loading || !dataLoaded) {
     return (
       <DashboardLayout role="trainer">
-        <div className="p-8 max-w-5xl mx-auto space-y-8 animate-pulse">
+        <div className="p-8 max-w-full space-y-8 animate-pulse">
            <div className="h-10 w-48 bg-zinc-900 rounded-lg" />
            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {[1,2,3].map(i => <div key={i} className="h-28 bg-zinc-900 rounded-[2rem]" />)}
@@ -160,8 +160,8 @@ export default function TrainerPaymentsPage() {
 
   return (
     <DashboardLayout role="trainer">
-      <div className="min-h-screen bg-zinc-950 p-6 lg:p-8">
-        <div className="max-w-5xl mx-auto">
+      <div className="min-h-screen bg-zinc-950 p-6 lg:p-10">
+        <div className="max-w-full">
           
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 mb-10">
             <motion.div 

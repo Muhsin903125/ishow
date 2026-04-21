@@ -118,7 +118,7 @@ export default function AdminAssessmentsPage() {
   if (loading || !dataLoaded || !user) {
     return (
       <DashboardLayout role="admin">
-        <div className="p-8 max-w-5xl mx-auto animate-pulse space-y-10">
+        <div className="p-8 max-w-full animate-pulse space-y-10">
            <div className="h-10 w-48 bg-zinc-900 rounded-lg" />
            <div className="grid grid-cols-3 gap-6">
               {[1,2,3].map(i => <div key={i} className="h-32 bg-zinc-900 rounded-[2rem]" />)}
@@ -269,7 +269,7 @@ export default function AdminAssessmentsPage() {
   return (
     <DashboardLayout role="admin">
       <div className="min-h-screen bg-zinc-950 p-6 lg:p-8 text-white">
-        <div className="max-w-5xl mx-auto">
+        <div className="max-w-full">
 
           {/* Header */}
           <motion.div 

@@ -67,7 +67,7 @@ export default function ProgressPage() {
   if (loading || !dataLoaded) {
     return (
       <DashboardLayout role="customer">
-        <div className="p-8 max-w-5xl mx-auto space-y-8">
+        <div className="p-8 max-w-full space-y-8">
           <div className="h-10 w-48 bg-zinc-900 rounded-lg animate-pulse" />
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
              {[1,2,3,4].map(i => <div key={i} className="h-24 bg-zinc-900 rounded-2xl animate-pulse" />)}
@@ -109,8 +109,8 @@ export default function ProgressPage() {
 
   return (
     <DashboardLayout role="customer">
-      <div className="min-h-screen bg-zinc-950 p-6 lg:p-8">
-        <div className="max-w-5xl mx-auto">
+      <div className="min-h-screen bg-zinc-950 p-6 lg:p-10">
+        <div className="max-w-full">
           
           <div className="flex items-center justify-between flex-wrap gap-6 mb-10">
             <motion.div 

@@ -69,8 +69,11 @@ export default function ClientDetailPage() {
   if (loading || !dataLoaded) {
     return (
       <DashboardLayout role="trainer">
-        <div className="flex items-center justify-center h-full">
-          <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
+        <div className="flex items-center justify-center h-full bg-zinc-950">
+          <div className="text-center">
+            <Loader2 className="w-10 h-10 animate-spin text-orange-500 mx-auto mb-4" />
+            <p className="text-[10px] font-black text-zinc-600 uppercase tracking-widest italic">Synchronizing Operational Data...</p>
+          </div>
         </div>
       </DashboardLayout>
     );
@@ -84,197 +87,251 @@ export default function ClientDetailPage() {
 
   return (
     <DashboardLayout role="trainer">
-      <div className="p-6 lg:p-8 max-w-5xl mx-auto">
-        {/* Back button */}
-        <Link href="/trainer/clients" className="inline-flex items-center gap-2 text-gray-500 hover:text-gray-900 mb-6 transition-colors">
-          <ArrowLeft className="w-4 h-4" />
-          Back to Clients
-        </Link>
-
-        {/* Client Header */}
-        <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-6 text-white mb-6">
-          <div className="flex items-center justify-between flex-wrap gap-4">
-            <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-2xl font-black">
-                {client?.name.charAt(0)}
+      <div className="min-h-screen bg-zinc-950 p-6 lg:p-10 pb-32">
+        <div className="max-w-full">
+          
+          {/* Back button */}
+          <Link href="/trainer/clients" className="inline-flex items-center gap-2 text-zinc-500 hover:text-white mb-10 transition-colors group">
+            <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+            <span className="text-[10px] font-black uppercase tracking-widest italic">Return to Manifest</span>
+          </Link>
+  
+          {/* Client Header */}
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-zinc-900 border border-zinc-800 rounded-[3rem] p-8 md:p-10 mb-8 relative overflow-hidden"
+          >
+            {/* Subtle Gradient Glow */}
+            <div className="absolute top-0 right-0 w-64 h-64 bg-orange-500/5 blur-[100px] pointer-events-none" />
+            
+            <div className="relative z-10 flex items-center justify-between flex-wrap gap-8">
+              <div className="flex items-center gap-8">
+                <div className="w-24 h-24 rounded-[2rem] bg-zinc-950 border border-zinc-800 flex items-center justify-center text-3xl font-black text-orange-500 shadow-2xl rotate-3">
+                  {client?.name.charAt(0)}
+                </div>
+                <div>
+                  <div className="flex items-center gap-3 mb-2">
+                    <h1 className="text-4xl font-black text-white italic uppercase tracking-tighter leading-none">{client?.name}</h1>
+                    <span className="px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full text-[9px] font-black text-emerald-500 uppercase tracking-widest">Active Client</span>
+                  </div>
+                  <div className="flex flex-wrap gap-6 mt-4">
+                    <p className="text-zinc-500 flex items-center gap-2 text-[11px] font-bold uppercase tracking-tight italic">
+                      <Mail className="w-3.5 h-3.5 text-orange-500/50" />
+                      {client?.email}
+                    </p>
+                    {client?.phone && (
+                      <p className="text-zinc-500 flex items-center gap-2 text-[11px] font-bold uppercase tracking-tight italic">
+                        <Phone className="w-3.5 h-3.5 text-orange-500/50" />
+                        {client.phone}
+                      </p>
+                    )}
+                  </div>
+                </div>
               </div>
-              <div>
-                <h1 className="text-2xl font-black">{client?.name}</h1>
-                <p className="text-slate-300 flex items-center gap-1.5 mt-0.5">
-                  <Mail className="w-4 h-4" />
-                  {client?.email}
-                </p>
-                {client?.phone && (
-                  <p className="text-slate-400 text-sm flex items-center gap-1.5 mt-0.5">
-                    <Phone className="w-3.5 h-3.5" />
-                    {client.phone}
-                  </p>
-                )}
-              </div>
-            </div>
-            <div className="flex gap-3 flex-wrap">
-              {!plan && assessment && (
+              <div className="flex gap-4 flex-wrap">
                 <Link
                   href={`/trainer/clients/${clientId}/assign-plan`}
-                  className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg font-semibold text-sm transition-colors"
+                  className="bg-white hover:bg-orange-500 text-zinc-950 hover:text-white px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-xl active:scale-95 flex items-center gap-2"
                 >
-                  Assign Plan
+                  <Edit3 className="w-4 h-4" />
+                  {plan ? "Update Protocol" : "Assign Plan"}
                 </Link>
-              )}
-              <Link
-                href={`/trainer/clients/${clientId}/assign-plan`}
-                className="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg font-semibold text-sm transition-colors flex items-center gap-1.5"
-              >
-                <Edit3 className="w-4 h-4" />
-                {plan ? "Update Plan" : "Create Plan"}
-              </Link>
-            </div>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Assessment */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center">
-                <ClipboardList className="w-5 h-5 text-orange-600" />
+                {/* Add logic same as before but styled */}
               </div>
-              <h2 className="font-bold text-gray-900">Assessment</h2>
             </div>
+          </motion.div>
 
-            {assessment ? (
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-sm text-gray-500">Status</span>
-                  {assessment.status === "reviewed" ? (
-                    <span className="bg-green-100 text-green-700 px-2.5 py-1 rounded-full text-xs font-semibold flex items-center gap-1">
-                      <CheckCircle className="w-3 h-3" />Reviewed
-                    </span>
-                  ) : (
-                    <span className="bg-yellow-100 text-yellow-700 px-2.5 py-1 rounded-full text-xs font-semibold flex items-center gap-1">
-                      <Clock className="w-3 h-3" />Pending
-                    </span>
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+            {/* Assessment */}
+            <motion.div 
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="bg-zinc-900 border border-zinc-800 rounded-[2.5rem] p-8 md:p-10 relative overflow-hidden"
+            >
+              <div className="absolute top-0 right-0 p-10 opacity-[0.02] pointer-events-none">
+                 <ClipboardList className="w-32 h-32 text-white" />
+              </div>
+
+              <div className="flex items-center justify-between mb-10 relative z-10">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-2xl bg-orange-500/10 flex items-center justify-center border border-orange-500/20">
+                    <ClipboardList className="w-6 h-6 text-orange-500" />
+                  </div>
+                  <h2 className="text-lg font-black text-white italic uppercase tracking-widest">Manifest Assessment</h2>
+                </div>
+                {assessment && (
+                  <div className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border transition-colors ${
+                    assessment.status === "reviewed" ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" : "bg-amber-500/10 text-amber-500 border-amber-500/20"
+                  }`}>
+                    {assessment.status === "reviewed" ? "Operational" : "Pending Intel"}
+                  </div>
+                )}
+              </div>
+
+              {assessment ? (
+                <div className="relative z-10">
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-6 mb-10">
+                    {[
+                      { label: "Age Group", value: assessment.age ? `${assessment.age} yr` : "N/A" },
+                      { label: "Mass Index", value: assessment.weight || "N/A" },
+                      { label: "Height Ref", value: assessment.height || "N/A" },
+                      { label: "Exp Level", value: assessment.experienceLevel, capitalize: true },
+                      { label: "Duty Cycle", value: `${assessment.daysPerWeek} days/wk` },
+                      { label: "Operational Window", value: assessment.preferredTimes, capitalize: true },
+                    ].map((item, i) => (
+                      <div key={i} className="border-l-2 border-zinc-800 pl-4 py-1">
+                        <p className="text-[10px] font-black text-zinc-600 uppercase tracking-widest mb-1 italic">{item.label}</p>
+                        <p className={`text-sm font-black text-white italic ${item.capitalize ? 'capitalize' : ''}`}>{item.value}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  {assessment.goals.length > 0 && (
+                    <div className="mb-10">
+                      <p className="text-[10px] font-black text-zinc-600 uppercase tracking-widest mb-4 italic">Strategic Objectives</p>
+                      <div className="flex flex-wrap gap-2">
+                        {assessment.goals.map((g) => (
+                          <span key={g} className="bg-zinc-950 border border-zinc-800 text-orange-500 text-[10px] font-black px-4 py-2 rounded-xl uppercase tracking-tighter italic">
+                            {g.replace("_", " ")}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {assessment.healthConditions && assessment.healthConditions !== "None" && (
+                    <div className="mb-10 p-5 bg-zinc-950 border border-zinc-800 rounded-3xl">
+                      <p className="text-[10px] font-black text-amber-500 uppercase tracking-widest mb-2 italic">Physiological Constraints</p>
+                      <p className="text-xs font-medium text-zinc-400 leading-relaxed italic">{assessment.healthConditions}</p>
+                    </div>
+                  )}
+
+                  {assessment.status === "pending" && (
+                    <button
+                      onClick={markAssessmentReviewed}
+                      disabled={reviewingAssessment}
+                      className="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all disabled:opacity-40 shadow-xl active:scale-95 flex items-center justify-center gap-3"
+                    >
+                      {reviewingAssessment ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
+                      {reviewingAssessment ? "Processing Intel..." : "Certify Assessment"}
+                    </button>
                   )}
                 </div>
-
-                <div className="space-y-2 text-sm">
-                  {assessment.age !== undefined && (
-                    <div className="flex justify-between"><span className="text-gray-500">Age</span><span className="font-medium text-gray-900">{assessment.age} years</span></div>
-                  )}
-                  {assessment.weight && (
-                    <div className="flex justify-between"><span className="text-gray-500">Weight</span><span className="font-medium text-gray-900">{assessment.weight}</span></div>
-                  )}
-                  {assessment.height && (
-                    <div className="flex justify-between"><span className="text-gray-500">Height</span><span className="font-medium text-gray-900">{assessment.height}</span></div>
-                  )}
-                  <div className="flex justify-between"><span className="text-gray-500">Experience</span><span className="font-medium text-gray-900 capitalize">{assessment.experienceLevel}</span></div>
-                  <div className="flex justify-between"><span className="text-gray-500">Days/Week</span><span className="font-medium text-gray-900">{assessment.daysPerWeek}</span></div>
-                  <div className="flex justify-between"><span className="text-gray-500">Preferred Time</span><span className="font-medium text-gray-900 capitalize">{assessment.preferredTimes}</span></div>
+              ) : (
+                <div className="text-center py-20 bg-zinc-950/50 border border-zinc-800 rounded-3xl border-dashed">
+                  <ClipboardList className="w-16 h-16 mx-auto mb-6 opacity-10" />
+                  <p className="text-[10px] font-black text-zinc-700 uppercase tracking-[0.3em] italic">No Intel Logged</p>
                 </div>
+              )}
+            </motion.div>
 
-                {assessment.goals.length > 0 && (
-                  <div className="mt-3">
-                    <p className="text-xs text-gray-500 mb-1.5">Goals</p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {assessment.goals.map((g) => (
-                        <span key={g} className="bg-blue-50 text-blue-700 text-xs px-2 py-0.5 rounded-full">{g.replace("_", " ")}</span>
-                      ))}
+            {/* Plan */}
+            <motion.div 
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="bg-zinc-900 border border-zinc-800 rounded-[2.5rem] p-8 md:p-10 relative overflow-hidden"
+            >
+              <div className="absolute top-0 right-0 p-10 opacity-[0.02] pointer-events-none">
+                 <Target className="w-32 h-32 text-white" />
+              </div>
+
+              <div className="flex items-center gap-4 mb-10">
+                <div className="w-12 h-12 rounded-2xl bg-blue-500/10 flex items-center justify-center border border-blue-500/20">
+                  <Target className="w-6 h-6 text-blue-500" />
+                </div>
+                <h2 className="text-lg font-black text-white italic uppercase tracking-widest">Assigned Protocol</h2>
+              </div>
+  
+              {plan ? (
+                <div className="relative z-10">
+                  <h3 className="font-black text-orange-500 text-2xl uppercase italic tracking-tighter mb-2">{plan.name}</h3>
+                  <p className="text-zinc-500 text-[11px] font-medium leading-relaxed italic mb-10">{plan.description}</p>
+                  
+                  <div className="space-y-6">
+                    <div className="flex justify-between items-center bg-zinc-950 p-6 rounded-3xl border border-zinc-800/50">
+                      <div>
+                        <p className="text-[10px] font-black text-zinc-600 uppercase tracking-widest mb-1 italic">Amortization Rate</p>
+                        <p className="font-black text-white text-xl italic"><span className="text-orange-500 text-xs align-top mr-1">AED</span>{plan.monthlyRate}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-[10px] font-black text-zinc-600 uppercase tracking-widest mb-1 italic">Epoch Start</p>
+                        <p className="font-black text-white text-sm italic">{formatDate(plan.startDate)}</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-3">
+                      <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                      <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest italic">{plan.status} - Active Link</span>
                     </div>
                   </div>
-                )}
-
-                {assessment.healthConditions && assessment.healthConditions !== "None" && (
-                  <div className="mt-3 p-2.5 bg-yellow-50 rounded-lg">
-                    <p className="text-xs text-yellow-700 font-medium">Health Notes: {assessment.healthConditions}</p>
-                  </div>
-                )}
-
-                {assessment.status === "pending" && (
-                  <button
-                    onClick={markAssessmentReviewed}
-                    disabled={reviewingAssessment}
-                    className="mt-4 w-full bg-green-500 hover:bg-green-600 text-white py-2 rounded-lg text-sm font-semibold transition-colors disabled:opacity-60"
-                  >
-                    {reviewingAssessment ? "Marking..." : "Mark as Reviewed"}
-                  </button>
-                )}
-              </div>
-            ) : (
-              <div className="text-center py-6 text-gray-400">
-                <ClipboardList className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                <p className="text-sm">No assessment submitted yet</p>
-              </div>
-            )}
-          </div>
-
-          {/* Plan */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center">
-                <Target className="w-5 h-5 text-blue-700" />
-              </div>
-              <h2 className="font-bold text-gray-900">Current Plan</h2>
-            </div>
-
-            {plan ? (
-              <div>
-                <h3 className="font-bold text-gray-900 text-lg mb-1">{plan.name}</h3>
-                <p className="text-gray-500 text-sm mb-3">{plan.description}</p>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between"><span className="text-gray-500">Monthly Rate</span><span className="font-bold text-gray-900">${plan.monthlyRate}</span></div>
-                  <div className="flex justify-between"><span className="text-gray-500">Start Date</span><span className="font-medium text-gray-900">{formatDate(plan.startDate)}</span></div>
-                  <div className="flex justify-between"><span className="text-gray-500">Status</span><span className="bg-green-100 text-green-700 px-2 py-0.5 rounded-full text-xs font-semibold capitalize">{plan.status}</span></div>
                 </div>
-              </div>
-            ) : (
-              <div className="text-center py-6 text-gray-400">
-                <Target className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                <p className="text-sm">No plan assigned yet</p>
-                <Link
-                  href={`/trainer/clients/${clientId}/assign-plan`}
-                  className="mt-3 inline-flex items-center gap-1 bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-800 transition-colors"
-                >
-                  Assign Plan
-                </Link>
-              </div>
-            )}
+              ) : (
+                <div className="text-center py-20 bg-zinc-950/50 border border-zinc-800 rounded-3xl border-dashed">
+                  <Target className="w-16 h-16 mx-auto mb-6 opacity-10" />
+                  <p className="text-[10px] font-black text-zinc-700 uppercase tracking-[0.3em] italic mb-8">No Active Protocol</p>
+                  <Link
+                    href={`/trainer/clients/${clientId}/assign-plan`}
+                    className="inline-flex items-center gap-3 bg-zinc-800 hover:bg-orange-500 text-white px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-xl active:scale-95"
+                  >
+                    Initiate Assignment
+                  </Link>
+                </div>
+              )}
+            </motion.div>
           </div>
-
+  
           {/* Sessions */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 lg:col-span-2">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-xl bg-green-100 flex items-center justify-center">
-                <Calendar className="w-5 h-5 text-green-600" />
-              </div>
-              <h2 className="font-bold text-gray-900">Sessions ({sessions.length})</h2>
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="mt-8 bg-zinc-900 border border-zinc-800 rounded-[2.5rem] p-8 md:p-10 relative overflow-hidden"
+          >
+            <div className="absolute top-0 right-0 p-10 opacity-[0.02] pointer-events-none">
+                <Calendar className="w-32 h-32 text-white" />
             </div>
 
+            <div className="flex items-center justify-between mb-10 relative z-10">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20">
+                  <Calendar className="w-6 h-6 text-emerald-500" />
+                </div>
+                <h2 className="text-lg font-black text-white italic uppercase tracking-widest">Deployment Logs ({sessions.length})</h2>
+              </div>
+            </div>
+  
             {sessions.length > 0 ? (
-              <div className="space-y-2">
-                {sessions.slice(0, 5).map((session) => (
-                  <div key={session.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                    <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center flex-shrink-0">
-                      <Dumbbell className="w-4 h-4 text-white" />
+              <div className="space-y-4 relative z-10">
+                {sessions.slice(0, 8).map((session) => (
+                  <div key={session.id} className="flex items-center gap-6 p-6 bg-zinc-950 border border-zinc-900 rounded-3xl hover:border-zinc-700 transition-all group">
+                    <div className="w-14 h-14 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center flex-shrink-0 group-hover:rotate-6 transition-transform">
+                      <Dumbbell className="w-6 h-6 text-orange-500" />
                     </div>
                     <div className="flex-1">
-                      <p className="font-medium text-gray-900 text-sm">{session.title}</p>
-                      <p className="text-gray-500 text-xs">{formatDate(session.date)} · {session.time} · {session.duration}min</p>
+                      <p className="font-black text-white uppercase italic tracking-tight text-lg mb-1">{session.title}</p>
+                      <div className="flex items-center gap-4 text-[10px] font-bold text-zinc-500 uppercase tracking-widest italic">
+                        <span className="flex items-center gap-1.5"><Calendar className="w-3 h-3" />{formatDate(session.date)}</span>
+                        <span className="flex items-center gap-1.5"><Clock className="w-3 h-3" />{session.time} · {session.duration}MIN</span>
+                      </div>
                     </div>
-                    <span className={`text-xs px-2.5 py-1 rounded-full font-medium capitalize ${
-                      session.status === "completed" ? "bg-green-100 text-green-700" :
-                      session.status === "scheduled" ? "bg-blue-100 text-blue-700" :
-                      "bg-red-100 text-red-700"
-                    }`}>{session.status}</span>
+                    <div className="text-right">
+                      <span className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-[0.2em] italic border ${
+                        session.status === "completed" ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" :
+                        session.status === "scheduled" ? "bg-blue-500/10 text-blue-500 border-blue-500/20" :
+                        "bg-red-500/10 text-red-500 border-red-500/20"
+                      }`}>{session.status}</span>
+                    </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <div className="text-center py-6 text-gray-400">
-                <Calendar className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                <p className="text-sm">No sessions yet</p>
+              <div className="text-center py-20 bg-zinc-950/50 border border-zinc-800 rounded-3xl border-dashed">
+                <Calendar className="w-16 h-16 mx-auto mb-6 opacity-10" />
+                <p className="text-[10px] font-black text-zinc-700 uppercase tracking-[0.3em] italic">No Logs Found</p>
               </div>
             )}
-          </div>
+          </motion.div>
         </div>
       </div>
     </DashboardLayout>

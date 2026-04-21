@@ -67,7 +67,7 @@ export default function TrainerTeamPage() {
   if (loading || !dataLoaded) {
     return (
       <DashboardLayout role="trainer">
-        <div className="p-8 max-w-6xl mx-auto space-y-10 animate-pulse">
+        <div className="p-8 max-w-full space-y-10 animate-pulse">
            <div className="h-12 w-64 bg-zinc-900 rounded-xl" />
            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {[1,2,3].map(i => <div key={i} className="h-48 bg-zinc-900 rounded-[2rem]" />)}
@@ -79,8 +79,8 @@ export default function TrainerTeamPage() {
 
   return (
     <DashboardLayout role="trainer">
-      <div className="min-h-screen bg-zinc-950 p-6 lg:p-8">
-        <div className="max-w-6xl mx-auto space-y-10 pb-20">
+      <div className="min-h-screen bg-zinc-950 p-6 lg:p-10">
+        <div className="max-w-full space-y-10 pb-20">
           
           {/* ── Page Header ─────────────────────────────────── */}
           <motion.div 

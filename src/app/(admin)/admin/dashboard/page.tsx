@@ -79,7 +79,7 @@ export default function AdminDashboardPage() {
   if (loading || !dataLoaded || !user) {
     return (
       <DashboardLayout role="admin">
-        <div className="p-8 max-w-6xl mx-auto space-y-8 animate-pulse">
+        <div className="p-6 lg:p-10 max-w-full space-y-8 animate-pulse">
            <div className="h-40 bg-zinc-900 rounded-[2.5rem]" />
            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               {[1,2,3,4].map(i => <div key={i} className="h-28 bg-zinc-900 rounded-[2rem]" />)}
@@ -140,8 +140,8 @@ export default function AdminDashboardPage() {
 
   return (
     <DashboardLayout role="admin">
-      <div className="min-h-screen bg-zinc-950 p-6 lg:p-8">
-        <div className="max-w-6xl mx-auto space-y-10">
+      <div className="min-h-screen bg-zinc-950 p-6 lg:p-10">
+        <div className="max-w-full space-y-10">
           
           {/* Header */}
           <motion.div 
