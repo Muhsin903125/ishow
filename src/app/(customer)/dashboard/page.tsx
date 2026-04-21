@@ -3,13 +3,13 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import DashboardLayout from "@/components/DashboardLayout";
 import { getAssessment, type Assessment } from "@/lib/db/assessments";
 import { getActivePlan, type Plan } from "@/lib/db/plans";
 import { listSessions, type TrainingSession } from "@/lib/db/sessions";
 import { listPayments, type Payment } from "@/lib/db/payments";
-import { SkeletonCard, SkeletonSessionRow, SkeletonText } from "@/components/ui/Skeleton";
 import {
   Calendar,
   Dumbbell,
@@ -21,34 +21,12 @@ import {
   Flame,
   CheckCircle2,
   AlertCircle,
+  Activity,
+  Zap,
+  ChevronRight,
+  Sparkles,
 } from "lucide-react";
 
-// ─── Skeleton Placeholders ───────────────────────────────────
-function HeroSkeleton() {
-  return (
-    <div className="rounded-2xl bg-zinc-900 border border-zinc-800 p-6 animate-pulse">
-      <div className="flex items-center gap-4">
-        <div className="w-12 h-12 rounded-xl bg-zinc-800" />
-        <div className="space-y-2 flex-1">
-          <div className="h-4 bg-zinc-800 rounded-md w-1/3" />
-          <div className="h-3 bg-zinc-800 rounded-md w-1/2" />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function StatCardSkeleton() {
-  return (
-    <div className="rounded-2xl bg-zinc-900 border border-zinc-800 p-5 animate-pulse">
-      <div className="w-8 h-8 rounded-lg bg-zinc-800 mb-3" />
-      <div className="h-6 bg-zinc-800 rounded w-16 mb-1" />
-      <div className="h-3 bg-zinc-800 rounded w-24" />
-    </div>
-  );
-}
-
-// ─── Dashboard ───────────────────────────────────────────────
 export default function CustomerDashboard() {
   const { user, loading } = useAuth();
   const router = useRouter();
@@ -60,11 +38,15 @@ export default function CustomerDashboard() {
 
   useEffect(() => {
     if (loading) return;
-    if (!user) { router.push("/login"); return; }
+    
+    if (!user) {
+      router.push("/login"); 
+      return; 
+    }
+    
     if (user.role === "trainer") { router.push("/trainer/dashboard"); return; }
     if (user.role === "admin") { router.push("/admin/dashboard"); return; }
 
-    // Load assessment first — determines if we redirect
     getAssessment(user.id)
       .then((a) => {
         if (!a) { router.replace("/assessment"); return; }
@@ -72,7 +54,6 @@ export default function CustomerDashboard() {
       })
       .catch(() => setAssessment(null));
 
-    // Load remaining data in parallel, independently
     getActivePlan(user.id)
       .then(setPlan)
       .catch(() => setPlan(null));
@@ -84,7 +65,7 @@ export default function CustomerDashboard() {
     listPayments({ userId: user.id })
       .then(setPayments)
       .catch(() => setPayments([]));
-  }, [user?.id, loading, router]);
+  }, [user, loading, router]);
 
   const today = new Date().toISOString().split("T")[0];
 
@@ -110,17 +91,15 @@ export default function CustomerDashboard() {
       day: "numeric",
     });
 
-  // Only block render briefly while auth resolves — everything else loads per-section
-  if (loading) {
+  if (loading || assessment === "loading") {
     return (
       <DashboardLayout role="customer">
-        <div className="p-6 lg:p-8 max-w-5xl mx-auto space-y-4">
-          <HeroSkeleton />
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            {Array.from({ length: 4 }).map((_, i) => <StatCardSkeleton key={i} />)}
+        <div className="p-6 lg:p-8 max-w-5xl mx-auto space-y-6">
+          <div className="h-40 bg-zinc-900 rounded-[2.5rem] animate-pulse" />
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+             {[1,2,3,4].map(i => <div key={i} className="h-28 bg-zinc-900 rounded-3xl animate-pulse" />)}
           </div>
-          <SkeletonCard className="h-52" />
-          <SkeletonCard className="h-40" />
+          <div className="h-64 bg-zinc-900 rounded-[2.5rem] animate-pulse" />
         </div>
       </DashboardLayout>
     );
@@ -128,235 +107,298 @@ export default function CustomerDashboard() {
 
   return (
     <DashboardLayout role="customer">
-      <div className="p-5 lg:p-8 max-w-5xl mx-auto space-y-5">
+      <div className="min-h-screen bg-zinc-950 p-5 lg:p-8">
+        <div className="max-w-5xl mx-auto space-y-6">
 
-        {/* ── Welcome Hero ─────────────────────────────────── */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-zinc-900 to-zinc-900 border border-zinc-800 p-6">
-          <div
-            className="absolute inset-0 opacity-30"
-            style={{
-              background:
-                "radial-gradient(ellipse at top right, rgba(249,115,22,0.35) 0%, transparent 60%)",
-            }}
-          />
-          <div className="relative flex items-center justify-between gap-4">
-            <div>
-              <p className="text-zinc-400 text-sm font-medium mb-0.5">Welcome back</p>
-              <h1 className="text-2xl font-black text-white">
-                {user?.name?.split(" ")[0]} 👋
-              </h1>
-              <p className="text-zinc-400 text-sm mt-1">
-                {todaySession
-                  ? `You have a session today — let's crush it.`
-                  : "Track your progress and stay on target."}
-              </p>
-            </div>
-            <div className="hidden sm:flex w-14 h-14 rounded-2xl bg-orange-500/20 border border-orange-500/30 items-center justify-center shrink-0">
-              <Flame className="w-7 h-7 text-orange-400" />
-            </div>
-          </div>
-        </div>
-
-        {/* ── Today's Session ──────────────────────────────── */}
-        {sessions === "loading" ? (
-          <SkeletonCard className="h-24" />
-        ) : todaySession ? (
-          <div className="flex items-center gap-4 rounded-2xl bg-orange-500 p-5 shadow-lg shadow-orange-500/25">
-            <div className="w-11 h-11 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
-              <Calendar className="w-5 h-5 text-white" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-bold text-white">{todaySession.title}</p>
-              <p className="text-orange-100 text-sm mt-0.5">
-                {todaySession.scheduledTime} · {todaySession.duration} min
-              </p>
-            </div>
-            <Link
-              href="/sessions"
-              className="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-xl text-sm font-bold transition-colors whitespace-nowrap"
-            >
-              View
-            </Link>
-          </div>
-        ) : null}
-
-        {/* ── Assessment Notice ────────────────────────────── */}
-        {assessment !== "loading" && assessment?.status === "pending" && plan === null && (
-          <div className="flex items-start gap-3 rounded-2xl bg-zinc-900 border border-zinc-700 p-4">
-            <div className="w-9 h-9 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center shrink-0">
-              <Clock className="w-4 h-4 text-orange-400" />
-            </div>
-            <div>
-              <p className="font-bold text-white text-sm">Assessment under review</p>
-              <p className="text-zinc-400 text-sm mt-0.5">
-                Your coach is building your personalized program — hang tight.
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* ── Stat Row ─────────────────────────────────────── */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {[
-            {
-              label: "Sessions",
-              value: sessions === "loading" ? null : upcomingSessions.length,
-              icon: Calendar,
-              color: "text-blue-400",
-              bg: "bg-blue-500/10",
-              href: "/sessions",
-            },
-            {
-              label: "Plan",
-              value: plan === "loading" ? null : plan ? "Active" : "Pending",
-              icon: TrendingUp,
-              color: "text-green-400",
-              bg: "bg-green-500/10",
-              href: "/my-plan",
-            },
-            {
-              label: "Due",
-              value: payments === "loading" ? null : pendingPayments.length > 0 ? `AED ${pendingPayments.reduce((s, p) => s + (p.amount || 0), 0)}` : "Clear",
-              icon: CreditCard,
-              color: pendingPayments.length > 0 ? "text-red-400" : "text-zinc-400",
-              bg: pendingPayments.length > 0 ? "bg-red-500/10" : "bg-zinc-800",
-              href: "/payments",
-            },
-            {
-              label: "Programs",
-              value: null,
-              icon: Dumbbell,
-              color: "text-purple-400",
-              bg: "bg-purple-500/10",
-              href: "/programs",
-            },
-          ].map(({ label, value, icon: Icon, color, bg, href }) => (
-            <Link
-              key={label}
-              href={href}
-              className="rounded-2xl bg-zinc-900 border border-zinc-800 p-4 hover:border-zinc-700 transition-all group"
-            >
-              <div className={`w-9 h-9 rounded-xl ${bg} flex items-center justify-center mb-3`}>
-                <Icon className={`w-4.5 h-4.5 ${color}`} />
+          {/* ── Welcome Hero ─────────────────────────────────── */}
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="relative overflow-hidden rounded-[2.5rem] bg-zinc-900 border border-zinc-800 p-8 md:p-10"
+          >
+            <div
+              className="absolute inset-0 opacity-40 pointer-events-none"
+              style={{
+                background:
+                  "radial-gradient(circle at top right, rgba(249,115,22,0.15) 0%, transparent 70%)",
+              }}
+            />
+            <div className="relative flex items-center justify-between gap-8">
+              <div>
+                <div className="inline-flex items-center gap-2 bg-orange-500/10 border border-orange-500/20 rounded-full px-4 py-1.5 text-[10px] font-black uppercase tracking-[0.2em] text-orange-500 mb-6">
+                   <Zap className="w-3 h-3 fill-orange-500" /> Operational Status: Active
+                </div>
+                <h1 className="text-4xl font-black text-white italic uppercase tracking-tight">
+                  Status <span className="text-orange-500">Check</span>, {user?.name?.split(" ")[0]}
+                </h1>
+                <p className="text-zinc-500 text-sm mt-4 font-medium max-w-md leading-relaxed">
+                  {todaySession
+                    ? `Tactical session deployed for today. Final preparation advised.`
+                    : "Mission parameters normalized. System awaiting next scheduled execution."}
+                </p>
               </div>
-              {value === null ? (
-                <div className="h-5 bg-zinc-800 rounded-md w-12 animate-pulse mb-1" />
-              ) : (
-                <p className="text-base font-black text-white">{value}</p>
-              )}
-              <p className="text-xs text-zinc-500 font-medium">{label}</p>
-            </Link>
-          ))}
-        </div>
+              <div className="hidden lg:flex w-24 h-24 rounded-[2rem] bg-zinc-950 border border-zinc-800 items-center justify-center shrink-0 shadow-2xl relative">
+                <div className="absolute inset-0 bg-orange-500/5 blur-2xl rounded-full" />
+                <Flame className="w-10 h-10 text-orange-500 animate-pulse" />
+              </div>
+            </div>
+          </motion.div>
 
-        {/* ── Active Plan ───────────────────────────────────── */}
-        {plan === "loading" ? (
-          <SkeletonCard />
-        ) : plan ? (
-          <div className="rounded-2xl bg-zinc-900 border border-zinc-800 p-5">
-            <div className="flex items-center gap-4">
-              <div className="w-11 h-11 rounded-xl bg-green-500/10 border border-green-500/20 flex items-center justify-center shrink-0">
-                <TrendingUp className="w-5 h-5 text-green-400" />
+          {/* ── Today's Session Alert ────────────────────────── */}
+          {todaySession && (
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="flex items-center gap-6 rounded-[2rem] bg-orange-500 p-6 md:p-8 shadow-2xl shadow-orange-500/20 group"
+            >
+              <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center shrink-0">
+                <Activity className="w-7 h-7 text-white" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-bold text-white">{plan.name}</p>
-                <div className="flex items-center gap-2 mt-1">
-                  <span className="text-zinc-400 text-sm">AED {plan.monthlyRate}/mo</span>
-                  <span className="bg-green-500/10 text-green-400 border border-green-500/20 text-xs px-2 py-0.5 rounded-full font-semibold">
-                    Active
-                  </span>
-                </div>
+                <p className="text-[10px] font-black uppercase tracking-widest text-orange-100 mb-1 opacity-80">Immediate Deployment</p>
+                <p className="text-2xl font-black text-white uppercase italic tracking-tight">{todaySession.title}</p>
+                <p className="text-orange-100 text-sm font-bold mt-1">
+                  {todaySession.scheduledTime} <span className="mx-2 opacity-50">•</span> {todaySession.duration} MIN DURATION
+                </p>
               </div>
               <Link
-                href="/my-plan"
-                className="flex items-center gap-1 text-sm text-orange-400 font-semibold hover:text-orange-300 transition-colors"
+                href="/sessions"
+                className="bg-zinc-950 text-white px-6 py-4 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-white hover:text-zinc-950 transition-all shadow-xl"
               >
-                Details <ArrowRight className="w-3.5 h-3.5" />
+                Commence
               </Link>
-            </div>
-          </div>
-        ) : null}
-
-        {/* ── Upcoming Sessions ─────────────────────────────── */}
-        <div className="rounded-2xl bg-zinc-900 border border-zinc-800 p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="font-bold text-white">Upcoming Sessions</h2>
-            <Link href="/sessions" className="text-sm text-orange-400 font-semibold hover:text-orange-300 transition-colors flex items-center gap-1">
-              View all <ArrowRight className="w-3.5 h-3.5" />
-            </Link>
-          </div>
-
-          {sessions === "loading" ? (
-            <div className="space-y-1">
-              <SkeletonSessionRow />
-              <SkeletonSessionRow />
-              <SkeletonSessionRow />
-            </div>
-          ) : upcomingSessions.length > 0 ? (
-            <div className="space-y-1">
-              {upcomingSessions.map((sess) => (
-                <div key={sess.id} className="flex items-center gap-3 p-3 rounded-xl hover:bg-zinc-800/60 transition-colors group">
-                  <div className="w-9 h-9 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center shrink-0">
-                    <Calendar className="w-4 h-4 text-blue-400" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-white text-sm truncate">{sess.title}</p>
-                    <p className="text-zinc-500 text-xs mt-0.5">
-                      {formatDate(sess.scheduledDate)} · {sess.scheduledTime}
-                    </p>
-                  </div>
-                  <CheckCircle2 className="w-4 h-4 text-zinc-700 group-hover:text-zinc-500 transition-colors" />
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-8">
-              <Calendar className="w-8 h-8 text-zinc-700 mx-auto mb-2" />
-              <p className="text-zinc-500 text-sm">No upcoming sessions yet.</p>
-              <p className="text-zinc-600 text-xs mt-0.5">Your coach will schedule them soon.</p>
-            </div>
+            </motion.div>
           )}
-        </div>
 
-        {/* ── Pending Payments Alert ────────────────────────── */}
-        {payments !== "loading" && pendingPayments.length > 0 && (
-          <Link
-            href="/payments"
-            className="flex items-center gap-3 p-4 rounded-2xl bg-red-500/10 border border-red-500/20 hover:bg-red-500/15 transition-colors group"
-          >
-            <div className="w-9 h-9 rounded-xl bg-red-500/20 flex items-center justify-center shrink-0">
-              <AlertCircle className="w-4 h-4 text-red-400" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-bold text-red-300 text-sm">
-                {pendingPayments.length} payment{pendingPayments.length > 1 ? "s" : ""} due
-              </p>
-              <p className="text-red-400/70 text-xs mt-0.5">Tap to review and pay</p>
-            </div>
-            <ArrowRight className="w-4 h-4 text-red-400 group-hover:translate-x-0.5 transition-transform" />
-          </Link>
-        )}
+          {/* ── Stat Row ─────────────────────────────────────── */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {[
+              {
+                label: "Missions",
+                value: sessions === "loading" ? null : upcomingSessions.length,
+                icon: Calendar,
+                color: "text-blue-500",
+                bg: "bg-blue-500/10",
+                href: "/sessions",
+                delay: 0.1
+              },
+              {
+                label: "Curriculum",
+                value: plan === "loading" ? null : plan ? "Sync'd" : "Pending",
+                icon: Target,
+                color: "text-emerald-500",
+                bg: "bg-emerald-500/10",
+                href: "/my-plan",
+                 delay: 0.2
+              },
+              {
+                label: "Liability",
+                value: payments === "loading" ? null : pendingPayments.length > 0 ? `AED ${pendingPayments.reduce((s, p) => s + (p.amount || 0), 0)}` : "Nominal",
+                icon: CreditCard,
+                color: pendingPayments.length > 0 ? "text-rose-500" : "text-zinc-600",
+                bg: pendingPayments.length > 0 ? "bg-rose-500/10" : "bg-zinc-900",
+                href: "/payments",
+                 delay: 0.3
+              },
+              {
+                label: "Analytics",
+                value: "View",
+                icon: Activity,
+                color: "text-orange-500",
+                bg: "bg-orange-500/10",
+                href: "/progress",
+                 delay: 0.4
+              },
+            ].map(({ label, value, icon: Icon, color, bg, href, delay }) => (
+              <motion.div
+                key={label}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay }}
+              >
+                <Link
+                  href={href}
+                  className="block h-full rounded-[2rem] bg-zinc-900 border border-zinc-800 p-6 hover:border-zinc-600 transition-all group relative overflow-hidden"
+                >
+                  <div className={`w-10 h-10 rounded-xl ${bg} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
+                    <Icon className={`w-5 h-5 ${color}`} />
+                  </div>
+                  {value === null ? (
+                    <div className="h-6 bg-zinc-800 rounded-md w-16 animate-pulse mb-1" />
+                  ) : (
+                    <p className="text-xl font-black text-white italic uppercase tracking-tight">{value}</p>
+                  )}
+                  <p className="text-[10px] text-zinc-500 font-black uppercase tracking-widest mt-1">{label}</p>
+                  
+                  <div className="absolute top-0 right-0 p-6 opacity-0 group-hover:opacity-100 transition-opacity">
+                     <ChevronRight className="w-5 h-5 text-zinc-700" />
+                  </div>
+                </Link>
+              </motion.div>
+            ))}
+          </div>
 
-        {/* ── Quick Links ───────────────────────────────────── */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {[
-            { href: "/programs",  icon: Dumbbell,    label: "Programs",  color: "text-purple-400", bg: "bg-purple-500/10 border-purple-500/20" },
-            { href: "/payments",  icon: CreditCard,  label: "Payments",  color: "text-green-400",  bg: "bg-green-500/10 border-green-500/20" },
-            { href: "/sessions",  icon: Calendar,    label: "Sessions",  color: "text-blue-400",   bg: "bg-blue-500/10 border-blue-500/20" },
-            { href: "/my-plan",   icon: Target,      label: "My Plan",   color: "text-orange-400", bg: "bg-orange-500/10 border-orange-500/20" },
-          ].map(({ href, icon: Icon, label, color, bg }) => (
-            <Link
-              key={href}
-              href={href}
-              className={`rounded-2xl border p-4 hover:scale-[1.02] transition-all flex flex-col items-center gap-2.5 ${bg}`}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            {/* ── Active Framework ─────────────────────────────── */}
+            <motion.div 
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.5 }}
+              className="lg:col-span-1 rounded-[2.5rem] bg-zinc-900 border border-zinc-800 p-8 flex flex-col justify-between"
             >
-              <Icon className={`w-5 h-5 ${color}`} />
-              <span className="text-xs font-bold text-zinc-300">{label}</span>
-            </Link>
-          ))}
-        </div>
+              <div>
+                <h2 className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.2em] mb-8 italic">Active Framework</h2>
+                {plan === "loading" ? (
+                  <div className="space-y-4">
+                    <div className="h-6 bg-zinc-800 rounded w-3/4 animate-pulse" />
+                    <div className="h-4 bg-zinc-800 rounded w-1/2 animate-pulse" />
+                  </div>
+                ) : plan ? (
+                  <div className="space-y-6">
+                    <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl inline-block mb-2">
+                       <TrendingUp className="w-8 h-8 text-emerald-500" />
+                    </div>
+                    <div>
+                      <p className="text-2xl font-black text-white uppercase italic tracking-tight leading-none">{plan.name}</p>
+                      <p className="text-zinc-500 text-xs font-bold mt-2 uppercase tracking-widest">Premium Enrolment</p>
+                    </div>
+                    <div className="pt-6 border-t border-zinc-800">
+                       <p className="text-[10px] font-black text-zinc-600 uppercase tracking-widest mb-1">Fee Structure</p>
+                       <p className="text-xl font-black text-white italic">AED {plan.monthlyRate}<span className="text-[10px] text-zinc-600 ml-1">/ PERIOD</span></p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="py-10 text-center">
+                    <AlertCircle className="w-10 h-10 text-zinc-800 mx-auto mb-4" />
+                    <p className="text-zinc-600 font-black uppercase text-[10px] tracking-widest">No Framework Synchronized</p>
+                  </div>
+                )}
+              </div>
+              
+              <Link
+                href="/my-plan"
+                className="mt-10 group flex items-center justify-between p-4 bg-zinc-950 border border-zinc-800 rounded-2xl hover:border-zinc-600 transition-all"
+              >
+                <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Protocol Details</span>
+                <ArrowRight className="w-4 h-4 text-orange-500 group-hover:translate-x-1 transition-transform" />
+              </Link>
+            </motion.div>
 
+            {/* ── Upcoming Manifest ────────────────────────────── */}
+            <motion.div 
+               initial={{ opacity: 0, x: 20 }}
+               animate={{ opacity: 1, x: 0 }}
+               transition={{ delay: 0.6 }}
+               className="lg:col-span-2 rounded-[2.5rem] bg-zinc-900 border border-zinc-800 p-8 md:p-10"
+            >
+              <div className="flex items-center justify-between mb-10">
+                <h2 className="text-[10px] font-black text-white uppercase tracking-[0.2em] italic flex items-center gap-3">
+                   <div className="w-1.5 h-1.5 bg-blue-500 rounded-full shadow-[0_0_10px_rgba(59,130,246,0.5)]" />
+                   Deployment Manifest
+                </h2>
+                <Link href="/sessions" className="text-[10px] font-black text-orange-500 uppercase tracking-widest hover:text-white transition-colors">
+                  Full Log
+                </Link>
+              </div>
+
+              {sessions === "loading" ? (
+                <div className="space-y-4">
+                  {[1,2,3].map(i => <div key={i} className="h-16 bg-zinc-950 rounded-2xl animate-pulse" />)}
+                </div>
+              ) : upcomingSessions.length > 0 ? (
+                <div className="space-y-3">
+                  {upcomingSessions.map((sess) => (
+                    <div key={sess.id} className="flex items-center gap-5 p-4 md:p-5 bg-zinc-950/50 border border-zinc-800/50 rounded-2xl hover:border-zinc-700 hover:bg-zinc-950 transition-all group">
+                      <div className="w-12 h-12 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center shrink-0 group-hover:bg-blue-500 group-hover:text-white transition-all">
+                        <Calendar className="w-6 h-6 text-zinc-600 group-hover:text-white transition-colors" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-black text-white uppercase italic tracking-tight text-base truncate">{sess.title}</p>
+                        <p className="text-zinc-600 text-[10px] font-black uppercase tracking-widest mt-1">
+                          {formatDate(sess.scheduledDate)} <span className="mx-1.5">•</span> {sess.scheduledTime}
+                        </p>
+                      </div>
+                      <ChevronRight className="w-5 h-5 text-zinc-800 group-hover:text-zinc-500 transition-colors" />
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-16 bg-zinc-950/50 border border-dashed border-zinc-800 rounded-2xl">
+                  <Sparkles className="w-8 h-8 text-zinc-800 mx-auto mb-4" />
+                  <p className="text-zinc-600 font-black uppercase text-[10px] tracking-widest">All current missions executed.</p>
+                </div>
+              )}
+            </motion.div>
+          </div>
+
+          {/* ── Pending Liability Notice ──────────────────────── */}
+          {payments !== "loading" && pendingPayments.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.7 }}
+            >
+              <Link
+                href="/payments"
+                className="flex items-center gap-6 p-6 rounded-[2rem] bg-rose-500/5 border border-rose-500/20 hover:bg-rose-500/10 transition-all group"
+              >
+                <div className="w-14 h-14 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center shrink-0">
+                  <AlertCircle className="w-7 h-7 text-rose-500" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[10px] font-black text-rose-500 uppercase tracking-widest mb-1">Financial Variance Detected</p>
+                  <p className="text-lg font-black text-white uppercase italic tracking-tight">
+                    {pendingPayments.length} Oustanding Settlement{pendingPayments.length > 1 ? "s" : ""}
+                  </p>
+                  <p className="text-zinc-500 text-xs font-bold mt-1 uppercase tracking-widest">Immediate reconciliation required to maintain operational access.</p>
+                </div>
+                <div className="p-4 bg-white rounded-2xl text-zinc-950 group-hover:bg-rose-500 group-hover:text-white transition-all">
+                   <ArrowRight className="w-5 h-5" />
+                </div>
+              </Link>
+            </motion.div>
+          )}
+
+          {/* ── Secondary Quick Links ─────────────────────────── */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pb-10">
+            {[
+              { href: "/programs",  icon: Dumbbell,    label: "Programs",  color: "text-orange-500" },
+              { href: "/payments",  icon: CreditCard,  label: "Payments",  color: "text-blue-500" },
+              { href: "/sessions",  icon: Calendar,    label: "Sessions",  color: "text-emerald-500" },
+              { href: "/profile",   icon: User,        label: "Security",  color: "text-zinc-500" },
+            ].map(({ href, icon: Icon, label, color }) => (
+              <motion.div key={href} whileHover={{ y: -5 }}>
+                <Link
+                  href={href}
+                  className="flex flex-col items-center gap-3 p-6 bg-zinc-900/50 border border-zinc-800 rounded-[2rem] hover:border-zinc-700 transition-all group"
+                >
+                  <Icon className={`w-5 h-5 ${color} group-hover:scale-110 transition-transform`} />
+                  <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest group-hover:text-white transition-colors">{label}</span>
+                </Link>
+              </motion.div>
+            ))}
+          </div>
+
+        </div>
       </div>
     </DashboardLayout>
+  );
+}
+
+function User({ className }: { className?: string }) {
+  return (
+    <svg 
+      viewBox="0 0 24 24" 
+      fill="none" 
+      stroke="currentColor" 
+      strokeWidth="2" 
+      strokeLinecap="round" 
+      strokeLinejoin="round" 
+      className={className}
+    >
+      <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+      <circle cx="12" cy="7" r="4" />
+    </svg>
   );
 }

@@ -3,10 +3,26 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { motion, AnimatePresence } from "framer-motion";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useAuth } from "@/contexts/AuthContext";
 import { getLocations, upsertLocation, deleteLocation, type Location } from "@/lib/db/master";
-import { ArrowLeft, MapPin, Pencil, Plus, Save, Trash2, X } from "lucide-react";
+import { 
+  ArrowLeft, 
+  MapPin, 
+  Pencil, 
+  Plus, 
+  Save, 
+  Trash2, 
+  X,
+  Target,
+  Zap,
+  Activity,
+  Shield,
+  ArrowRight,
+  Loader2,
+  CheckCircle
+} from "lucide-react";
 
 type Form = { id?: string; name: string; city: string; sortOrder: string };
 
@@ -24,42 +40,75 @@ export default function LocationsPage() {
   const [editing, setEditing] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [dataLoaded, setDataLoaded] = useState(false);
 
-  const loadData = async () => setLocations(await getLocations(false));
+  const loadData = async () => {
+    try {
+      setLocations(await getLocations(false));
+    } finally {
+      setDataLoaded(true);
+    }
+  };
 
   useEffect(() => {
-    if (!loading && !user) { router.push("/login"); return; }
-    const init = async () => {
-      if (!loading && user) {
-        if (user.role === 'customer') { router.push('/dashboard'); return; }
-        await loadData();
-      }
-    };
-    init();
-  }, [loading, router, user]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (loading) return;
+    if (!user) { router.replace("/login"); return; }
+    if (user.role === 'customer') { router.replace('/dashboard'); return; }
+    loadData();
+  }, [loading, router, user]);
 
-  if (loading || !user) return null;
+  if (loading || !dataLoaded || !user) {
+    return (
+      <DashboardLayout role="admin">
+        <div className="p-8 max-w-4xl mx-auto animate-pulse space-y-10">
+           <div className="h-10 w-48 bg-zinc-900 rounded-lg" />
+           <div className="h-64 bg-zinc-900 rounded-[2.5rem]" />
+           <div className="space-y-4">
+              {[1,2,3].map(i => <div key={i} className="h-20 bg-zinc-900 rounded-2xl" />)}
+           </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   const visible = showAll ? locations : locations.filter((l) => l.isActive);
   const role = user.role === "admin" ? "admin" : "trainer";
 
-  function startEdit(l: Location) { setForm(fromLocation(l)); setEditing(true); setError(""); setSuccess(""); }
-  function cancelEdit() { setForm(blankForm()); setEditing(false); setError(""); }
+  function startEdit(l: Location) { 
+    setForm(fromLocation(l)); 
+    setEditing(true); 
+    setError(""); 
+    setSuccess(""); 
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function cancelEdit() { setForm(blankForm()); setEditing(false); setError(""); setSuccess(""); }
   function update(field: keyof Form, value: string) { setForm((f) => ({ ...f, [field]: value })); }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!form.name.trim()) { setError("Name is required."); return; }
-    await upsertLocation({
-      id: form.id,
-      name: form.name.trim(),
-      city: form.city.trim() || undefined,
-      sortOrder: Number(form.sortOrder) || 0,
-      isActive: true,
-    });
-    setSuccess(form.id ? "Location updated." : "Location added.");
-    cancelEdit();
-    await loadData();
+    if (!form.name.trim()) { setError("Location identity required."); return; }
+    setSaving(true);
+    setError("");
+    try {
+      await upsertLocation({
+        id: form.id,
+        name: form.name.trim(),
+        city: form.city.trim() || undefined,
+        sortOrder: Number(form.sortOrder) || 0,
+        isActive: true,
+      });
+      setSuccess(form.id ? "Vector updated." : "Vector established.");
+      setTimeout(() => {
+        cancelEdit();
+        loadData();
+        setSaving(false);
+      }, 800);
+    } catch {
+      setError("System Link Failure: Vector sync aborted.");
+      setSaving(false);
+    }
   }
 
   async function handleToggle(l: Location) {
@@ -68,86 +117,206 @@ export default function LocationsPage() {
   }
 
   async function handleDelete(l: Location) {
-    if (!window.confirm(`Delete "${l.name}"?`)) return;
+    if (!window.confirm(`Purge location "${l.name.toUpperCase()}"? This affects all related logs.`)) return;
     await deleteLocation(l.id);
     await loadData();
   }
 
   return (
     <DashboardLayout role={role}>
-      <div className="w-full max-w-3xl p-6 lg:p-8">
-        <div className="mb-6 flex items-center gap-3">
-          <Link href={role === "admin" ? "/admin/master" : "/trainer/master"} className="text-sm text-gray-400 hover:text-gray-600">
-            <ArrowLeft className="w-4 h-4" />
-          </Link>
-          <div>
-            <h1 className="text-2xl font-black text-gray-900">Locations</h1>
-            <p className="text-gray-500 mt-0.5 text-sm">Manage training venue options for the assessment form.</p>
-          </div>
-        </div>
-
-        <form onSubmit={handleSubmit} className="mb-8 rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
-          <div className="flex items-center justify-between mb-5">
-            <h2 className="text-lg font-black text-gray-900">{editing ? "Edit Location" : "Add Location"}</h2>
-            {editing && <button type="button" onClick={cancelEdit} className="p-1 text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>}
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-3">
-            <label className="text-sm font-semibold text-gray-700 sm:col-span-2">
-              Name *
-              <input type="text" value={form.name} onChange={(e) => update("name", e.target.value)} placeholder="Dubai Sports City Gym" className="mt-1 w-full rounded-2xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-blue-500" />
-            </label>
-            <label className="text-sm font-semibold text-gray-700">
-              City
-              <input type="text" value={form.city} onChange={(e) => update("city", e.target.value)} placeholder="Dubai" className="mt-1 w-full rounded-2xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-blue-500" />
-            </label>
-          </div>
-
-          <label className="mt-4 block text-sm font-semibold text-gray-700 max-w-[160px]">
-            Sort Order
-            <input type="number" min="0" value={form.sortOrder} onChange={(e) => update("sortOrder", e.target.value)} className="mt-1 w-full rounded-2xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-blue-500" />
-          </label>
-
-          {error && <p className="mt-3 text-sm font-medium text-red-600">{error}</p>}
-          {success && <p className="mt-3 text-sm font-medium text-green-600">{success}</p>}
-
-          <div className="mt-4 flex gap-3">
-            <button type="submit" className="inline-flex items-center gap-2 rounded-2xl bg-blue-700 px-5 py-2.5 text-sm font-bold text-white hover:bg-blue-800">
-              <Save className="w-4 h-4" /> {editing ? "Save Changes" : "Add Location"}
-            </button>
-            {editing && <button type="button" onClick={cancelEdit} className="rounded-2xl border border-gray-200 px-5 py-2.5 text-sm font-semibold text-gray-600 hover:bg-gray-50">Cancel</button>}
-          </div>
-        </form>
-
-        <div className="mb-4 flex justify-end">
-          <label className="flex items-center gap-2 text-sm font-semibold text-gray-600 cursor-pointer select-none">
-            <input type="checkbox" checked={showAll} onChange={(e) => setShowAll(e.target.checked)} className="rounded" />
-            Show inactive
-          </label>
-        </div>
-
-        <div className="space-y-2">
-          {visible.length === 0 && <p className="text-gray-400 text-center py-8">No locations yet.</p>}
-          {visible.map((l) => (
-            <div key={l.id} className={`rounded-2xl border ${l.isActive ? "bg-white border-gray-100" : "bg-gray-50 border-gray-200 opacity-60"} p-4 flex items-center justify-between gap-4`}>
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center flex-shrink-0">
-                  <MapPin className="w-4 h-4 text-blue-500" />
-                </div>
-                <div>
-                  <p className="font-semibold text-gray-900 text-sm">{l.name}</p>
-                  <p className="text-xs text-gray-400 mt-0.5">{l.city ?? "—"} · Sort {l.sortOrder}</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 flex-shrink-0">
-                <button onClick={() => handleToggle(l)} className={`text-xs font-bold px-3 py-1.5 rounded-full ${l.isActive ? "bg-green-100 text-green-700" : "bg-gray-200 text-gray-500"}`}>
-                  {l.isActive ? "Active" : "Inactive"}
-                </button>
-                <button onClick={() => startEdit(l)} className="p-2 text-gray-400 hover:text-blue-600"><Pencil className="w-4 h-4" /></button>
-                <button onClick={() => handleDelete(l)} className="p-2 text-gray-400 hover:text-red-600"><Trash2 className="w-4 h-4" /></button>
+      <div className="min-h-screen bg-zinc-950 p-6 lg:p-8 text-white text-white">
+        <div className="max-w-4xl mx-auto">
+          
+          {/* Header */}
+          <motion.div 
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-6"
+          >
+            <div className="flex items-center gap-6">
+              <Link href={role === "admin" ? "/admin/master" : "/trainer/master"} className="w-12 h-12 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-500 hover:text-white hover:border-zinc-500 transition-all shadow-xl">
+                 <ArrowLeft className="w-5 h-5" />
+              </Link>
+              <div>
+                <h1 className="text-3xl font-black text-white italic uppercase tracking-tight">
+                   Sector <span className="text-blue-500">Locations</span>
+                </h1>
+                <p className="text-zinc-500 mt-1 font-medium text-sm">Managing the training base network and operational vectors.</p>
               </div>
             </div>
-          ))}
+          </motion.div>
+
+          {/* Form Section */}
+          <motion.form 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            onSubmit={handleSubmit} 
+            className="mb-12 bg-zinc-900 border border-zinc-800 rounded-[2.5rem] p-8 md:p-10 relative overflow-hidden group hover:border-zinc-700 transition-all shadow-2xl"
+          >
+            <div className="absolute top-0 right-0 p-10 opacity-[0.02] pointer-events-none group-hover:opacity-10 transition-opacity">
+               <Target className="w-24 h-24 text-white" />
+            </div>
+
+            <div className="flex items-center justify-between mb-10 relative z-10">
+               <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-500 shadow-inner">
+                     {editing ? <Pencil size={20} /> : <Plus size={20} />}
+                  </div>
+                  <div>
+                     <h2 className="text-[10px] font-black text-white uppercase tracking-[0.3em] italic">{editing ? "Modify Vector" : "Establish New Vector"}</h2>
+                     <p className="text-zinc-600 text-[9px] font-black uppercase tracking-widest mt-1 italic">Tactical site integration</p>
+                  </div>
+               </div>
+               {editing && (
+                 <button type="button" onClick={cancelEdit} className="p-3 bg-zinc-950 border border-zinc-800 rounded-xl text-zinc-600 hover:text-white transition-colors">
+                   <X size={20} />
+                 </button>
+               )}
+            </div>
+
+            <div className="grid gap-8 sm:grid-cols-12 relative z-10">
+              <div className="sm:col-span-8">
+                <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-3 italic">Site Identifier (Name)</label>
+                <input 
+                  type="text" 
+                  value={form.name} 
+                  onChange={(e) => update("name", e.target.value)} 
+                  placeholder="E.G. DUBAI SPORTS CITY GYM"
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl px-6 py-4 text-sm text-white font-black uppercase tracking-tight focus:border-blue-500/50 outline-none transition-all placeholder:text-zinc-800"
+                />
+              </div>
+              <div className="sm:col-span-4">
+                <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-3 italic">Sector City</label>
+                <input 
+                  type="text" 
+                  value={form.city} 
+                  onChange={(e) => update("city", e.target.value)} 
+                  placeholder="DUBAI"
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl px-6 py-4 text-sm text-white font-black uppercase focus:border-zinc-600 outline-none transition-all placeholder:text-zinc-800"
+                />
+              </div>
+              <div className="sm:col-span-4">
+                <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-3 italic">Manifest Priority (Sort Order)</label>
+                <input 
+                  type="number" 
+                  min="0" 
+                  value={form.sortOrder} 
+                  onChange={(e) => update("sortOrder", e.target.value)}
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl px-6 py-4 text-sm text-white font-black focus:border-zinc-600 outline-none text-center"
+                />
+              </div>
+            </div>
+
+            <div className="mt-12 flex flex-col sm:flex-row gap-4 relative z-10 border-t border-zinc-800/50 pt-10">
+               <button 
+                 type="submit" 
+                 disabled={saving}
+                 className="bg-white text-zinc-950 px-10 py-5 rounded-[2rem] text-[10px] font-black uppercase tracking-[0.3em] hover:bg-blue-600 hover:text-white disabled:opacity-50 transition-all shadow-xl active:scale-95 flex items-center justify-center gap-4 italic"
+               >
+                 {saving ? <Loader2 size={16} className="animate-spin" /> : <Zap size={14} fill="currentColor" />}
+                 {editing ? "Update Vector" : "Authorize Vector"}
+               </button>
+               {editing && (
+                 <button 
+                   type="button" 
+                   onClick={cancelEdit}
+                   className="bg-zinc-950 text-zinc-600 border border-zinc-800 px-10 py-5 rounded-[2rem] text-[10px] font-black uppercase tracking-[.3em] transition-all italic"
+                 >
+                   Abort establishment
+                 </button>
+               )}
+               
+               <AnimatePresence>
+                 {success && (
+                   <motion.div 
+                     initial={{ opacity: 0, x: 20 }}
+                     animate={{ opacity: 1, x: 0 }}
+                     exit={{ opacity: 0, x: 20 }}
+                     className="flex-1 flex items-center gap-3 px-6 py-4 bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 rounded-2xl text-[10px] font-black uppercase tracking-widest italic"
+                   >
+                     <CheckCircle className="w-5 h-5" /> {success}
+                   </motion.div>
+                 )}
+               </AnimatePresence>
+            </div>
+          </motion.form>
+
+          {/* List Section */}
+          <div className="space-y-4">
+             <div className="flex items-center justify-between mb-8">
+                <p className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.3em] italic">Tactical Site Manifest</p>
+                <label className="flex items-center gap-3 text-[10px] font-black text-zinc-600 uppercase tracking-widest cursor-pointer group italic">
+                   <input type="checkbox" checked={showAll} onChange={(e) => setShowAll(e.target.checked)} className="hidden" />
+                   <div className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${showAll ? 'bg-blue-500 border-blue-500 text-white' : 'border-zinc-800 bg-zinc-900 text-transparent'}`}>
+                       <CheckCircle size={12} />
+                   </div>
+                   Reveal Isolated Sites
+                </label>
+             </div>
+
+             <div className="grid gap-4">
+               {visible.length === 0 && (
+                 <div className="bg-zinc-900/50 border border-dashed border-zinc-800 rounded-[3rem] py-20 text-center">
+                    <Shield className="w-12 h-12 mx-auto mb-4 text-zinc-800 opacity-20" />
+                    <p className="text-zinc-700 font-black uppercase text-[10px] tracking-[0.5em] italic">Manifest Silent · Site Network Offline</p>
+                 </div>
+               )}
+               <AnimatePresence mode="popLayout">
+                 {visible.map((l, idx) => (
+                   <motion.div 
+                     layout
+                     key={l.id} 
+                     initial={{ opacity: 0, x: -10 }}
+                     animate={{ opacity: 1, x: 0 }}
+                     exit={{ opacity: 0, scale: 0.95 }}
+                     transition={{ delay: idx * 0.02 }}
+                     className={`rounded-[2rem] border p-6 flex flex-col sm:flex-row items-center justify-between gap-6 transition-all group relative overflow-hidden ${
+                       l.isActive ? "bg-zinc-900 border-zinc-800 hover:border-zinc-600 shadow-2xl" : "bg-zinc-950 border-zinc-900 opacity-40 grayscale"
+                     }`}
+                   >
+                     <div className="absolute top-0 right-0 p-8 opacity-[0.02] group-hover:opacity-10 transition-opacity pointer-events-none">
+                        <MapPin className="w-20 h-20 text-white" />
+                     </div>
+
+                     <div className="flex items-center gap-6 relative z-10 w-full sm:w-auto">
+                        <div className="w-12 h-12 rounded-2xl bg-zinc-950 border border-zinc-800 flex items-center justify-center text-zinc-600 group-hover:text-blue-500 transition-colors">
+                           <MapPin size={20} />
+                        </div>
+                        <div>
+                           <h3 className="text-sm font-black text-white italic uppercase tracking-widest leading-none mb-2">{l.name}</h3>
+                           <div className="flex items-center gap-4 text-[9px] font-black text-zinc-600 uppercase tracking-widest italic">
+                              <span className="text-zinc-400">{l.city ?? "FIELD OPERATIONAL"}</span>
+                              <span className="w-1 h-1 bg-zinc-800 rounded-full" />
+                              <span>Order: {l.sortOrder}</span>
+                           </div>
+                        </div>
+                     </div>
+
+                     <div className="flex items-center gap-4 self-end sm:self-center relative z-10 shrink-0">
+                        <button 
+                           onClick={() => handleToggle(l)} 
+                           className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest italic border transition-all ${
+                             l.isActive 
+                               ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.2)]" 
+                               : "bg-zinc-800 border-zinc-700 text-zinc-600"
+                           }`}
+                        >
+                           {l.isActive ? "Operational" : "Isolated"}
+                        </button>
+                        <div className="flex gap-2">
+                           <button onClick={() => startEdit(l)} className="p-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-zinc-600 hover:text-white hover:border-zinc-600 transition-all">
+                              <Pencil size={14} />
+                           </button>
+                           <button onClick={() => handleDelete(l)} className="p-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-zinc-600 hover:text-rose-500 hover:border-rose-500/30 transition-all">
+                              <Trash2 size={14} />
+                           </button>
+                        </div>
+                     </div>
+                   </motion.div>
+                 ))}
+               </AnimatePresence>
+             </div>
+          </div>
         </div>
       </div>
     </DashboardLayout>

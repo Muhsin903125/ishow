@@ -42,8 +42,8 @@ export default function AdminSidebar({ onClose }: Props) {
   const handleSignOut = async () => {
     setSigningOut(true);
     await logout();
-    router.push("/");
     if (onClose) onClose();
+    window.location.href = "/";
   };
 
   return (
@@ -59,11 +59,11 @@ export default function AdminSidebar({ onClose }: Props) {
         {/* Logo */}
         <div className="flex items-center justify-between px-5 py-5 border-b border-zinc-800/60">
           <Link href="/" className="flex items-center gap-2.5" onClick={onClose}>
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-500 to-violet-700 flex items-center justify-center shadow-lg shadow-violet-500/30">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-orange-500 to-orange-700 flex items-center justify-center shadow-lg shadow-orange-500/30">
               <Zap className="w-4 h-4 text-white" />
             </div>
             <span className="font-black text-base text-white tracking-tight">
-              iShow<span className="text-violet-400">Admin</span>
+              iShow<span className="text-orange-500">Admin</span>
             </span>
           </Link>
           {onClose && (
@@ -79,12 +79,12 @@ export default function AdminSidebar({ onClose }: Props) {
         {/* User card */}
         <div className="px-4 pt-4 pb-2">
           <div className="flex items-center gap-3 px-3 py-3 rounded-xl bg-zinc-900 border border-zinc-800">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500 to-violet-700 flex items-center justify-center text-white font-black text-sm shrink-0 shadow-lg shadow-violet-500/20">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-orange-500 to-orange-700 flex items-center justify-center text-white font-black text-sm shrink-0 shadow-lg shadow-orange-500/20">
               {user?.name?.charAt(0).toUpperCase() ?? "A"}
             </div>
             <div className="min-w-0">
               <p className="font-bold text-white text-sm truncate">{user?.name}</p>
-              <p className="text-xs text-violet-400 font-semibold tracking-wide uppercase">Administrator</p>
+              <p className="text-xs text-orange-500 font-semibold tracking-wide uppercase">Administrator</p>
             </div>
           </div>
         </div>
@@ -101,7 +101,7 @@ export default function AdminSidebar({ onClose }: Props) {
                 onClick={onClose}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 group ${
                   isActive
-                    ? "bg-violet-600 text-white shadow-lg shadow-violet-500/25"
+                    ? "bg-orange-600 text-white shadow-lg shadow-orange-500/25"
                     : "text-zinc-400 hover:bg-zinc-800/80 hover:text-white"
                 }`}
               >

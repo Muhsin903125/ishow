@@ -38,36 +38,49 @@ export function ProgressChart({
 
   if (data.length < 2) {
     return (
-      <div className="flex items-center justify-center h-32 text-gray-400 text-sm">
-        Log at least 2 measurements to see your {label.toLowerCase()} chart.
+    <div className="bg-zinc-950/30 rounded-2xl p-4 border border-zinc-800">
+      <div className="flex items-center justify-between mb-4">
+        <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500 italic">{label}</p>
+        <span className="text-[10px] font-black text-zinc-700 uppercase tracking-widest px-2 py-0.5 bg-zinc-900 rounded">{unit}</span>
       </div>
-    );
-  }
-
-  return (
-    <div>
-      <p className="text-xs text-gray-500 mb-2">{label}</p>
-      <ResponsiveContainer width="100%" height={140}>
+      <ResponsiveContainer width="100%" height={180}>
         <LineChart data={data}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
-          <XAxis dataKey="date" tick={{ fontSize: 10, fill: "#9ca3af" }} />
+          <CartesianGrid strokeDasharray="3 3" stroke="#27272a" vertical={false} />
+          <XAxis 
+            dataKey="date" 
+            tick={{ fontSize: 10, fill: "#71717a", fontWeight: 'bold' }} 
+            axisLine={false}
+            tickLine={false}
+          />
           <YAxis
-            tick={{ fontSize: 10, fill: "#9ca3af" }}
+            tick={{ fontSize: 10, fill: "#71717a", fontWeight: 'bold' }}
             unit={unit}
             width={40}
+            axisLine={false}
+            tickLine={false}
           />
           <Tooltip
             /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
             formatter={(v: any) => [`${v} ${unit}`, label]}
-            contentStyle={{ borderRadius: "12px", border: "1px solid #e5e7eb", fontSize: "12px" }}
+            contentStyle={{ 
+              backgroundColor: "#18181b", 
+              borderRadius: "16px", 
+              border: "1px solid #27272a", 
+              fontSize: "12px",
+              color: "#fff",
+              fontWeight: 'bold',
+              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)'
+            }}
+            itemStyle={{ color: color }}
           />
           <Line
             type="monotone"
             dataKey="value"
             stroke={color}
-            strokeWidth={2}
-            dot={{ r: 3 }}
-            activeDot={{ r: 5 }}
+            strokeWidth={3}
+            dot={{ r: 4, fill: color, stroke: "#18181b", strokeWidth: 2 }}
+            activeDot={{ r: 6, fill: color, stroke: "#fff", strokeWidth: 2 }}
+            animationDuration={1500}
           />
         </LineChart>
       </ResponsiveContainer>

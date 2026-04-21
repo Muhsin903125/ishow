@@ -44,8 +44,8 @@ export default function CustomerSidebar({ onClose }: Props) {
   const handleSignOut = async () => {
     setSigningOut(true);
     await logout();
-    router.push("/");
     if (onClose) onClose();
+    window.location.href = "/";
   };
 
   return (

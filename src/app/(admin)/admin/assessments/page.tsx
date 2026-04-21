@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useAuth } from "@/contexts/AuthContext";
 import { listAssessments, reviewAssessment, type Assessment } from "@/lib/db/assessments";
@@ -10,8 +11,26 @@ import { listSessions, createSession, updateSession, type TrainingSession } from
 import { createClient } from "@/lib/supabase/client";
 import { notify } from "@/lib/email/notify";
 import {
-  CheckCircle, Clock, ChevronDown, ChevronUp, CalendarDays, MapPin,
-  Mail, Phone, UserCheck, Calendar, Pencil, X, Loader2, RefreshCw,
+  CheckCircle, 
+  Clock, 
+  ChevronDown, 
+  ChevronUp, 
+  CalendarDays, 
+  MapPin,
+  Mail, 
+  Phone, 
+  UserCheck, 
+  Calendar, 
+  Pencil, 
+  X, 
+  Loader2, 
+  RefreshCw,
+  Activity,
+  Target,
+  Zap,
+  Shield,
+  ArrowRight,
+  ClipboardList
 } from "lucide-react";
 
 function fmt(iso: string) {
@@ -33,7 +52,7 @@ type ScheduleForm = {
 
 function blankSchedule(a: Assessment, clientName: string): ScheduleForm {
   return {
-    title: `Session – ${clientName}`,
+    title: `Syllabus Induction – ${clientName}`,
     date: a.preferredDate ?? "",
     time: a.preferredTimeSlot ?? "",
     duration: "60",
@@ -56,6 +75,7 @@ export default function AdminAssessmentsPage() {
   const [sessions, setSessions] = useState<TrainingSession[]>([]);
   const [filter, setFilter] = useState<Filter>("all");
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [dataLoaded, setDataLoaded] = useState(false);
 
   // Notes editing
   const [editingNotesId, setEditingNotesId] = useState<string | null>(null);
@@ -72,30 +92,44 @@ export default function AdminAssessmentsPage() {
   // Actions
   const [convertingId, setConvertingId] = useState<string | null>(null);
 
-  // TD7: Trainer assignment state
+  // Trainer assignment
   const [trainers, setTrainers] = useState<Profile[]>([]);
   const [assignedTrainerId, setAssignedTrainerId] = useState<Record<string, string>>({});
 
   const loadData = async () => {
-    const [a, c, s, t] = await Promise.all([listAssessments(), listCustomers(), listSessions(), listTrainers()]);
-    setAssessments(a);
-    setCustomers(c);
-    setSessions(s);
-    setTrainers(t);
+    try {
+      const [a, c, s, t] = await Promise.all([listAssessments(), listCustomers(), listSessions(), listTrainers()]);
+      setAssessments(a);
+      setCustomers(c);
+      setSessions(s);
+      setTrainers(t);
+    } finally {
+      setDataLoaded(true);
+    }
   };
 
   useEffect(() => {
-    if (!loading && !user) { router.push("/login"); return; }
-    const init = async () => {
-      if (!loading && user) {
-        if (user.role !== 'admin') { router.push('/trainer/dashboard'); return; }
-        await loadData();
-      }
-    };
-    init();
-  }, [loading, router, user]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (loading) return;
+    if (!user) { router.replace("/login"); return; }
+    if (user.role !== 'admin') { router.replace('/trainer/dashboard'); return; }
+    loadData();
+  }, [loading, router, user]);
 
-  if (loading || !user) return null;
+  if (loading || !dataLoaded || !user) {
+    return (
+      <DashboardLayout role="admin">
+        <div className="p-8 max-w-5xl mx-auto animate-pulse space-y-10">
+           <div className="h-10 w-48 bg-zinc-900 rounded-lg" />
+           <div className="grid grid-cols-3 gap-6">
+              {[1,2,3].map(i => <div key={i} className="h-32 bg-zinc-900 rounded-[2rem]" />)}
+           </div>
+           <div className="space-y-4">
+              {[1,2,3].map(i => <div key={i} className="h-20 bg-zinc-900 rounded-2xl" />)}
+           </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   const customerById = Object.fromEntries(customers.map(c => [c.id, c]));
   const sessionByUserId: Record<string, TrainingSession[]> = {};
@@ -109,7 +143,7 @@ export default function AdminAssessmentsPage() {
   const filtered = filter === "all" ? assessments : assessments.filter(a => a.status === filter);
 
   function openSchedule(assessment: Assessment, existingSession?: TrainingSession) {
-    const name = customerById[assessment.userId]?.name ?? "Client";
+    const name = customerById[assessment.userId]?.name ?? "Asset";
     if (existingSession) {
       setRescheduleSessionId(existingSession.id);
       setScheduleForm({
@@ -135,7 +169,7 @@ export default function AdminAssessmentsPage() {
 
   async function handleSaveSession(assessment: Assessment) {
     if (!scheduleForm.date || !scheduleForm.time || !scheduleForm.title) {
-      setSessionError("Title, date and time are required.");
+      setSessionError("Identity mismatch: Identifier, timestamp, and temporal coordinates required.");
       return;
     }
     setSavingSession(true);
@@ -184,7 +218,7 @@ export default function AdminAssessmentsPage() {
       closeSchedule();
       await loadData();
     } catch {
-      setSessionError("Failed to save session. Please try again.");
+      setSessionError("Communications failure. Deployment aborted. Retry system link.");
     } finally {
       setSavingSession(false);
     }
@@ -234,39 +268,57 @@ export default function AdminAssessmentsPage() {
 
   return (
     <DashboardLayout role="admin">
-      <div className="min-h-full bg-zinc-950">
-        <div className="max-w-5xl p-6 lg:p-8">
+      <div className="min-h-screen bg-zinc-950 p-6 lg:p-8 text-white">
+        <div className="max-w-5xl mx-auto">
 
           {/* Header */}
-          <div className="mb-8">
-            <p className="text-violet-400 text-xs font-bold tracking-[0.3em] uppercase mb-1.5">Admin</p>
-            <h1 className="text-3xl font-black text-white tracking-tight">Assessment Requests</h1>
-            <p className="text-zinc-500 mt-2 text-sm">Review, schedule sessions, and convert clients.</p>
-          </div>
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-12"
+          >
+            <div className="inline-flex items-center gap-2 bg-orange-500/10 border border-orange-500/20 rounded-full px-4 py-1.5 text-[10px] font-black uppercase tracking-[0.3em] text-orange-500 mb-6 italic">
+              <ClipboardList className="w-3 h-3 fill-orange-500" /> Assessment Queue Active
+            </div>
+            <h1 className="text-4xl lg:text-5xl font-black italic uppercase tracking-tighter leading-none mb-4">
+               Assay <span className="text-orange-500">Logistics</span>
+            </h1>
+            <p className="text-zinc-500 font-medium max-w-xl">Reviewing kinetic profiles, scheduling syllabus inductions, and authorizing sector access.</p>
+          </motion.div>
 
-          {/* Stats */}
-          <div className="grid grid-cols-3 gap-3 mb-7">
+          {/* Stats Grid */}
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-10">
             {[
-              { label: "Total", value: assessments.length, accent: "bg-zinc-500", light: "text-zinc-300 bg-zinc-800 border-zinc-700" },
-              { label: "Pending", value: pending, accent: "bg-orange-500", light: "text-orange-400 bg-orange-500/10 border-orange-500/20" },
-              { label: "Reviewed", value: reviewed, accent: "bg-green-500", light: "text-green-400 bg-green-500/10 border-green-500/20" },
-            ].map(({ label, value, accent, light }) => (
-              <div key={label} className="rounded-2xl bg-zinc-900 border border-zinc-800 p-5 relative overflow-hidden">
-                <div className={`absolute top-0 left-0 right-0 h-0.5 ${accent}`} />
-                <p className={`text-2xl font-black ${light.split(' ')[0]}`}>{value}</p>
-                <p className="text-zinc-500 text-xs mt-1">{label}</p>
-              </div>
+              { label: "Manifest Total", value: assessments.length, icon: Activity, color: "text-zinc-400" },
+              { label: "Pending Review", value: pending, icon: Clock, color: "text-orange-500" },
+              { label: "Validated Nodes", value: reviewed, icon: CheckCircle, color: "text-emerald-500" },
+            ].map((stat, i) => (
+              <motion.div 
+                key={stat.label}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.05 }}
+                className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 relative overflow-hidden"
+              >
+                <div className="absolute top-0 right-0 p-4 opacity-5">
+                   <stat.icon className="w-12 h-12" />
+                </div>
+                <p className={`text-3xl font-black italic ${stat.color}`}>{stat.value}</p>
+                <p className="text-[10px] text-zinc-600 font-black uppercase tracking-widest mt-1 italic">{stat.label}</p>
+              </motion.div>
             ))}
           </div>
 
-          {/* Filter tabs */}
-          <div className="flex gap-2 mb-6">
+          {/* Filters */}
+          <div className="flex flex-wrap gap-3 mb-10">
             {(["all", "pending", "reviewed"] as Filter[]).map(f => (
-              <button key={f} onClick={() => setFilter(f)}
-                className={`px-4 py-2 rounded-xl text-sm font-semibold transition-colors capitalize ${
+              <button 
+                key={f} 
+                onClick={() => setFilter(f)}
+                className={`px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all italic border ${
                   filter === f
-                    ? "bg-violet-600 text-white"
-                    : "bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white"
+                    ? "bg-white text-zinc-950 border-white shadow-xl shadow-white/5"
+                    : "bg-zinc-900 border-zinc-800 text-zinc-600 hover:text-white hover:border-zinc-700"
                 }`}
               >
                 {f}
@@ -274,348 +326,397 @@ export default function AdminAssessmentsPage() {
             ))}
           </div>
 
-          {/* List */}
-          <div className="space-y-3">
-            {filtered.length === 0 && (
-              <p className="text-zinc-600 text-center py-12 text-sm">No assessments to show.</p>
-            )}
+          {/* Manifest List */}
+          <div className="space-y-4">
+            <AnimatePresence mode="popLayout">
+              {filtered.length === 0 ? (
+                <motion.div 
+                   initial={{ opacity: 0 }}
+                   animate={{ opacity: 1 }}
+                   className="bg-zinc-900/50 border border-dashed border-zinc-800 rounded-[3rem] py-32 text-center"
+                >
+                   <Shield className="w-12 h-12 mx-auto mb-4 text-zinc-800 opacity-20" />
+                   <p className="text-zinc-700 font-black uppercase text-[10px] tracking-[0.5em] italic">Queue Synchronized · No Assets Found</p>
+                </motion.div>
+              ) : filtered.map((assessment, aIdx) => {
+                const expanded = expandedId === assessment.id;
+                const client = customerById[assessment.userId];
+                const name = client?.name ?? "IDENTIFIER UNKNOWN";
+                const userSessions = sessionByUserId[assessment.userId] ?? [];
+                const scheduledSession = userSessions.find(s => s.status === "scheduled");
+                const isSchedulingThis = schedulingId === assessment.id;
+                const isConverted = client?.customerStatus === "client";
 
-            {filtered.map(assessment => {
-              const expanded = expandedId === assessment.id;
-              const client = customerById[assessment.userId];
-              const name = client?.name ?? "Unknown";
-              const userSessions = sessionByUserId[assessment.userId] ?? [];
-              const scheduledSession = userSessions.find(s => s.status === "scheduled");
-              const isSchedulingThis = schedulingId === assessment.id;
-              const isConverted = client?.customerStatus === "client";
-
-              return (
-                <div key={assessment.id} className="rounded-2xl border border-zinc-800 bg-zinc-900 overflow-hidden">
-                  {/* Row header */}
-                  <button
-                    onClick={() => setExpandedId(expanded ? null : assessment.id)}
-                    className="w-full flex items-center justify-between gap-4 p-5 text-left hover:bg-zinc-800/50 transition-colors"
+                return (
+                  <motion.div 
+                    layout
+                    key={assessment.id} 
+                    initial={{ opacity: 0, scale: 0.98 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.98 }}
+                    transition={{ delay: aIdx * 0.02 }}
+                    className="bg-zinc-900 border border-zinc-800 rounded-[2.5rem] overflow-hidden group hover:border-zinc-700 transition-all shadow-2xl relative"
                   >
-                    <div className="flex items-center gap-4 min-w-0">
-                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-orange-500 flex items-center justify-center text-white font-black text-sm shrink-0">
-                        {name.charAt(0)}
-                      </div>
-                      <div className="min-w-0">
-                        <p className="font-bold text-white">{name}</p>
-                        <div className="flex flex-wrap items-center gap-3 mt-0.5">
-                          <p className="text-xs text-zinc-500">Submitted {fmt(assessment.submittedAt)}</p>
-                          {assessment.preferredDate && (
-                            <span className="inline-flex items-center gap-1 text-xs text-blue-400 font-medium">
-                              <CalendarDays className="w-3 h-3" />
-                              {new Date(assessment.preferredDate + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-                              {assessment.preferredTimeSlot && ` · ${assessment.preferredTimeSlot}`}
-                            </span>
-                          )}
-                          {(assessment.preferredLocation) && (
-                            <span className="inline-flex items-center gap-1 text-xs text-zinc-500">
-                              <MapPin className="w-3 h-3" />{assessment.preferredLocation}
-                            </span>
-                          )}
+                    <button
+                      onClick={() => setExpandedId(expanded ? null : assessment.id)}
+                      className="w-full flex flex-col md:flex-row items-start md:items-center justify-between gap-6 p-6 md:p-8 text-left hover:bg-zinc-950/40 transition-all"
+                    >
+                      <div className="flex items-center gap-6">
+                        <div className="w-14 h-14 rounded-2xl bg-zinc-950 border border-zinc-800 flex items-center justify-center text-white font-black text-xl italic shrink-0 group-hover:bg-orange-500 group-hover:border-transparent transition-all shadow-inner">
+                           {name.charAt(0)}
                         </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      {isConverted && (
-                        <span className="hidden sm:inline-flex items-center gap-1 rounded-full bg-green-500/10 border border-green-500/20 px-2.5 py-1 text-[10px] font-bold text-green-400">
-                          <CheckCircle className="w-3 h-3" /> Client
-                        </span>
-                      )}
-                      <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold border ${
-                        assessment.status === "pending"
-                          ? "bg-orange-500/10 border-orange-500/20 text-orange-400"
-                          : "bg-green-500/10 border-green-500/20 text-green-400"
-                      }`}>
-                        {assessment.status === "pending" ? <Clock className="w-3 h-3" /> : <CheckCircle className="w-3 h-3" />}
-                        {assessment.status === "pending" ? "Pending" : "Reviewed"}
-                      </span>
-                      {expanded ? <ChevronUp className="w-4 h-4 text-zinc-500" /> : <ChevronDown className="w-4 h-4 text-zinc-500" />}
-                    </div>
-                  </button>
-
-                  {/* Expanded detail */}
-                  {expanded && (
-                    <div className="border-t border-zinc-800 p-5 space-y-5">
-
-                      {/* Contact + Appointment */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div className="rounded-xl border border-zinc-700/50 bg-zinc-800/60 p-4">
-                          <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-3">Client Contact</p>
-                          <div className="space-y-2">
-                            <div className="flex items-center gap-2 text-sm text-zinc-300">
-                              <Mail className="w-4 h-4 text-zinc-500 shrink-0" />{client?.email ?? "—"}
-                            </div>
-                            <div className="flex items-center gap-2 text-sm text-zinc-300">
-                              <Phone className="w-4 h-4 text-zinc-500 shrink-0" />{client?.phone ?? "—"}
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="rounded-xl border border-blue-500/20 bg-blue-500/8 p-4">
-                          <p className="text-[10px] font-bold text-blue-400 uppercase tracking-wider mb-3">Requested Appointment</p>
-                          <div className="space-y-2">
-                            <div className="flex items-center gap-2 text-sm text-zinc-300">
-                              <CalendarDays className="w-4 h-4 text-blue-400 shrink-0" />
-                              {assessment.preferredDate ? fmtLong(assessment.preferredDate) : <span className="text-zinc-600">No date selected</span>}
-                            </div>
-                            <div className="flex items-center gap-2 text-sm text-zinc-300">
-                              <Clock className="w-4 h-4 text-blue-400 shrink-0" />
-                              {assessment.preferredTimeSlot ?? <span className="text-zinc-600">No time selected</span>}
-                            </div>
-                            <div className="flex items-center gap-2 text-sm text-zinc-300">
-                              <MapPin className="w-4 h-4 text-blue-400 shrink-0" />
-                              {assessment.preferredLocation ?? <span className="text-zinc-600">No location selected</span>}
-                            </div>
+                        <div className="min-w-0">
+                          <p className="font-black text-white text-xl uppercase italic tracking-tighter leading-none mb-2">{name}</p>
+                          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                             <span className="text-zinc-600 text-[9px] font-black uppercase tracking-widest flex items-center gap-2 italic">
+                               <Clock className="w-3 h-3" /> Logged {fmt(assessment.submittedAt)}
+                             </span>
+                             {assessment.preferredDate && (
+                               <span className="text-blue-500 text-[9px] font-black uppercase tracking-widest flex items-center gap-2 italic">
+                                 <CalendarDays className="w-3 h-3" /> 
+                                 {new Date(assessment.preferredDate + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                                 {" · "}{assessment.preferredTimeSlot}
+                               </span>
+                             )}
                           </div>
                         </div>
                       </div>
 
-                      {/* Existing session status */}
-                      {scheduledSession && (
-                        <div className="rounded-xl border border-orange-500/20 bg-orange-500/8 p-4 flex items-center justify-between gap-3">
-                          <div className="flex items-center gap-3">
-                            <Calendar className="w-4 h-4 text-orange-400 shrink-0" />
-                            <div>
-                              <p className="text-sm font-semibold text-white">{scheduledSession.title}</p>
-                              <p className="text-xs text-zinc-400 mt-0.5">
-                                {new Date(scheduledSession.scheduledDate + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                                {" · "}{scheduledSession.scheduledTime} · {scheduledSession.duration} min
-                              </p>
+                      <div className="flex items-center gap-4 self-end md:self-center">
+                         {isConverted && (
+                            <div className="px-4 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 text-[10px] font-black uppercase tracking-widest italic flex items-center gap-2">
+                               <UserCheck size={12} /> Authorized Asset
                             </div>
-                          </div>
-                          <span className="text-[10px] font-bold rounded-full bg-orange-500/20 border border-orange-500/30 px-2 py-1 text-orange-300">Scheduled</span>
-                        </div>
-                      )}
-
-                      {/* Metrics */}
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                        {[
-                          { label: "Age", value: assessment.age ? `${assessment.age} yrs` : "—" },
-                          { label: "Gender", value: assessment.gender ?? "—" },
-                          { label: "Weight", value: assessment.weight ?? "—" },
-                          { label: "Height", value: assessment.height ?? "—" },
-                          { label: "Experience", value: assessment.experienceLevel ?? "—" },
-                          { label: "Days/week", value: assessment.daysPerWeek ? `${assessment.daysPerWeek}x` : "—" },
-                        ].map(({ label, value }) => (
-                          <div key={label} className="rounded-xl bg-zinc-800/60 border border-zinc-700/50 p-3">
-                            <p className="text-[10px] text-zinc-500 mb-0.5">{label}</p>
-                            <p className="text-sm font-semibold text-white capitalize">{value}</p>
-                          </div>
-                        ))}
+                         )}
+                         <div className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest italic border flex items-center gap-2 ${
+                            assessment.status === "pending"
+                              ? "bg-orange-500/10 border-orange-500/20 text-orange-500"
+                              : "bg-zinc-800 border-zinc-700 text-zinc-500"
+                          }`}>
+                            {assessment.status === "pending" ? <Activity className="w-3.5 h-3.5" /> : <CheckCircle className="w-3.5 h-3.5" />}
+                            {assessment.status === "pending" ? "Awaiting Assay" : "Assay Validated"}
+                         </div>
+                         <div className="p-3 bg-zinc-950 border border-zinc-800 rounded-xl group-hover:text-white transition-colors">
+                            {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                         </div>
                       </div>
+                    </button>
 
-                      {/* Goals */}
-                      {assessment.goals.length > 0 && (
-                        <div>
-                          <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-2">Goals</p>
-                          <div className="flex flex-wrap gap-2">
-                            {assessment.goals.map(g => (
-                              <span key={g} className="rounded-xl bg-violet-500/10 border border-violet-500/20 text-violet-300 text-xs font-medium px-3 py-1 capitalize">
-                                {g.replace(/_/g, " ")}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Health conditions */}
-                      {assessment.healthConditions && (
-                        <div>
-                          <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-1">Health / Injuries</p>
-                          <p className="text-sm text-zinc-400">{assessment.healthConditions}</p>
-                        </div>
-                      )}
-
-                      {/* Trainer notes */}
-                      <div>
-                        <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-2">Trainer Notes</p>
-                        {editingNotesId === assessment.id ? (
-                          <div>
-                            <textarea
-                              value={notesText}
-                              onChange={e => setNotesText(e.target.value)}
-                              rows={3}
-                              placeholder="Add notes for this client…"
-                              className="w-full rounded-xl bg-zinc-800/60 border border-zinc-700 px-4 py-3 text-sm text-white placeholder-zinc-600 outline-none focus:border-orange-500/60 resize-none transition"
-                            />
-                            <div className="flex gap-2 mt-2">
-                              <button onClick={() => setEditingNotesId(null)}
-                                className="text-xs text-zinc-500 hover:text-white px-3 py-1.5 rounded-lg border border-zinc-700 transition-colors"
-                              >Cancel</button>
-                              <button onClick={() => handleSaveNotes(assessment.id)} disabled={savingNotes}
-                                className="text-xs text-white bg-orange-500 hover:bg-orange-400 disabled:opacity-50 px-3 py-1.5 rounded-lg font-bold transition-colors"
-                              >
-                                {savingNotes ? "Saving…" : "Save Notes"}
-                              </button>
-                            </div>
-                          </div>
-                        ) : (
-                          <div
-                            onClick={() => { setEditingNotesId(assessment.id); setNotesText(assessment.trainerNotes ?? ""); }}
-                            className="min-h-[48px] rounded-xl border border-dashed border-zinc-700 px-4 py-3 text-sm text-zinc-500 cursor-pointer hover:border-orange-500/40 hover:text-zinc-300 transition-colors flex items-center gap-2"
-                          >
-                            <Pencil className="w-3.5 h-3.5 shrink-0" />
-                            {assessment.trainerNotes || "Click to add notes…"}
-                          </div>
-                        )}
-                      </div>
-
-                      {/* TD7: Assign Trainer */}
-                      <div className="mt-4 pt-4 border-t border-zinc-800">
-                        <label className="block text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-2">Assign Trainer</label>
-                        <select
-                          value={assignedTrainerId[assessment.id] ?? assessment.assignedTrainerId ?? ""}
-                          onChange={e => setAssignedTrainerId(prev => ({ ...prev, [assessment.id]: e.target.value }))}
-                          className="w-full sm:w-64 rounded-xl bg-zinc-800/60 border border-zinc-700 px-3 py-2.5 text-sm text-white outline-none focus:border-violet-500/60 transition"
+                    <AnimatePresence>
+                      {expanded && (
+                        <motion.div 
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: "auto", opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          className="border-t border-zinc-800/50 bg-zinc-950/20"
                         >
-                          <option value="">Unassigned</option>
-                          {trainers.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                        </select>
-                        {assessment.assignedTrainerId && !assignedTrainerId[assessment.id] && (
-                          <p className="text-xs text-zinc-500 mt-1">
-                            Currently assigned: {trainers.find(t => t.id === assessment.assignedTrainerId)?.name ?? "Unknown"}
-                          </p>
-                        )}
-                      </div>
+                          <div className="p-8 md:p-10 space-y-12">
+                             
+                             {/* Logistics Grid */}
+                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                {/* Contact/Location */}
+                                <div className="space-y-6">
+                                   <p className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.3em] italic">Deployment Logistics</p>
+                                   <div className="grid grid-cols-1 gap-4">
+                                      <div className="bg-zinc-900/50 border border-zinc-800 rounded-3xl p-6 flex items-center justify-between group/item hover:border-zinc-700 transition-colors">
+                                         <div className="flex items-center gap-4">
+                                            <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-500">
+                                               <Mail size={16} />
+                                            </div>
+                                            <div>
+                                               <p className="text-[9px] font-black text-zinc-600 uppercase tracking-widest italic">Communications Link</p>
+                                               <p className="text-sm font-black text-white italic uppercase tracking-tight">{client?.email ?? "N/A"}</p>
+                                            </div>
+                                         </div>
+                                         <ArrowRight className="w-4 h-4 text-zinc-800 group-hover/item:text-blue-500 transition-colors" />
+                                      </div>
+                                      <div className="bg-zinc-900/50 border border-zinc-800 rounded-3xl p-6 flex items-center justify-between group/item hover:border-zinc-700 transition-colors">
+                                         <div className="flex items-center gap-4">
+                                            <div className="w-10 h-10 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-orange-500">
+                                               <MapPin size={16} />
+                                            </div>
+                                            <div>
+                                               <p className="text-[9px] font-black text-zinc-600 uppercase tracking-widest italic">Combat Vector (Location)</p>
+                                               <p className="text-sm font-black text-white italic uppercase tracking-tight">{assessment.preferredLocation ?? "FIELD OP"}</p>
+                                            </div>
+                                         </div>
+                                         <ArrowRight className="w-4 h-4 text-zinc-800 group-hover/item:text-orange-500 transition-colors" />
+                                      </div>
+                                   </div>
+                                </div>
 
-                      {/* Schedule session inline form */}
-                      {isSchedulingThis && (
-                        <div className="rounded-xl border border-zinc-700 bg-zinc-800/60 p-4 space-y-3">
-                          <div className="flex items-center justify-between">
-                            <p className="text-sm font-bold text-white">
-                              {rescheduleSessionId ? "Reschedule Session" : "Schedule Session"}
-                            </p>
-                            <button onClick={closeSchedule} className="text-zinc-500 hover:text-white"><X className="w-4 h-4" /></button>
+                                {/* Kinetic Status */}
+                                <div className="space-y-6">
+                                   <p className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.3em] italic">Kinetic Analysis</p>
+                                   <div className="grid grid-cols-2 gap-3">
+                                      {[
+                                        { label: "Temporal Age", value: assessment.age ? `${assessment.age} CY` : "—" },
+                                        { label: "Mass Status", value: assessment.weight ?? "—" },
+                                        { label: "Kinetic Range", value: assessment.experienceLevel ?? "—" },
+                                        { label: "Op Frequency", value: assessment.daysPerWeek ? `${assessment.daysPerWeek}x/W` : "—" },
+                                      ].map(m => (
+                                        <div key={m.label} className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-4">
+                                           <p className="text-[8px] font-black text-zinc-700 uppercase tracking-widest mb-1 italic">{m.label}</p>
+                                           <p className="text-xs font-black text-zinc-200 italic uppercase">{m.value}</p>
+                                        </div>
+                                      ))}
+                                   </div>
+                                </div>
+                             </div>
+
+                             {/* Goals & Health */}
+                             <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                                <div>
+                                   <p className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.3em] italic mb-6">Strategic Objectives</p>
+                                   <div className="flex flex-wrap gap-2">
+                                      {assessment.goals.map(g => (
+                                        <span key={g} className="bg-violet-500/10 border border-violet-500/20 text-violet-500 text-[9px] font-black uppercase tracking-widest px-4 py-2 rounded-xl italic">
+                                          {g.replace(/_/g, " ")}
+                                        </span>
+                                      ))}
+                                      {assessment.goals.length === 0 && <p className="text-zinc-800 text-[10px] font-black uppercase tracking-widest italic">No objectives logged</p>}
+                                   </div>
+                                </div>
+                                <div>
+                                   <p className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.3em] italic mb-6">Vital Disclaimers / Injuries</p>
+                                   <p className="text-[10px] font-bold text-zinc-400 leading-relaxed uppercase tracking-widest italic">{assessment.healthConditions || "CLEARED FOR DEPLOYMENT"}</p>
+                                </div>
+                             </div>
+
+                             {/* Assigned Handler */}
+                             <div className="pt-10 border-t border-zinc-800/50">
+                                <p className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.3em] italic mb-8">Asset Command Transfer</p>
+                                <div className="flex flex-col md:flex-row items-center gap-10">
+                                   <div className="w-full md:w-auto">
+                                      <p className="text-[9px] font-black text-zinc-700 uppercase tracking-widest mb-4 italic">Handler Designation</p>
+                                      <div className="relative">
+                                        <select
+                                          value={assignedTrainerId[assessment.id] ?? assessment.assignedTrainerId ?? ""}
+                                          onChange={e => setAssignedTrainerId(prev => ({ ...prev, [assessment.id]: e.target.value }))}
+                                          className="w-full md:w-80 bg-zinc-900 border border-zinc-800 rounded-3xl px-8 py-5 text-xs font-black text-white uppercase tracking-widest italic focus:border-zinc-600 outline-none appearance-none cursor-pointer"
+                                        >
+                                          <option value="">— NO HANDLER ASSIGNED —</option>
+                                          {trainers.map(t => <option key={t.id} value={t.id}>{t.name.toUpperCase()}</option>)}
+                                        </select>
+                                        <UserCheck className="absolute right-6 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-800 pointer-events-none" />
+                                      </div>
+                                   </div>
+                                   
+                                   <div className="flex-1 space-y-4">
+                                      <p className="text-[10px] font-black text-zinc-700 uppercase tracking-widest mb-4 italic">Operational Overlay (Notes)</p>
+                                      {editingNotesId === assessment.id ? (
+                                        <div className="space-y-4">
+                                          <textarea
+                                            value={notesText}
+                                            onChange={e => setNotesText(e.target.value)}
+                                            rows={3}
+                                            placeholder="ENTER OVERLAY OVERRIDE..."
+                                            className="w-full bg-zinc-900 border border-zinc-800 rounded-[2rem] px-8 py-6 text-xs text-white font-black uppercase tracking-widest outline-none focus:border-orange-500/50 resize-none transition italic placeholder:text-zinc-800"
+                                          />
+                                          <div className="flex gap-4">
+                                            <button onClick={() => handleSaveNotes(assessment.id)} disabled={savingNotes} className="bg-orange-500 text-white px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest italic hover:bg-orange-400 transition-all">
+                                              {savingNotes ? "Syncing..." : "Update Feedback"}
+                                            </button>
+                                            <button onClick={() => setEditingNotesId(null)} className="bg-zinc-900 text-zinc-600 border border-zinc-800 px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest italic hover:text-white transition-all">Abort Override</button>
+                                          </div>
+                                        </div>
+                                      ) : (
+                                        <div
+                                          onClick={() => { setEditingNotesId(assessment.id); setNotesText(assessment.trainerNotes ?? ""); }}
+                                          className="group/note min-h-[80px] bg-zinc-950 border border-dashed border-zinc-800 rounded-[2rem] px-8 py-6 text-[10px] font-black text-zinc-600 uppercase tracking-widest italic flex items-center gap-6 cursor-pointer hover:border-zinc-600 transition-all"
+                                        >
+                                          <Pencil className="w-5 h-5 text-zinc-800 group-hover/note:text-orange-500 transition-colors shrink-0" />
+                                          {assessment.trainerNotes || "INITIALIZE OVERLAY DATA..."}
+                                        </div>
+                                      )}
+                                   </div>
+                                </div>
+                             </div>
+
+                             {/* Induction Protocols (Scheduling) */}
+                             <div className="pt-10 border-t border-zinc-800/50">
+                                <p className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.3em] italic mb-8">Induction Protocol (Scheduling)</p>
+                                
+                                {scheduledSession ? (
+                                   <div className="bg-zinc-900 border border-orange-500/20 bg-orange-500/5 rounded-[2.5rem] p-8 flex flex-col md:flex-row items-center justify-between gap-8 group/sess">
+                                      <div className="flex items-center gap-8">
+                                         <div className="w-16 h-16 rounded-[1.5rem] bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-orange-500 shadow-xl shadow-orange-950/20">
+                                            <Calendar size={28} />
+                                         </div>
+                                         <div>
+                                            <h4 className="text-xl font-black text-white italic uppercase tracking-tighter mb-1">{scheduledSession.title}</h4>
+                                            <p className="text-[10px] font-black text-orange-500 uppercase tracking-[0.2em] italic flex items-center gap-3">
+                                               Scheduled: {new Date(scheduledSession.scheduledDate + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                                               {" · "}{scheduledSession.scheduledTime} · {scheduledSession.duration}m
+                                            </p>
+                                         </div>
+                                      </div>
+                                      {!isSchedulingThis && (
+                                         <button 
+                                           onClick={() => openSchedule(assessment, scheduledSession)}
+                                           className="bg-zinc-950 border border-zinc-800 px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest italic text-zinc-500 hover:text-white hover:border-white transition-all flex items-center gap-3"
+                                         >
+                                            <RefreshCw size={14} /> Adjust Schedule
+                                         </button>
+                                      )}
+                                   </div>
+                                ) : !isSchedulingThis && (
+                                   <button 
+                                     onClick={() => openSchedule(assessment)}
+                                     className="w-full bg-zinc-900/50 border border-dashed border-zinc-800 py-12 rounded-[2.5rem] flex flex-col items-center justify-center group hover:border-blue-500/50 transition-all"
+                                   >
+                                      <Calendar className="w-10 h-10 text-zinc-800 group-hover:text-blue-500 transition-all mb-4" />
+                                      <p className="text-[10px] font-black text-zinc-700 uppercase tracking-[0.4em] italic group-hover:text-white transition-colors">Initialize Induction Protocol</p>
+                                   </button>
+                                )}
+
+                                {/* Schedule Form */}
+                                {isSchedulingThis && (
+                                  <motion.div 
+                                    initial={{ opacity: 0, scale: 0.95 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    className="bg-zinc-900 border border-blue-500/20 rounded-[2.5rem] p-10 space-y-10"
+                                  >
+                                    <div className="flex items-center justify-between">
+                                       <div className="flex items-center gap-4">
+                                          <div className="w-12 h-12 rounded-2xl bg-blue-500 flex items-center justify-center text-white shadow-xl shadow-blue-900/40">
+                                            <Calendar size={24} />
+                                          </div>
+                                          <div>
+                                             <h4 className="text-xl font-black text-white italic uppercase tracking-tighter">Induction Parameter Link</h4>
+                                             <p className="text-[9px] font-black text-zinc-600 uppercase tracking-widest italic mt-1">Establishing temporal coordinates</p>
+                                          </div>
+                                       </div>
+                                       <button onClick={closeSchedule} className="p-3 bg-zinc-950 border border-zinc-800 rounded-xl text-zinc-600 hover:text-white transition-colors">
+                                          <X size={20} />
+                                       </button>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
+                                       <div className="md:col-span-12">
+                                          <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-3 italic">Protocol Identifier</label>
+                                          <input 
+                                             type="text" 
+                                             value={scheduleForm.title}
+                                             onChange={e => setScheduleForm(f => ({ ...f, title: e.target.value }))}
+                                             className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl px-6 py-4 text-xs font-black text-white uppercase tracking-widest outline-none focus:border-blue-500 transition-all italic"
+                                          />
+                                       </div>
+                                       <div className="md:col-span-6">
+                                          <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-3 italic">Deployment Date</label>
+                                          <input 
+                                             type="date" 
+                                             value={scheduleForm.date}
+                                             min={new Date().toISOString().split("T")[0]}
+                                             onChange={e => setScheduleForm(f => ({ ...f, date: e.target.value }))}
+                                             className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl px-6 py-4 text-xs font-black text-white uppercase tracking-widest outline-none focus:border-blue-500 transition-all italic"
+                                          />
+                                       </div>
+                                       <div className="md:col-span-6">
+                                          <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-3 italic">Deployment Span (Minutes)</label>
+                                          <input 
+                                             type="number" 
+                                             value={scheduleForm.duration} 
+                                             min="15" 
+                                             step="15"
+                                             onChange={e => setScheduleForm(f => ({ ...f, duration: e.target.value }))}
+                                             className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl px-6 py-4 text-xs font-black text-white uppercase tracking-widest outline-none focus:border-blue-500 transition-all italic"
+                                          />
+                                       </div>
+                                       <div className="md:col-span-12">
+                                          <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-4 italic">Deployment Window (Time)</label>
+                                          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
+                                             {TIME_SLOTS.map(slot => (
+                                               <button 
+                                                 key={slot} 
+                                                 type="button"
+                                                 onClick={() => setScheduleForm(f => ({ ...f, time: slot }))}
+                                                 className={`py-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all italic border ${
+                                                   scheduleForm.time === slot
+                                                     ? "bg-blue-500 border-blue-500 text-white shadow-lg shadow-blue-900/20"
+                                                     : "bg-zinc-950 border-zinc-800 text-zinc-700 hover:text-white"
+                                                 }`}
+                                               >
+                                                  {slot}
+                                               </button>
+                                             ))}
+                                          </div>
+                                       </div>
+                                       <div className="md:col-span-12">
+                                          <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-3 italic">Dispatch Memo</label>
+                                          <input 
+                                             type="text" 
+                                             value={scheduleForm.notes} 
+                                             placeholder="Logistics memo..."
+                                             onChange={e => setScheduleForm(f => ({ ...f, notes: e.target.value }))}
+                                             className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl px-6 py-4 text-xs font-black text-white uppercase tracking-widest outline-none focus:border-blue-500 transition-all italic placeholder:text-zinc-900"
+                                          />
+                                       </div>
+                                    </div>
+
+                                    {sessionError && (
+                                       <div className="flex items-center gap-3 p-4 bg-rose-500/10 border border-rose-500/20 text-rose-500 rounded-2xl text-[10px] font-black uppercase tracking-widest italic">
+                                          <Shield size={16} /> {sessionError}
+                                       </div>
+                                    )}
+
+                                    <div className="flex gap-4">
+                                       <button 
+                                         onClick={() => handleSaveSession(assessment)} 
+                                         disabled={savingSession}
+                                         className="bg-blue-600 text-white px-10 py-5 rounded-[2rem] text-[10px] font-black uppercase tracking-[0.3em] hover:bg-blue-500 disabled:opacity-50 transition-all flex items-center gap-4 italic shadow-2xl shadow-blue-900/20"
+                                       >
+                                          {savingSession ? <Loader2 size={16} className="animate-spin" /> : <Zap size={14} fill="currentColor" />}
+                                          {rescheduleSessionId ? "Confirm Reschedule" : "Confirm Protocol"}
+                                       </button>
+                                       <button onClick={closeSchedule} className="bg-zinc-950 text-zinc-600 border border-zinc-800 px-10 py-5 rounded-[2rem] text-[10px] font-black uppercase tracking-[0.3em] transition-all italic">Discard Changes</button>
+                                    </div>
+                                  </motion.div>
+                                )}
+                             </div>
+
+                             {/* Commander Final Control */}
+                             <div className="pt-10 border-t border-zinc-800/50 flex flex-wrap gap-4 items-center">
+                                {assessment.status === "pending" && (
+                                  <button 
+                                    onClick={() => handleMarkReviewed(assessment.id)}
+                                    className="bg-zinc-100 text-zinc-950 px-10 py-5 rounded-[2rem] text-[10px] font-black uppercase tracking-[0.3em] hover:bg-emerald-500 hover:text-white transition-all flex items-center gap-4 italic"
+                                  >
+                                     <CheckCircle size={16} /> Mark Assay Validated
+                                  </button>
+                                )}
+                                
+                                {!isConverted && (
+                                  <button 
+                                    onClick={() => handleConvert(assessment.userId, assessment.id)}
+                                    disabled={convertingId === assessment.userId}
+                                    className="bg-orange-500 text-white px-10 py-5 rounded-[2rem] text-[10px] font-black uppercase tracking-[0.3em] hover:bg-orange-400 transition-all flex items-center gap-4 italic shadow-2xl shadow-orange-900/20"
+                                  >
+                                     {convertingId === assessment.userId ? <Loader2 size={16} className="animate-spin" /> : <Shield size={16} />}
+                                     Initialize Sector Access
+                                  </button>
+                                )}
+
+                                {isConverted && (
+                                  <div className="px-10 py-5 bg-zinc-950 border border-emerald-500/20 text-emerald-500 rounded-[2rem] text-[10px] font-black uppercase tracking-[0.3em] italic flex items-center gap-4">
+                                     <UserCheck size={16} /> Asset Fully Converted
+                                  </div>
+                                )}
+
+                                {assessment.reviewedAt && (
+                                   <div className="ml-auto text-[9px] font-black text-zinc-700 uppercase tracking-widest italic">
+                                      VALIDATED BY CMD: {new Date(assessment.reviewedAt).toLocaleTimeString()} · {fmt(assessment.reviewedAt)}
+                                   </div>
+                                )}
+                             </div>
                           </div>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <div className="sm:col-span-2">
-                              <label className="block text-xs font-semibold text-zinc-500 mb-1">Title</label>
-                              <input
-                                type="text" value={scheduleForm.title}
-                                onChange={e => setScheduleForm(f => ({ ...f, title: e.target.value }))}
-                                className="w-full rounded-xl bg-zinc-900 border border-zinc-700 px-3 py-2.5 text-sm text-white outline-none focus:border-orange-500/60 transition"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-xs font-semibold text-zinc-500 mb-1">Date</label>
-                              <input
-                                type="date" value={scheduleForm.date}
-                                min={new Date().toISOString().split("T")[0]}
-                                onChange={e => setScheduleForm(f => ({ ...f, date: e.target.value }))}
-                                className="w-full rounded-xl bg-zinc-900 border border-zinc-700 px-3 py-2.5 text-sm text-white outline-none focus:border-orange-500/60 transition"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-xs font-semibold text-zinc-500 mb-1">Duration (min)</label>
-                              <input
-                                type="number" value={scheduleForm.duration} min="15" step="15"
-                                onChange={e => setScheduleForm(f => ({ ...f, duration: e.target.value }))}
-                                className="w-full rounded-xl bg-zinc-900 border border-zinc-700 px-3 py-2.5 text-sm text-white outline-none focus:border-orange-500/60 transition"
-                              />
-                            </div>
-                            <div className="sm:col-span-2">
-                              <label className="block text-xs font-semibold text-zinc-500 mb-2">Time</label>
-                              <div className="flex flex-wrap gap-1.5">
-                                {TIME_SLOTS.map(slot => (
-                                  <button key={slot} type="button"
-                                    onClick={() => setScheduleForm(f => ({ ...f, time: slot }))}
-                                    className={`px-3 py-1.5 rounded-lg border text-xs font-semibold transition-all ${
-                                      scheduleForm.time === slot
-                                        ? "border-orange-500/60 bg-orange-500/15 text-orange-300"
-                                        : "border-zinc-700 text-zinc-500 hover:border-zinc-600 hover:text-zinc-300"
-                                    }`}
-                                  >{slot}</button>
-                                ))}
-                              </div>
-                            </div>
-                            <div className="sm:col-span-2">
-                              <label className="block text-xs font-semibold text-zinc-500 mb-1">Notes (optional)</label>
-                              <input
-                                type="text" value={scheduleForm.notes} placeholder="Any notes for the session…"
-                                onChange={e => setScheduleForm(f => ({ ...f, notes: e.target.value }))}
-                                className="w-full rounded-xl bg-zinc-900 border border-zinc-700 px-3 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-orange-500/60 transition"
-                              />
-                            </div>
-                          </div>
-                          {sessionError && <p className="text-xs text-red-400">{sessionError}</p>}
-                          <button
-                            onClick={() => handleSaveSession(assessment)} disabled={savingSession}
-                            className="flex items-center gap-2 rounded-xl bg-orange-500 hover:bg-orange-400 disabled:opacity-50 px-5 py-2.5 text-sm font-bold text-white transition-colors shadow-lg shadow-orange-500/20"
-                          >
-                            {savingSession
-                              ? <><Loader2 className="w-4 h-4 animate-spin" />Saving…</>
-                              : <><Calendar className="w-4 h-4" />{rescheduleSessionId ? "Update Session" : "Confirm Session"}</>
-                            }
-                          </button>
-                        </div>
+                        </motion.div>
                       )}
-
-                      {/* Actions row */}
-                      <div className="flex flex-wrap gap-2 pt-1">
-                        {/* Schedule / Reschedule */}
-                        {!isSchedulingThis && (
-                          scheduledSession ? (
-                            <button
-                              onClick={() => openSchedule(assessment, scheduledSession)}
-                              className="inline-flex items-center gap-2 rounded-xl border border-zinc-700 bg-zinc-800 hover:bg-zinc-700 px-4 py-2 text-sm font-semibold text-zinc-200 transition-colors"
-                            >
-                              <RefreshCw className="w-4 h-4" /> Reschedule
-                            </button>
-                          ) : (
-                            <button
-                              onClick={() => openSchedule(assessment)}
-                              className="inline-flex items-center gap-2 rounded-xl border border-blue-500/30 bg-blue-500/10 hover:bg-blue-500/20 px-4 py-2 text-sm font-semibold text-blue-300 transition-colors"
-                            >
-                              <Calendar className="w-4 h-4" /> Schedule Session
-                            </button>
-                          )
-                        )}
-
-                        {/* Mark reviewed */}
-                        {assessment.status === "pending" && (
-                          <button
-                            onClick={() => handleMarkReviewed(assessment.id)}
-                            className="inline-flex items-center gap-2 rounded-xl border border-green-500/30 bg-green-500/10 hover:bg-green-500/20 px-4 py-2 text-sm font-semibold text-green-300 transition-colors"
-                          >
-                            <CheckCircle className="w-4 h-4" /> Mark Reviewed
-                          </button>
-                        )}
-
-                        {/* Convert to client */}
-                        {!isConverted && (
-                          <button
-                            onClick={() => handleConvert(assessment.userId, assessment.id)}
-                            disabled={convertingId === assessment.userId}
-                            className="inline-flex items-center gap-2 rounded-xl bg-violet-600 hover:bg-violet-500 disabled:opacity-50 px-4 py-2 text-sm font-bold text-white transition-colors shadow-lg shadow-violet-500/20"
-                          >
-                            {convertingId === assessment.userId
-                              ? <><Loader2 className="w-4 h-4 animate-spin" />Converting…</>
-                              : <><UserCheck className="w-4 h-4" />Convert to Client</>
-                            }
-                          </button>
-                        )}
-
-                        {isConverted && (
-                          <span className="inline-flex items-center gap-1.5 rounded-xl bg-green-500/10 border border-green-500/20 px-4 py-2 text-sm font-semibold text-green-400">
-                            <CheckCircle className="w-4 h-4" /> Converted to Client
-                          </span>
-                        )}
-
-                        {assessment.reviewedAt && (
-                          <span className="text-xs text-zinc-600 flex items-center gap-1 ml-auto">
-                            Reviewed {fmt(assessment.reviewedAt)}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+                    </AnimatePresence>
+                  </motion.div>
+                );
+              })}
+            </AnimatePresence>
           </div>
         </div>
       </div>

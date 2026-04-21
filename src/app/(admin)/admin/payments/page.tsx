@@ -2,30 +2,49 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useAuth } from "@/contexts/AuthContext";
 import { listPayments, createPayment, updatePaymentStatus, deletePayment, type Payment } from "@/lib/db/payments";
 import { listCustomers, type Profile } from "@/lib/db/profiles";
 import { listAllPlans, type Plan } from "@/lib/db/plans";
-import { CreditCard, CheckCircle, Clock, AlertCircle, Plus, Loader2, X, Trash2 } from "lucide-react";
+import { 
+  CreditCard, 
+  CheckCircle, 
+  Clock, 
+  AlertCircle, 
+  Plus, 
+  Loader2, 
+  X, 
+  Trash2,
+  TrendingUp,
+  Activity,
+  Shield,
+  Zap,
+  ChevronDown,
+  ArrowRight,
+  Target
+} from "lucide-react";
 
 const formatCurrency = (amount: number) =>
   new Intl.NumberFormat("en-AE", { style: "currency", currency: "AED", maximumFractionDigits: 0 }).format(amount);
 
 function PaymentBadge({ status }: { status: string }) {
   const map = {
-    paid: { color: "green", icon: CheckCircle, label: "Paid" },
-    pending: { color: "yellow", icon: Clock, label: "Pending" },
-    overdue: { color: "red", icon: AlertCircle, label: "Overdue" },
+    paid: { color: "emerald", icon: CheckCircle, label: "Settled" },
+    pending: { color: "orange", icon: Clock, label: "Pending" },
+    overdue: { color: "rose", icon: AlertCircle, label: "Overdue" },
   };
   const { color, icon: Icon, label } = map[status as keyof typeof map] ?? map.pending;
-  const colorMap: Record<string, string> = {
-    green: "bg-green-50 text-green-700",
-    yellow: "bg-yellow-50 text-yellow-700",
-    red: "bg-red-50 text-red-700",
+  
+  const styles: Record<string, string> = {
+    emerald: "bg-emerald-500/10 border-emerald-500/20 text-emerald-500",
+    orange: "bg-orange-500/10 border-orange-500/20 text-orange-500",
+    rose: "bg-rose-500/10 border-rose-500/20 text-rose-500",
   };
+
   return (
-    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${colorMap[color]}`}>
+    <span className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest italic border ${styles[color]}`}>
       <Icon className="w-3.5 h-3.5" /> {label}
     </span>
   );
@@ -34,7 +53,7 @@ function PaymentBadge({ status }: { status: string }) {
 const emptyInvoice = () => ({
   userId: "",
   amount: "",
-  description: "Monthly Training Fee",
+  description: "Operational Syllabus Fee",
   dueDate: "",
   planId: "",
 });
@@ -54,17 +73,21 @@ export default function AdminPaymentsPage() {
   const [invoiceForm, setInvoiceForm] = useState(emptyInvoice());
 
   useEffect(() => {
-    if (!loading && !user) { router.push("/login"); return; }
-    if (!loading && user && user.role !== "admin") { router.push("/trainer/dashboard"); return; }
-    if (!loading && user) { loadData(); }
-  }, [loading, user]); // eslint-disable-line
+    if (loading) return;
+    if (!user) { router.replace("/login"); return; }
+    if (user.role !== "admin") { router.replace("/trainer/dashboard"); return; }
+    loadData();
+  }, [loading, user, router]);
 
   const loadData = async () => {
-    const [p, c, pl] = await Promise.all([listPayments(), listCustomers(), listAllPlans()]);
-    setPayments(p);
-    setCustomers(c);
-    setPlans(pl);
-    setDataLoaded(true);
+    try {
+      const [p, c, pl] = await Promise.all([listPayments(), listCustomers(), listAllPlans()]);
+      setPayments(p);
+      setCustomers(c);
+      setPlans(pl);
+    } finally {
+      setDataLoaded(true);
+    }
   };
 
   const handleClientChange = (clientId: string) => {
@@ -79,7 +102,7 @@ export default function AdminPaymentsPage() {
 
   const handleCreateInvoice = async () => {
     if (!invoiceForm.userId || !invoiceForm.amount || !invoiceForm.dueDate) {
-      setFormError("Client, amount, and due date are required.");
+      setFormError("Identifier mismatch: Client, magnitude, and timestamp required.");
       return;
     }
     setSaving(true);
@@ -97,7 +120,7 @@ export default function AdminPaymentsPage() {
       setInvoiceForm(emptyInvoice());
       await loadData();
     } catch {
-      setFormError("Failed to create invoice.");
+      setFormError("System Link Failure: Invoice dispatch aborted.");
     } finally {
       setSaving(false);
     }
@@ -110,242 +133,271 @@ export default function AdminPaymentsPage() {
   };
 
   const handleDelete = async (paymentId: string) => {
-    if (!window.confirm("Delete this payment record? This cannot be undone.")) return;
+    if (!window.confirm("Purge financial record? This action is permanent.")) return;
     await deletePayment(paymentId);
     await loadData();
   };
 
-  if (loading || !dataLoaded) {
+  if (loading || !dataLoaded || !user) {
     return (
       <DashboardLayout role="admin">
-        <div className="flex items-center justify-center h-full">
-          <Loader2 className="w-8 h-8 animate-spin text-violet-600" />
+        <div className="p-8 max-w-6xl mx-auto animate-pulse space-y-12">
+           <div className="h-12 w-64 bg-zinc-900 rounded-lg" />
+           <div className="grid grid-cols-4 gap-6">
+              {[1,2,3,4].map(i => <div key={i} className="h-32 bg-zinc-900 rounded-[2rem]" />)}
+           </div>
+           <div className="h-96 bg-zinc-900 rounded-[3rem]" />
         </div>
       </DashboardLayout>
     );
   }
 
   const filtered = filterStatus === "all" ? payments : payments.filter(p => p.status === filterStatus);
-
-  const getClientName = (userId: string) =>
-    customers.find(c => c.id === userId)?.name ?? "Unknown client";
-
-  const getPlanName = (userId: string) => {
-    const plan = plans.find(p => p.userId === userId && p.status === "active");
-    return plan?.name ?? "—";
-  };
+  const getClientName = (userId: string) => customers.find(c => c.id === userId)?.name ?? "UNKNOWN ASSET";
+  const getPlanName = (userId: string) => plans.find(p => p.userId === userId && p.status === "active")?.name ?? "N/A";
 
   const totalRevenue = payments.filter(p => p.status === "paid").reduce((sum, p) => sum + p.amount, 0);
-  const pendingCount = payments.filter(p => p.status === "pending").length;
   const pendingTotal = payments.filter(p => p.status === "pending").reduce((sum, p) => sum + p.amount, 0);
-  const overdueCount = payments.filter(p => p.status === "overdue").length;
   const overdueTotal = payments.filter(p => p.status === "overdue").reduce((sum, p) => sum + p.amount, 0);
-
-  // This month's revenue
-  const thisMonth = new Date().toISOString().slice(0, 7); // "YYYY-MM"
+  
+  const thisMonth = new Date().toISOString().slice(0, 7);
   const monthRevenue = payments
     .filter(p => p.status === "paid" && p.paidDate?.startsWith(thisMonth))
     .reduce((sum, p) => sum + p.amount, 0);
 
   return (
     <DashboardLayout role="admin">
-      <div className="p-6 lg:p-8 max-w-6xl mx-auto">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-xl bg-violet-100 flex items-center justify-center">
-              <CreditCard className="w-6 h-6 text-violet-600" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-black text-gray-900">Payments</h1>
-              <p className="text-gray-500 text-sm">Manage all client payments and invoices</p>
-            </div>
-          </div>
-          <button
-            onClick={() => { setInvoiceForm(emptyInvoice()); setShowCreateModal(true); setFormError(""); }}
-            className="flex items-center gap-2 bg-violet-600 text-white px-5 py-2.5 rounded-xl text-sm font-semibold shadow-sm hover:bg-violet-700 transition-colors"
-          >
-            <Plus className="w-4 h-4" /> Create Invoice
-          </button>
-        </div>
+      <div className="min-h-screen bg-zinc-950 p-6 lg:p-8 text-white">
+        <div className="max-w-6xl mx-auto">
+          
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-8 mb-12">
+            <motion.div 
+               initial={{ opacity: 0, x: -20 }}
+               animate={{ opacity: 1, x: 0 }}
+            >
+              <div className="inline-flex items-center gap-2 bg-orange-500/10 border border-orange-500/20 rounded-full px-4 py-1.5 text-[10px] font-black uppercase tracking-[0.3em] text-orange-500 mb-6 italic">
+                <Shield className="w-3 h-3 fill-orange-500" /> Secure Financial Link Active
+              </div>
+              <h1 className="text-4xl lg:text-5xl font-black italic uppercase tracking-tighter leading-none">
+                 Fiscal <span className="text-orange-500">Manifest</span>
+              </h1>
+              <p className="text-zinc-500 font-medium mt-4">Auditing platform revenue, settlement protocols, and operational yield.</p>
+            </motion.div>
 
-        {/* Summary Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
-            <div className="flex items-center gap-2 text-gray-500 font-medium text-sm mb-2">
-              <CheckCircle className="w-4 h-4 text-green-500" /> Total Revenue
-            </div>
-            <p className="text-2xl font-bold text-gray-900">{formatCurrency(totalRevenue)}</p>
+            <motion.button
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              onClick={() => { setInvoiceForm(emptyInvoice()); setShowCreateModal(true); setFormError(""); }}
+              className="bg-white text-zinc-950 hover:bg-orange-500 hover:text-white px-10 py-5 rounded-[2rem] text-[10px] font-black uppercase tracking-[0.3em] transition-all flex items-center gap-4 italic shadow-2xl shadow-white/5 active:scale-95"
+            >
+              <Plus className="w-5 h-5" /> Initialize Invoice
+            </motion.button>
           </div>
-          <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
-            <div className="flex items-center gap-2 text-gray-500 font-medium text-sm mb-2">
-              <CreditCard className="w-4 h-4 text-blue-500" /> This Month
-            </div>
-            <p className="text-2xl font-bold text-gray-900">{formatCurrency(monthRevenue)}</p>
-          </div>
-          <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
-            <div className="flex items-center gap-2 text-gray-500 font-medium text-sm mb-2">
-              <Clock className="w-4 h-4 text-yellow-500" /> Pending
-            </div>
-            <p className="text-2xl font-bold text-gray-900">{pendingCount} <span className="text-sm font-normal text-gray-400">({formatCurrency(pendingTotal)})</span></p>
-          </div>
-          <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
-            <div className="flex items-center gap-2 text-gray-500 font-medium text-sm mb-2">
-              <AlertCircle className="w-4 h-4 text-red-500" /> Overdue
-            </div>
-            <p className="text-2xl font-bold text-gray-900">{overdueCount} <span className="text-sm font-normal text-gray-400">({formatCurrency(overdueTotal)})</span></p>
-          </div>
-        </div>
 
-        {/* Filters */}
-        <div className="bg-white rounded-t-2xl border border-gray-100 border-b-0 overflow-hidden">
-          <div className="flex border-b border-gray-100 p-1">
-            {(["all", "paid", "pending", "overdue"] as const).map(status => (
-              <button
-                key={status}
-                onClick={() => setFilterStatus(status)}
-                className={`flex-1 sm:flex-none capitalize px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-                  filterStatus === status ? "bg-gray-100 text-gray-900" : "text-gray-500 hover:text-gray-700"
-                }`}
+          {/* Stats Grid */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+            {[
+              { label: "Gross Yield", value: formatCurrency(totalRevenue), color: "text-emerald-500", icon: TrendingUp },
+              { label: "Temporal Yield", value: formatCurrency(monthRevenue), color: "text-white", icon: Activity },
+              { label: "Pending Settle", value: formatCurrency(pendingTotal), color: "text-orange-500", icon: Clock },
+              { label: "Overdue Delta", value: formatCurrency(overdueTotal), color: "text-rose-500", icon: AlertCircle },
+            ].map((stat, i) => (
+              <motion.div 
+                key={stat.label}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.05 }}
+                className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 relative overflow-hidden group hover:border-zinc-700 transition-colors"
               >
-                {status}
-              </button>
+                <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                   <stat.icon className="w-12 h-12" />
+                </div>
+                <p className={`text-2xl font-black italic ${stat.color} truncate`}>{stat.value}</p>
+                <p className="text-[10px] text-zinc-600 font-black uppercase tracking-widest mt-1 italic">{stat.label}</p>
+              </motion.div>
             ))}
           </div>
-        </div>
 
-        {/* Table */}
-        <div className="bg-white border border-gray-100 rounded-b-2xl shadow-sm overflow-hidden">
-          {filtered.length > 0 ? (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm whitespace-nowrap">
-                <thead className="bg-gray-50 text-gray-500 font-medium border-b border-gray-100">
-                  <tr>
-                    <th className="px-6 py-4">Client</th>
-                    <th className="px-6 py-4">Plan</th>
-                    <th className="px-6 py-4">Amount</th>
-                    <th className="px-6 py-4">Description</th>
-                    <th className="px-6 py-4">Due Date</th>
-                    <th className="px-6 py-4">Paid Date</th>
-                    <th className="px-6 py-4">Status</th>
-                    <th className="px-6 py-4 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-50 text-gray-900">
-                  {filtered.map(p => (
-                    <tr key={p.id} className="hover:bg-gray-50/50">
-                      <td className="px-6 py-4 font-semibold">{getClientName(p.userId)}</td>
-                      <td className="px-6 py-4 text-gray-500">{getPlanName(p.userId)}</td>
-                      <td className="px-6 py-4 font-medium">{formatCurrency(p.amount)}</td>
-                      <td className="px-6 py-4 text-gray-500">{p.description || "N/A"}</td>
-                      <td className="px-6 py-4 text-gray-500">{p.dueDate || "N/A"}</td>
-                      <td className="px-6 py-4 text-gray-500">{p.paidDate || "—"}</td>
-                      <td className="px-6 py-4"><PaymentBadge status={p.status} /></td>
-                      <td className="px-6 py-4 text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          {(p.status === "pending" || p.status === "overdue") && (
-                            <button
-                              onClick={() => handleMarkPaid(p.id)}
-                              className="bg-green-50 text-green-700 hover:bg-green-100 px-3 py-1.5 rounded-lg text-xs font-semibold inline-flex items-center gap-1.5 transition-colors"
-                            >
-                              <CheckCircle className="w-3.5 h-3.5" /> Mark Paid
-                            </button>
-                          )}
-                          <button
-                            onClick={() => handleDelete(p.id)}
-                            className="p-1.5 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors"
-                            title="Delete payment"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <div className="p-12 text-center text-gray-400">
-              <CreditCard className="w-10 h-10 mx-auto mb-4 opacity-30" />
-              <p className="text-base font-medium">No {filterStatus !== "all" ? filterStatus : ""} payments found</p>
-            </div>
-          )}
+          {/* Table Controls */}
+          <div className="mb-6 flex flex-wrap gap-3">
+             {(["all", "paid", "pending", "overdue"] as const).map(status => (
+               <button
+                 key={status}
+                 onClick={() => setFilterStatus(status)}
+                 className={`px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all italic border ${
+                    filterStatus === status
+                      ? "bg-white text-zinc-950 border-white"
+                      : "bg-zinc-900 border-zinc-800 text-zinc-600 hover:text-white"
+                 }`}
+               >
+                 {status}
+               </button>
+             ))}
+          </div>
+
+          {/* Records Table */}
+          <motion.div 
+             initial={{ opacity: 0, scale: 0.98 }}
+             animate={{ opacity: 1, scale: 1 }}
+             className="bg-zinc-900 border border-zinc-800 rounded-[3rem] overflow-hidden shadow-2xl relative"
+          >
+             {filtered.length > 0 ? (
+               <div className="overflow-x-auto">
+                 <table className="w-full text-left text-[11px] whitespace-nowrap">
+                   <thead>
+                     <tr className="bg-zinc-950/50 text-zinc-700 font-black uppercase tracking-[0.2em] italic border-b border-zinc-800">
+                       <th className="px-8 py-6">Asset Identifier</th>
+                       <th className="px-8 py-6">Mission Plan</th>
+                       <th className="px-8 py-6">Magnitude</th>
+                       <th className="px-8 py-6">Due Timestamp</th>
+                       <th className="px-8 py-6">Status</th>
+                       <th className="px-8 py-6 text-right">Control</th>
+                     </tr>
+                   </thead>
+                   <tbody className="divide-y divide-zinc-800/50">
+                     {filtered.map((p, idx) => (
+                       <motion.tr 
+                         key={p.id} 
+                         initial={{ opacity: 0, x: -10 }}
+                         animate={{ opacity: 1, x: 0 }}
+                         transition={{ delay: idx * 0.02 }}
+                         className="hover:bg-zinc-950/40 transition-colors group"
+                       >
+                         <td className="px-8 py-6 font-black text-white italic uppercase tracking-tight">{getClientName(p.userId)}</td>
+                         <td className="px-8 py-6 text-zinc-500 font-bold uppercase tracking-widest">{getPlanName(p.userId)}</td>
+                         <td className="px-8 py-6 font-black text-white italic">{formatCurrency(p.amount)}</td>
+                         <td className="px-8 py-6 text-zinc-500 font-bold uppercase tracking-widest">{p.dueDate || "N/A"}</td>
+                         <td className="px-8 py-6"><PaymentBadge status={p.status} /></td>
+                         <td className="px-8 py-6 text-right">
+                            <div className="flex items-center justify-end gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                               {(p.status === "pending" || p.status === "overdue") && (
+                                 <button
+                                   onClick={() => handleMarkPaid(p.id)}
+                                   className="bg-orange-500 text-white px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest italic hover:bg-orange-400 transition-all flex items-center gap-2"
+                                 >
+                                   <Zap size={12} fill="currentColor" /> Authorize Settlement
+                                 </button>
+                               )}
+                               <button 
+                                 onClick={() => handleDelete(p.id)}
+                                 className="w-10 h-10 bg-zinc-950 border border-zinc-800 rounded-xl flex items-center justify-center text-zinc-700 hover:text-rose-500 hover:border-rose-500/30 transition-all"
+                               >
+                                  <Trash2 size={16} />
+                               </button>
+                            </div>
+                         </td>
+                       </motion.tr>
+                     ))}
+                   </tbody>
+                 </table>
+               </div>
+             ) : (
+               <div className="p-32 text-center flex flex-col items-center justify-center">
+                  <CreditCard className="w-12 h-12 text-zinc-800 opacity-20 mb-6" />
+                  <p className="text-[10px] font-black text-zinc-700 uppercase tracking-[0.5em] italic">Manifest Silent · Financial Log Empty</p>
+               </div>
+             )}
+          </motion.div>
         </div>
       </div>
 
-      {/* Create Invoice Modal */}
-      {showCreateModal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4 transition-opacity">
-          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden">
-            <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
-              <h2 className="text-xl font-bold text-gray-900">Create Invoice</h2>
-              <button title="Close" onClick={() => setShowCreateModal(false)}>
-                <X className="w-5 h-5 text-gray-400 hover:text-gray-600" />
-              </button>
-            </div>
-            <div className="p-6 space-y-4">
-              {formError && <div className="p-3 bg-red-50 text-red-600 rounded-lg text-sm">{formError}</div>}
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Client</label>
-                <select
-                  value={invoiceForm.userId}
-                  onChange={(e) => handleClientChange(e.target.value)}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none"
-                >
-                  <option value="">Select a client...</option>
-                  {customers.map(c => (
-                    <option key={c.id} value={c.id}>{c.name || c.email}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Amount (AED)</label>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={invoiceForm.amount}
-                  onChange={(e) => setInvoiceForm({ ...invoiceForm, amount: e.target.value })}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                <input
-                  type="text"
-                  value={invoiceForm.description}
-                  onChange={(e) => setInvoiceForm({ ...invoiceForm, description: e.target.value })}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none"
-                  placeholder="e.g. Monthly Training Fee"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Due Date</label>
-                <input
-                  type="date"
-                  value={invoiceForm.dueDate}
-                  onChange={(e) => setInvoiceForm({ ...invoiceForm, dueDate: e.target.value })}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none"
-                />
-              </div>
-
-              <div className="pt-4 flex gap-3">
-                <button
-                  onClick={handleCreateInvoice}
-                  disabled={saving}
-                  className="flex-1 bg-violet-600 text-white flex items-center justify-center py-2.5 rounded-xl font-semibold hover:bg-violet-700 disabled:opacity-50 transition-all"
-                >
-                  {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : "Send Invoice"}
+      {/* Invoice Modal */}
+      <AnimatePresence>
+        {showCreateModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-950/90 backdrop-blur-xl p-6">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="bg-zinc-900 border border-zinc-800 rounded-[3rem] w-full max-w-xl shadow-[0_0_100px_rgba(0,0,0,0.8)] overflow-hidden relative"
+            >
+              <div className="absolute top-0 right-0 p-10 z-10">
+                <button onClick={() => setShowCreateModal(false)} className="w-12 h-12 rounded-full bg-zinc-950 border border-zinc-800 text-zinc-600 hover:text-white flex items-center justify-center transition-all">
+                   <X size={24} />
                 </button>
               </div>
-            </div>
+
+              <div className="p-10 md:p-14">
+                <header className="mb-12">
+                   <div className="w-16 h-16 rounded-[1.5rem] bg-orange-500 flex items-center justify-center text-white mb-8 shadow-2xl shadow-orange-900/40">
+                      <CreditCard size={32} />
+                   </div>
+                   <h2 className="text-3xl font-black italic uppercase tracking-tighter">Induct <span className="text-orange-500">Invoice</span></h2>
+                   <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest mt-2 italic">Initializing fiscal settlement protocol</p>
+                </header>
+
+                <div className="space-y-8">
+                  {formError && (
+                    <div className="p-5 bg-rose-500/10 border border-rose-500/20 text-rose-500 rounded-2xl text-[10px] font-black uppercase tracking-widest italic flex items-center gap-3">
+                       <AlertCircle size={16} /> {formError}
+                    </div>
+                  )}
+
+                  <div className="grid gap-8">
+                    <div>
+                      <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-4 italic">Target Asset Identifier</label>
+                      <select
+                        value={invoiceForm.userId}
+                        onChange={(e) => handleClientChange(e.target.value)}
+                        className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl px-6 py-5 text-xs font-black text-white uppercase tracking-widest italic outline-none focus:border-zinc-600 appearance-none"
+                      >
+                        <option value="">— SELECT TARGET —</option>
+                        {customers.map(c => (
+                          <option key={c.id} value={c.id}>{c.name?.toUpperCase() || "UNIDENTIFIED"}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-8">
+                      <div>
+                        <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-4 italic">Magnitude (AED)</label>
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={invoiceForm.amount}
+                          onChange={(e) => setInvoiceForm({ ...invoiceForm, amount: e.target.value })}
+                          className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl px-6 py-5 text-xs font-black text-white uppercase tracking-widest italic outline-none focus:border-zinc-600"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-4 italic">Temporal Limit (Due Date)</label>
+                        <input
+                          type="date"
+                          value={invoiceForm.dueDate}
+                          onChange={(e) => setInvoiceForm({ ...invoiceForm, dueDate: e.target.value })}
+                          className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl px-6 py-5 text-xs font-black text-white uppercase tracking-widest italic outline-none focus:border-zinc-600"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-4 italic">Deployment Memo (Description)</label>
+                      <input
+                        type="text"
+                        value={invoiceForm.description}
+                        onChange={(e) => setInvoiceForm({ ...invoiceForm, description: e.target.value })}
+                        className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl px-6 py-5 text-xs font-black text-white uppercase tracking-widest italic outline-none focus:border-zinc-600 placeholder:text-zinc-900"
+                        placeholder="E.G. SYLLABUS INDUCTION FEED"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="pt-10">
+                    <button
+                      onClick={handleCreateInvoice}
+                      disabled={saving}
+                      className="w-full bg-orange-500 text-white flex items-center justify-center gap-4 py-6 rounded-[2.5rem] text-[11px] font-black uppercase tracking-[0.4em] italic hover:bg-orange-400 disabled:opacity-50 transition-all shadow-2xl shadow-orange-900/40 active:scale-95"
+                    >
+                      {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Zap size={16} fill="currentColor" /> Dispatch Settlement</>}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
           </div>
-        </div>
-      )}
+        )}
+      </AnimatePresence>
     </DashboardLayout>
   );
 }
