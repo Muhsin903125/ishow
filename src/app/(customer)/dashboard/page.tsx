@@ -61,7 +61,8 @@ export default function CustomerDashboard() {
   useEffect(() => {
     if (loading) return;
     if (!user) { router.push("/login"); return; }
-    if (user.role !== "customer") { router.push("/trainer/dashboard"); return; }
+    if (user.role === "trainer") { router.push("/trainer/dashboard"); return; }
+    if (user.role === "admin") { router.push("/admin/dashboard"); return; }
 
     // Load assessment first — determines if we redirect
     getAssessment(user.id)
