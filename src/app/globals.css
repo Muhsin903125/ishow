@@ -7,6 +7,7 @@
 
 html {
   scroll-behavior: smooth;
+  background: #09090b;
 }
 
 @theme inline {
@@ -17,7 +18,7 @@ html {
 }
 
 body {
-  background: var(--background);
+  background: #09090b;
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
@@ -26,34 +27,11 @@ body {
   scroll-margin-top: 6rem;
 }
 
-@keyframes reveal-up {
-  from {
-    opacity: 0;
-    translate: 0 28px;
-  }
-
-  to {
-    opacity: 1;
-    translate: 0 0;
-  }
+.landing-section {
+  scroll-margin-top: 6rem;
 }
 
-.landing-reveal {
-  opacity: 0;
-  animation: reveal-up 0.85s cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
-.landing-delay-1 {
-  animation-delay: 0.08s;
-}
-
-.landing-delay-2 {
-  animation-delay: 0.16s;
-}
-
-.landing-delay-3 {
-  animation-delay: 0.24s;
-}
+/* Redundant CSS reveals removed in favor of Framer Motion */
 
 .landing-panel {
   transition:

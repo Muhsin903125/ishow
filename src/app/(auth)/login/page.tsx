@@ -117,7 +117,7 @@ export default function LoginPage() {
             </div>
 
             {/* Quick Access Demos */}
-            {process.env.NODE_ENV !== "production" && (
+            {/* {process.env.NODE_ENV !== "production" && (
               <div className="mb-10 p-6 bg-zinc-950/40 rounded-3xl border border-zinc-800/50">
                 <div className="flex items-center gap-2 mb-4">
                   <Zap className="w-3.5 h-3.5 text-orange-500" />
@@ -136,7 +136,7 @@ export default function LoginPage() {
                   ))}
                 </div>
               </div>
-            )}
+            )} */}
 
             {error && (
               <div className="flex items-start gap-3 rounded-2xl border border-red-500/20 bg-red-500/10 px-5 py-4 text-sm text-red-400 mb-8 font-medium border-l-4 border-l-red-500">

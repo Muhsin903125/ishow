@@ -189,6 +189,7 @@ export default function AdminDashboardPage() {
             {[
               { href: "/admin/trainers", label: "Trainer Management", desc: "Invite new trainers and manage accounts.", icon: UserCog, color: "violet" },
               { href: "/admin/clients", label: "Client Directory", desc: "View all clients and their trainer assignments.", icon: Users, color: "blue" },
+              { href: "/admin/testimonials", label: "Testimonials", desc: "Manage client success stories and results.", icon: MessageSquare, color: "orange" },
               { href: "/admin/master", label: "Master Data", desc: "Manage exercises, locations, goals, and templates.", icon: Database, color: "orange" },
             ].map(({ href, label, desc, icon: Icon, color }) => {
               const cm: Record<string, string> = {

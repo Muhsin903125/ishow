@@ -38,7 +38,7 @@ export default function RegisterPage() {
 
   useEffect(() => {
     if (!authLoading && user) {
-      router.push('/dashboard');
+      router.push('/assessment');
     }
   }, [authLoading, router, user]);
 

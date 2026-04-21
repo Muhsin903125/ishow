@@ -16,8 +16,8 @@ export const metadata: Metadata = {
     default: "iShowTransformation | Elite Personal Training in the UAE",
     template: "%s | iShowTransformation",
   },
-  description: "Transform your body with expert personal training, structured programs, and 1-on-1 coaching. Book your free assessment today.",
-  keywords: ["personal training", "fitness coaching", "UAE fitness", "Dubai gym", "transformation", "weight loss", "strength training"],
+  description: "Dubai-based personal trainer Mohammed offers 1-on-1 coaching, custom training plans, and nutrition programs. Serving clients in Dubai, UAE, and online. Book your free assessment.",
+  keywords: ["personal training Dubai", "fitness coaching UAE", "online personal trainer Dubai", "Dubai gym", "transformation", "weight loss Dubai", "strength training UAE", "Mohammed fitness coach", "iShow fitness Dubai"],
   authors: [{ name: "iShowTransformation" }],
   creator: "iShowTransformation",
   openGraph: {
@@ -48,7 +48,32 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${geistSans.variable} h-full antialiased`}>
+    <html lang="en-AE" className={`${geistSans.variable} h-full antialiased`}>
+      <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "LocalBusiness",
+              "name": "iShow Transformation",
+              "description": "Personal training and fitness coaching in Dubai, UAE",
+              "url": siteUrl,
+              "address": {
+                "@type": "PostalAddress",
+                "addressLocality": "Dubai",
+                "addressCountry": "AE"
+              },
+              "founder": {
+                "@type": "Person",
+                "name": "Mohammed Sufiyan"
+              },
+              "priceRange": "$$",
+              "areaServed": ["Dubai", "Abu Dhabi", "UAE"]
+            })
+          }}
+        />
+      </head>
       <body className="min-h-full font-sans">
         <AuthProvider>
           {children}
