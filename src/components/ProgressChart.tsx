@@ -38,6 +38,16 @@ export function ProgressChart({
 
   if (data.length < 2) {
     return (
+      <div className="bg-zinc-950/30 rounded-2xl p-12 border border-zinc-800 border-dashed text-center flex items-center justify-center h-[254px]">
+        <div className="space-y-2">
+          <p className="text-zinc-500 text-[10px] font-black uppercase tracking-[0.2em] italic">Insufficient Samples</p>
+          <p className="text-zinc-700 text-[9px] font-bold uppercase tracking-widest">Protocol requires 2+ entries for variance analysis.</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
     <div className="bg-zinc-950/30 rounded-2xl p-4 border border-zinc-800">
       <div className="flex items-center justify-between mb-4">
         <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500 italic">{label}</p>

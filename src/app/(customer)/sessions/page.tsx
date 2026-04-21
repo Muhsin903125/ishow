@@ -288,12 +288,6 @@ export default function SessionsPage() {
                                   <Activity className="w-3.5 h-3.5 text-orange-500" />
                                   {s.duration} Min
                                 </span>
-                                {s.location && (
-                                  <span className="flex items-center gap-1.5">
-                                    <MapPin className="w-3.5 h-3.5 text-rose-500" />
-                                    {s.location}
-                                  </span>
-                                )}
                               </div>
                               {s.notes && (
                                 <p className="mt-4 text-zinc-500 text-xs italic font-medium bg-zinc-950/50 rounded-xl px-4 py-3 border border-zinc-800 max-w-lg">

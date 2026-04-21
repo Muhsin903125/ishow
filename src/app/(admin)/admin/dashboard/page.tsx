@@ -25,6 +25,8 @@ import {
   Target,
   ArrowRight,
   TrendingUp,
+  Mail,
+  CheckCircle,
 } from "lucide-react";
 
 function formatDate(iso: string) {
