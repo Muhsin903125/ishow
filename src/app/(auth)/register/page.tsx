@@ -80,96 +80,56 @@ export default function RegisterPage() {
   if (!authLoading && user) return null;
 
   return (
-    <div className={`${dm.variable} ${barlow.variable} font-[family-name:var(--font-dm)] min-h-screen bg-zinc-950 flex flex-col lg:flex-row overflow-hidden`}>
+    <div className={`${dm.variable} ${barlow.variable} font-[family-name:var(--font-dm)] min-h-screen bg-zinc-950 flex items-center justify-center relative overflow-hidden p-6`}>
       
-      {/* LEFT SIDE: PERSUASIVE CONTENT & MEDIA */}
-      <section className="hidden lg:flex lg:w-1/2 relative flex-col justify-end p-20 overflow-hidden">
-        <div className="absolute inset-0 z-0">
-          <AutoPlayVideo
-            src="/landing/14711435_2560_1440_25fps.mp4"
-            className="w-full h-full object-cover grayscale opacity-40 mix-blend-luminosity"
-            poster="https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=1200&q=80"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/40 to-transparent" />
-          <div className="absolute inset-0 bg-orange-600/5 mix-blend-overlay" />
-        </div>
+      {/* FULL SCREEN BACKGROUND */}
+      <div className="absolute inset-0 z-0">
+        <AutoPlayVideo
+          src="/landing/14711435_2560_1440_25fps.mp4"
+          className="w-full h-full object-cover grayscale opacity-40 mix-blend-luminosity"
+          poster="https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=1200&q=80"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/20 to-zinc-950/60" />
+        <div className="absolute inset-0 bg-zinc-950/40 backdrop-blur-[2px]" />
+      </div>
 
-        <div className="relative z-10">
-          <Link href="/" className="group flex items-center gap-3 mb-12">
-            <div className="w-10 h-10 bg-orange-500 rounded-xl flex items-center justify-center shadow-2xl shadow-orange-500/20 group-hover:scale-110 transition-transform">
-               <Flame className="w-6 h-6 text-white fill-white" />
+      <div className="w-full max-w-lg relative z-10 transition-all duration-700 animate-in fade-in zoom-in-95">
+        {/* Logo */}
+        <div className="flex justify-center mb-10">
+          <Link href="/" className="group flex items-center gap-3">
+            <div className="w-12 h-12 bg-orange-500 rounded-2xl flex items-center justify-center shadow-2xl shadow-orange-500/20 group-hover:scale-110 transition-transform">
+               <Flame className="w-7 h-7 text-white fill-white" />
             </div>
-            <span className="font-[family-name:var(--font-barlow)] font-black text-2xl text-white tracking-widest uppercase italic">
+            <span className="font-[family-name:var(--font-barlow)] font-black text-3xl text-white tracking-widest uppercase italic">
               iShow<span className="text-orange-500">Transformation</span>
             </span>
           </Link>
-
-          <h1 className="font-[family-name:var(--font-barlow)] font-extrabold uppercase text-white leading-[0.85] tracking-tight mb-8" style={{ fontSize: "clamp(40px, 5vw, 90px)" }}>
-            Elite <br/> Transformation <br/> <span className="text-orange-500">Awaits.</span>
-          </h1>
-
-          <div className="space-y-6 max-w-md">
-            {[
-              "Bespoke Programming built for your baseline",
-              "Granular Metric Tracking & Analytics",
-              "1-on-1 Direct Coach Accountability"
-            ].map((text, i) => (
-              <div key={i} className="flex items-center gap-4 group">
-                <div className="w-6 h-6 rounded-full bg-orange-500/10 flex items-center justify-center border border-orange-500/20 group-hover:bg-orange-500 group-hover:border-orange-500 transition-colors">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-orange-500 group-hover:text-white transition-colors" />
-                </div>
-                <span className="text-zinc-300 font-bold tracking-wide uppercase text-xs">{text}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-        
-        {/* Decorative elements */}
-        <div className="absolute top-1/2 -right-1/4 w-[500px] h-[500px] bg-orange-500/10 rounded-full blur-[150px] pointer-events-none" />
-      </section>
-
-      {/* RIGHT SIDE: REGISTRATION FORM */}
-      <section className="flex-1 flex items-center justify-center p-6 md:p-12 relative overflow-y-auto">
-        {/* Mobile Background (only visible on small screens) */}
-        <div className="lg:hidden absolute inset-0 z-0">
-          <img 
-            src="https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?auto=format&fit=crop&w=1200&q=80" 
-            className="w-full h-full object-cover opacity-20 grayscale" 
-            alt="Background"
-          />
-          <div className="absolute inset-0 bg-zinc-950/80 backdrop-blur-sm" />
         </div>
 
-        <div className="w-full max-w-md relative z-10">
-          {/* Logo for mobile */}
-          <div className="lg:hidden flex justify-center mb-10">
-            <Link href="/" className="inline-flex items-center gap-2">
-              <span className="font-[family-name:var(--font-barlow)] font-black text-2xl text-white tracking-widest uppercase italic">
-                iShow<span className="text-orange-500">Transformation</span>
-              </span>
-            </Link>
-          </div>
-
-          <div className="bg-zinc-900/40 backdrop-blur-2xl p-8 md:p-10 rounded-[2.5rem] border border-zinc-800 shadow-2xl">
-            <div className="mb-10 text-center lg:text-left">
-              <h1 className="font-[family-name:var(--font-barlow)] font-black uppercase text-4xl text-white mb-3">Create account</h1>
+        <div className="bg-zinc-900/40 backdrop-blur-3xl p-8 md:p-12 rounded-[3.5rem] border border-zinc-800 shadow-[0_32px_64px_-16px_rgba(0,0,0,0.6)] relative overflow-hidden">
+          {/* Decorative Glow */}
+          <div className="absolute -top-24 -right-24 w-48 h-48 bg-orange-500/10 rounded-full blur-[80px] pointer-events-none" />
+          
+          <div className="relative z-10">
+            <div className="mb-10 text-center">
+              <h1 className="font-[family-name:var(--font-barlow)] font-black uppercase text-5xl text-white mb-3 tracking-tight">Create account</h1>
               <p className="text-zinc-500 font-medium">
                 Already have one?{' '}
-                <Link href="/login" className="text-orange-500 font-bold hover:text-orange-400 transition-colors underline underline-offset-4 decoration-2">Sign in</Link>
+                <Link href="/login" className="text-orange-500 font-bold hover:text-orange-400 transition-colors underline underline-offset-8 decoration-2">Sign in</Link>
               </p>
             </div>
 
             {error && (
-              <div className="flex items-start gap-2 rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-4 text-sm text-red-400 mb-8 font-medium border-l-4 border-l-red-500">
+              <div className="flex items-start gap-3 rounded-2xl border border-red-500/20 bg-red-500/10 px-5 py-4 text-sm text-red-400 mb-8 font-medium border-l-4 border-l-red-500">
                 <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />{error}
               </div>
             )}
 
             <button type="button" onClick={handleGoogle} disabled={gLoading || authLoading}
-              className="w-full flex items-center justify-center gap-3 rounded-2xl border border-zinc-800 bg-zinc-950/50 hover:bg-zinc-800 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-white transition-all disabled:opacity-50 mb-8"
+              className="w-full flex items-center justify-center gap-3 rounded-2xl border border-zinc-800 bg-zinc-950/50 hover:bg-zinc-800 py-4.5 text-[10px] font-black uppercase tracking-[0.2em] text-white transition-all disabled:opacity-50 mb-8"
             >
               {gLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : (
-                <svg className="w-4 h-4" viewBox="0 0 24 24">
+                <svg className="w-5 h-5" viewBox="0 0 24 24">
                   <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
                   <path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
                   <path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
@@ -179,82 +139,81 @@ export default function RegisterPage() {
               Continue with Google
             </button>
 
-            <div className="flex items-center gap-4 mb-8">
+            <div className="flex items-center gap-6 mb-8">
               <div className="flex-1 h-px bg-zinc-800/50" />
-              <span className="text-[10px] text-zinc-600 font-extrabold uppercase tracking-widest whitespace-nowrap">or with email</span>
+              <span className="text-[10px] text-zinc-600 font-extrabold uppercase tracking-[0.2em] whitespace-nowrap">or with email</span>
               <div className="flex-1 h-px bg-zinc-800/50" />
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-5">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
-                  <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 mb-2 px-1">Full Name</label>
+                  <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 mb-2 px-2">Full Name</label>
                   <div className="relative group">
-                    <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600 group-focus-within:text-orange-500 transition-colors" />
+                    <User className="absolute left-5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-zinc-600 group-focus-within:text-orange-500 transition-colors" />
                     <input
                       type="text" name="name" value={formData.name} onChange={handleChange}
                       placeholder="John Doe" required autoComplete="name"
-                      className="w-full rounded-2xl bg-zinc-950/50 border border-zinc-800 pl-11 pr-4 py-4 text-sm text-white placeholder-zinc-700 outline-none focus:border-orange-500/50 focus:bg-zinc-950 focus:ring-4 focus:ring-orange-500/5 transition-all font-medium"
+                      className="w-full rounded-2xl bg-zinc-950/50 border border-zinc-800 pl-14 pr-5 py-4 text-white placeholder-zinc-700 outline-none focus:border-orange-500/50 focus:bg-zinc-950 focus:ring-8 focus:ring-orange-500/5 transition-all font-medium"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 mb-2 px-1">Phone Number</label>
+                  <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 mb-2 px-2">Phone Number</label>
                   <div className="relative group">
-                    <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600 group-focus-within:text-orange-500 transition-colors" />
+                    <Phone className="absolute left-5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-zinc-600 group-focus-within:text-orange-500 transition-colors" />
                     <input
                       type="tel" name="phone" value={formData.phone} onChange={handleChange}
                       placeholder="+971 50 123 4567" required autoComplete="tel"
-                      className="w-full rounded-2xl bg-zinc-950/50 border border-zinc-800 pl-11 pr-4 py-4 text-sm text-white placeholder-zinc-700 outline-none focus:border-orange-500/50 focus:bg-zinc-950 focus:ring-4 focus:ring-orange-500/5 transition-all font-medium"
+                      className="w-full rounded-2xl bg-zinc-950/50 border border-zinc-800 pl-14 pr-5 py-4 text-white placeholder-zinc-700 outline-none focus:border-orange-500/50 focus:bg-zinc-950 focus:ring-8 focus:ring-orange-500/5 transition-all font-medium"
                     />
                   </div>
                 </div>
               </div>
 
               <div>
-                <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 mb-2 px-1">Email Address</label>
+                <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 mb-2 px-2">Email Address</label>
                 <div className="relative group">
-                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600 group-focus-within:text-orange-500 transition-colors" />
+                  <Mail className="absolute left-5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-zinc-600 group-focus-within:text-orange-500 transition-colors" />
                   <input
                     type="email" name="email" value={formData.email} onChange={handleChange}
                     placeholder="you@example.com" required autoComplete="email"
-                    className="w-full rounded-2xl bg-zinc-950/50 border border-zinc-800 pl-11 pr-4 py-4 text-sm text-white placeholder-zinc-700 outline-none focus:border-orange-500/50 focus:bg-zinc-950 focus:ring-4 focus:ring-orange-500/5 transition-all font-medium"
+                    className="w-full rounded-2xl bg-zinc-950/50 border border-zinc-800 pl-14 pr-5 py-4 text-white placeholder-zinc-700 outline-none focus:border-orange-500/50 focus:bg-zinc-950 focus:ring-8 focus:ring-orange-500/5 transition-all font-medium"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 mb-2 px-1">Password</label>
+                <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 mb-2 px-2">Password</label>
                 <div className="relative group">
-                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600 group-focus-within:text-orange-500 transition-colors" />
+                  <Lock className="absolute left-5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-zinc-600 group-focus-within:text-orange-500 transition-colors" />
                   <input
                     type={showPw ? 'text' : 'password'} name="password" value={formData.password} onChange={handleChange}
                     placeholder="Min. 8 characters" required autoComplete="new-password"
-                    className="w-full rounded-2xl bg-zinc-950/50 border border-zinc-800 pl-11 pr-12 py-4 text-sm text-white placeholder-zinc-700 outline-none focus:border-orange-500/50 focus:bg-zinc-950 focus:ring-4 focus:ring-orange-500/5 transition-all font-medium"
+                    className="w-full rounded-2xl bg-zinc-950/50 border border-zinc-800 pl-14 pr-14 py-4 text-white placeholder-zinc-700 outline-none focus:border-orange-500/50 focus:bg-zinc-950 focus:ring-8 focus:ring-orange-500/5 transition-all font-medium"
                   />
-                  <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-600 hover:text-white transition-colors">
-                    {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-5 top-1/2 -translate-y-1/2 text-zinc-600 hover:text-white transition-colors">
+                    {showPw ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
                 </div>
               </div>
 
               <button type="submit" disabled={loading || authLoading}
-                className="w-full flex items-center justify-center gap-3 rounded-2xl bg-orange-500 hover:bg-orange-600 active:scale-95 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-white transition-all disabled:opacity-50 mt-10 shadow-2xl shadow-orange-500/20"
+                className="w-full flex items-center justify-center gap-3 rounded-2xl bg-orange-500 hover:bg-orange-600 active:scale-95 py-5 text-[11px] font-black uppercase tracking-[0.3em] text-white transition-all disabled:opacity-50 mt-10 shadow-[0_20px_40px_-12px_rgba(249,115,22,0.4)]"
               >
-                {loading ? <><Loader3 className="w-4 h-4 animate-spin" />Processing...</> : <>Build Your Protocol <ArrowRight className="w-4 h-4" /></>}
+                {loading ? <><Loader3 className="w-5 h-5 animate-spin" />Building Protocol...</> : <>Build Your Transformation <ArrowRight className="w-5 h-5" /></>}
               </button>
             </form>
 
-            <div className="text-center mt-10">
+            <div className="text-center mt-12">
               <Link href="/" className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-600 hover:text-white transition-colors flex items-center justify-center gap-2">
-                <span className="w-4 h-px bg-zinc-800" /> Return to launchpad <span className="w-4 h-px bg-zinc-800" />
+                <span className="w-6 h-px bg-zinc-800" /> Return to launchpad <span className="w-6 h-px bg-zinc-800" />
               </Link>
             </div>
           </div>
         </div>
-      </section>
-
+      </div>
     </div>
   );
 }
@@ -270,3 +229,4 @@ function Loader3(props: any) {
     </svg>
   );
 }
+
