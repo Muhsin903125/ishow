@@ -6,7 +6,7 @@ import CustomerSidebar from "./CustomerSidebar";
 import TrainerSidebar from "./TrainerSidebar";
 import AdminSidebar from "./AdminSidebar";
 import { NotificationBell } from "./NotificationBell";
-import { usePathname } from "next/navigation";
+import { useRouter } from "next/router";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -25,6 +25,7 @@ interface Props {
 
 // Derive a human-readable page title from the route
 function getPageTitle(pathname: string): string {
+  if (!pathname) return "Dashboard";
   const segments = pathname.split("/").filter(Boolean);
   const last = segments[segments.length - 1];
   if (!last) return "Dashboard";
@@ -42,7 +43,8 @@ const roleConfig = {
 };
 
 export default function DashboardLayout({ children, role }: Props) {
-  const pathname = usePathname();
+  const router = useRouter();
+  const pathname = router.pathname;
   const pageTitle = getPageTitle(pathname);
   const { dot } = roleConfig[role];
 
@@ -54,24 +56,24 @@ export default function DashboardLayout({ children, role }: Props) {
 
   return (
     <SidebarProvider>
-      <div className="flex h-screen bg-zinc-950 overflow-hidden w-full">
+      <div className="flex h-screen bg-background overflow-hidden w-full">
         <SidebarComponent />
         
-        <SidebarInset className="bg-zinc-950 flex flex-col overflow-hidden border-l border-zinc-900">
-          <header className="flex h-14 shrink-0 items-center justify-between gap-2 px-4 border-b border-zinc-900 bg-zinc-950/50 backdrop-blur-md sticky top-0 z-30">
+        <SidebarInset className="bg-background flex flex-col overflow-hidden border-l border-border">
+          <header className="flex h-12 shrink-0 items-center justify-between gap-2 px-4 border-b border-border bg-background/95 backdrop-blur-sm sticky top-0 z-30">
             <div className="flex items-center gap-2">
-              <SidebarTrigger className="-ml-1 text-zinc-400 hover:text-white" />
-              <Separator orientation="vertical" className="mr-2 h-4 bg-zinc-800" />
+              <SidebarTrigger className="-ml-1 text-muted-foreground hover:text-foreground" />
+              <Separator orientation="vertical" className="mr-2 h-4 bg-border" />
               <Breadcrumb>
                 <BreadcrumbList>
                   <BreadcrumbItem className="hidden md:block">
-                    <BreadcrumbLink href="#" className="text-zinc-500 hover:text-zinc-300 text-[10px] font-black uppercase tracking-widest italic">
-                      {role}
+                    <BreadcrumbLink href="#" className="text-muted-foreground hover:text-foreground text-xs font-medium">
+                      {role.charAt(0).toUpperCase() + role.slice(1)}
                     </BreadcrumbLink>
                   </BreadcrumbItem>
-                  <BreadcrumbSeparator className="hidden md:block text-zinc-800" />
+                  <BreadcrumbSeparator className="hidden md:block text-muted-foreground/50" />
                   <BreadcrumbItem>
-                    <BreadcrumbPage className="text-white text-[10px] font-black uppercase tracking-widest italic">
+                    <BreadcrumbPage className="text-foreground text-xs font-semibold">
                       {pageTitle}
                     </BreadcrumbPage>
                   </BreadcrumbItem>
@@ -79,16 +81,16 @@ export default function DashboardLayout({ children, role }: Props) {
               </Breadcrumb>
             </div>
 
-            <div className="flex items-center gap-4">
-              <div className="hidden sm:flex items-center gap-2 px-3 py-1 bg-zinc-900/50 rounded-lg border border-zinc-800">
+            <div className="flex items-center gap-3">
+              <div className="hidden sm:flex items-center gap-2 px-2.5 py-1 bg-muted/50 rounded-md border border-border">
                 <span className={`w-1.5 h-1.5 rounded-full ${dot} animate-pulse`} />
-                <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">{role} active</span>
+                <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-tight">{role} active</span>
               </div>
               <NotificationBell />
             </div>
           </header>
 
-          <main className="flex-1 overflow-y-auto scrollbar-hide">
+          <main className="flex-1 overflow-y-auto scrollbar-hide bg-muted/20">
             {children}
           </main>
         </SidebarInset>

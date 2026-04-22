@@ -1,27 +1,49 @@
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
+import { createServerClient, type CookieOptions } from "@supabase/ssr";
+import { type GetServerSidePropsContext } from "next";
 
-export async function createClient() {
-  const cookieStore = await cookies();
-
+export function createClient(context: GetServerSidePropsContext) {
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
         getAll() {
-          return cookieStore.getAll();
+          return context.req.headers.cookie
+            ? parseCookie(context.req.headers.cookie)
+            : [];
         },
         setAll(cookiesToSet) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            );
-          } catch {
-            // Server Component — cannot set cookies from here
-          }
+          context.res.setHeader(
+            "Set-Cookie",
+            cookiesToSet.map(({ name, value, options }) =>
+              serializeCookie(name, value, options)
+            )
+          );
         },
       },
     }
   );
+}
+
+function parseCookie(str: string) {
+  return str
+    .split(";")
+    .map((value) => value.split("="))
+    .map(([name, value]) => ({
+      name: name.trim(),
+      value: decodeURIComponent(value ?? ""),
+    }));
+}
+
+function serializeCookie(name: string, value: string, options: CookieOptions) {
+  let cookie = `${name}=${encodeURIComponent(value)}`;
+
+  if (options.maxAge) cookie += `; Max-Age=${options.maxAge}`;
+  if (options.domain) cookie += `; Domain=${options.domain}`;
+  if (options.path) cookie += `; Path=${options.path}`;
+  if (options.httpOnly) cookie += "; HttpOnly";
+  if (options.secure) cookie += "; Secure";
+  if (options.sameSite) cookie += `; SameSite=${options.sameSite}`;
+
+  return cookie;
 }

@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    "scratch/**",
+    "src/app_old/**",
+    "src/migrate_*.js",
   ]),
 ]);
 

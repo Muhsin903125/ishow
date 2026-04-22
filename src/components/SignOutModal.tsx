@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { LogOut, X } from "lucide-react";
+import { LogOut } from "lucide-react";
 
 interface Props {
   open: boolean;
@@ -48,7 +48,7 @@ export function SignOutModal({ open, onConfirm, onCancel, loading }: Props) {
 
               <h2 className="text-lg font-bold text-white mb-1">Sign out?</h2>
               <p className="text-sm text-zinc-400">
-                You'll be redirected to the homepage. You can always sign back in.
+                You&apos;ll be redirected to the homepage. You can always sign back in.
               </p>
 
               <div className="flex gap-3 mt-6">

@@ -1,28 +1,78 @@
 "use client";
 
-import { motion, useScroll, useTransform } from "framer-motion";
+import { motion, useScroll, useTransform, type Variants } from "framer-motion";
 import { useRef } from "react";
 import Link from "next/link";
 import { 
   Instagram, ArrowRight, Target, Dumbbell, TrendingUp, 
-  Calendar, Utensils, MessageSquare, Play, Star, MapPin, CheckCheck
+  Calendar, Utensils, MessageSquare, Play, Star, MapPin, CheckCheck,
+  Quote
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import AutoPlayVideo from "@/components/AutoPlayVideo";
 import SmoothScroll from "@/components/SmoothScroll";
 
-interface Testimonial {
+export interface LandingClientTestimonial {
   id: string;
   name: string;
   location: string | null;
   result_label: string | null;
   quote: string;
   rating: number;
+  role?: string | null;
+}
+
+export interface LandingMethodStep {
+  title: string;
+  description: string;
+}
+
+type LandingCapabilityIcon = "Target" | "TrendingUp" | "Calendar" | "Utensils";
+
+export interface LandingCapability {
+  title: string;
+  description: string;
+  icon?: LandingCapabilityIcon;
+  image?: string;
+}
+
+export interface LandingService {
+  title: string;
+  description: string;
+  image?: string;
+}
+
+export interface LandingClientConfig {
+  hero?: {
+    title?: string;
+    subtitle?: string;
+    cta_primary?: string;
+    cta_secondary?: string;
+  };
+  methodology?: {
+    title?: string;
+    steps?: LandingMethodStep[];
+  };
+  coach?: {
+    name?: string;
+    quote?: string;
+    experience?: string;
+    specialty?: string;
+  };
+  capabilities?: {
+    title?: string;
+    items?: LandingCapability[];
+  };
+  services?: {
+    items?: LandingService[];
+  };
+  testimonials_title?: string;
+  testimonials?: LandingClientTestimonial[];
 }
 
 interface LandingClientProps {
-  testimonials: Testimonial[];
-  config?: any;
+  testimonials: LandingClientTestimonial[];
+  config?: LandingClientConfig | null;
   fonts: {
     dm: string;
     barlow: string;
@@ -30,7 +80,7 @@ interface LandingClientProps {
 }
 
 export default function LandingClient({ testimonials, config, fonts }: LandingClientProps) {
-  const containerRef = useRef(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
   
   // Hero values
   const heroTitle = config?.hero?.title || "The System For True Momentum.";
@@ -52,6 +102,22 @@ export default function LandingClient({ testimonials, config, fonts }: LandingCl
   const coachExperience = config?.coach?.experience || "10+ Years";
   const coachSpecialty = config?.coach?.specialty || "Elite Transformation";
 
+  // Capabilities values
+  const capabilitiesTitle = config?.capabilities?.title || "A Unified Dashboard For Total Control";
+  const capabilitiesItems = config?.capabilities?.items || [
+    { title: "1-on-1 Plan Generation", description: "No templates. Every single training plan is built exclusively for your baseline and fitness goals.", icon: "Target", image: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=1200&q=80" },
+    { title: "Granular Analytics", description: "Track every rep and milestone. View progression with dynamic charting.", icon: "TrendingUp", image: "https://images.unsplash.com/photo-1521804906057-1df8fdb718b7?auto=format&fit=crop&w=800&q=80" },
+    { title: "Session Scheduling", description: "Never miss a workout. We log daily scheduled sessions to your calendar.", icon: "Calendar", image: "https://images.unsplash.com/photo-1507398941214-572c25f4b1dc?auto=format&fit=crop&w=800&q=80" },
+    { title: "Nutrition & Fueling", description: "Receive macro breakdowns and daily caloric targets designed for your objective.", icon: "Utensils", image: "https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?auto=format&fit=crop&w=1200&q=80" }
+  ];
+
+  // Services values
+  const servicesItems = config?.services?.items || [
+    { title: "Complete Transformation", image: "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?auto=format&fit=crop&w=800&q=80", description: "Full protocol encompassing precision training, macros, and extreme accountability." },
+    { title: "Elite Athleticism", image: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=800&q=80", description: "Focus on explosive power, reactive agility, and raw strength for competitive athletes." },
+    { title: "Nutrition Only Hub", image: "https://images.unsplash.com/photo-1490645935967-10de6ba17061?auto=format&fit=crop&w=800&q=80", description: "A strictly nutritional track for individuals who already have their training dialed in." }
+  ];
+
   // Hero Parallax
   const { scrollYProgress } = useScroll({
     target: containerRef,
@@ -63,7 +129,7 @@ export default function LandingClient({ testimonials, config, fonts }: LandingCl
   const heroOpacity = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
 
   // Gallery Parallax Settings
-  const galleryRef = useRef(null);
+  const galleryRef = useRef<HTMLDivElement | null>(null);
   const { scrollYProgress: galleryProgress } = useScroll({
     target: galleryRef,
     offset: ["start end", "end start"]
@@ -72,13 +138,15 @@ export default function LandingClient({ testimonials, config, fonts }: LandingCl
   const slowY = useTransform(galleryProgress, [0, 1], ["0%", "15%"]);
   const superSlowY = useTransform(galleryProgress, [0, 1], ["0%", "8%"]);
 
+  const easeOut: [number, number, number, number] = [0.22, 1, 0.36, 1];
+
   const fadeInScale = {
     initial: { opacity: 0, scale: 0.95, y: 30 },
     whileInView: { 
       opacity: 1, 
       scale: 1, 
       y: 0,
-      transition: { duration: 0.8, ease: [0.22, 1, 0.36, 1] as any }
+      transition: { duration: 0.8, ease: easeOut }
     },
     viewport: { once: true, margin: "-100px" }
   };
@@ -93,12 +161,12 @@ export default function LandingClient({ testimonials, config, fonts }: LandingCl
     viewport: { once: true, margin: "-100px" }
   };
 
-  const itemReveal = {
+  const itemReveal: Variants = {
     initial: { opacity: 0, y: 20 },
     whileInView: { 
       opacity: 1, 
       y: 0,
-      transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] as any }
+      transition: { duration: 0.6, ease: easeOut }
     }
   };
 
@@ -227,7 +295,7 @@ export default function LandingClient({ testimonials, config, fonts }: LandingCl
                className="flex-1 w-full max-w-lg lg:max-w-none flex flex-col z-20"
             >
               <div className="border border-zinc-800/60 bg-zinc-950/40 backdrop-blur-md rounded-sm overflow-hidden divide-y divide-zinc-800/60">
-                {methodSteps.map((stage: any, i: number) => (
+                {methodSteps.map((stage, i: number) => (
                   <motion.div 
                     key={i}
                     variants={itemReveal}
@@ -324,7 +392,11 @@ export default function LandingClient({ testimonials, config, fonts }: LandingCl
             >
               <h2 className="text-xs font-bold uppercase tracking-widest text-orange-500 mb-4 block">Our Capabilities</h2>
               <h3 className="font-[family-name:var(--font-barlow)] font-extrabold uppercase leading-none text-white" style={{ fontSize: "clamp(40px, 6vw, 70px)" }}>
-                A Unified Dashboard <br/> For Total Control
+                {capabilitiesTitle.split('<br/>').map((line: string, i: number) => (
+                  <span key={i}>
+                    {line} {i === 0 && <br/>}
+                  </span>
+                ))}
               </h3>
             </motion.div>
 
@@ -335,69 +407,27 @@ export default function LandingClient({ testimonials, config, fonts }: LandingCl
               viewport={{ once: true }}
               className="grid grid-cols-1 md:grid-cols-3 gap-6"
             >
-              {/* Feature 1 */}
-              <motion.div 
-                variants={itemReveal}
-                className="md:col-span-2 group relative bg-zinc-900 rounded-3xl overflow-hidden border border-zinc-800 hover:border-zinc-700 transition-colors min-h-[400px]"
-              >
-                <div className="absolute inset-0 bg-gradient-to-r from-zinc-950/90 via-zinc-950/60 to-zinc-950/20 z-10" />
-                <img src="https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=1200&q=80" alt="Training plan" className="absolute inset-0 w-full h-full object-cover opacity-40 group-hover:scale-105 transition-transform duration-700 grayscale group-hover:grayscale-0" />
-                <div className="relative z-20 p-8 md:p-10 h-full flex flex-col justify-end">
-                  <div className="w-12 h-12 rounded-2xl bg-orange-500/10 flex items-center justify-center mb-6 border border-orange-500/20">
-                    <Target className="w-6 h-6 text-orange-500" />
+              {capabilitiesItems.map((cap, idx: number) => (
+                <motion.div 
+                  key={idx}
+                  variants={itemReveal}
+                  className={`${idx === 0 || idx === 3 ? "md:col-span-2" : ""} group relative bg-zinc-900 rounded-3xl overflow-hidden border border-zinc-800 hover:border-zinc-700 transition-colors min-h-[400px]`}
+                >
+                  <div className={`absolute inset-0 bg-gradient-to-${idx === 0 ? "r" : idx === 3 ? "l" : "t"} from-zinc-950/90 via-zinc-950/60 to-zinc-950/20 z-10`} />
+                  <img src={cap.image || "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=1200&q=80"} alt={cap.title} className="absolute inset-0 w-full h-full object-cover opacity-40 group-hover:scale-105 transition-transform duration-700 grayscale group-hover:grayscale-0" />
+                  <div className={`relative z-20 p-8 md:p-10 h-full flex flex-col justify-end ${idx === 3 ? "items-end text-right" : ""}`}>
+                    <div className="w-12 h-12 rounded-2xl bg-orange-500/10 flex items-center justify-center mb-6 border border-orange-500/20">
+                      {cap.icon === "Target" && <Target className="w-6 h-6 text-orange-500" />}
+                      {cap.icon === "TrendingUp" && <TrendingUp className="w-6 h-6 text-orange-500" />}
+                      {cap.icon === "Calendar" && <Calendar className="w-6 h-6 text-orange-500" />}
+                      {cap.icon === "Utensils" && <Utensils className="w-6 h-6 text-orange-500" />}
+                      {!["Target", "TrendingUp", "Calendar", "Utensils"].includes(cap.icon ?? "") && <CheckCheck className="w-6 h-6 text-orange-500" />}
+                    </div>
+                    <h4 className="font-[family-name:var(--font-barlow)] font-extrabold uppercase text-3xl md:text-4xl text-white mb-3 tracking-tight">{cap.title}</h4>
+                    <p className="text-zinc-400 font-medium max-w-sm">{cap.description}</p>
                   </div>
-                  <h4 className="font-[family-name:var(--font-barlow)] font-extrabold uppercase text-3xl md:text-4xl text-white mb-3 tracking-tight">1-on-1 Plan Generation</h4>
-                  <p className="text-zinc-400 font-medium max-w-sm">No templates. Every single training plan is built exclusively for your baseline and fitness goals.</p>
-                </div>
-              </motion.div>
-
-              {/* Feature 2 */}
-              <motion.div 
-                 variants={itemReveal}
-                 className="group relative bg-zinc-900 rounded-3xl overflow-hidden border border-zinc-800 hover:border-zinc-700 transition-colors flex flex-col min-h-[400px]"
-              >
-                <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/90 via-zinc-950/60 to-zinc-950/20 z-10" />
-                <img src="https://images.unsplash.com/photo-1521804906057-1df8fdb718b7?auto=format&fit=crop&w=800&q=80" alt="Analytics" className="absolute inset-0 w-full h-full object-cover opacity-40 group-hover:scale-105 transition-transform duration-700 grayscale group-hover:grayscale-0" />
-                <div className="relative z-20 p-8 md:p-10 h-full flex flex-col justify-end">
-                  <div className="w-12 h-12 rounded-2xl bg-orange-500/10 flex items-center justify-center mb-6 border border-orange-500/20">
-                    <TrendingUp className="w-6 h-6 text-orange-500" />
-                  </div>
-                  <h4 className="font-[family-name:var(--font-barlow)] font-extrabold uppercase text-2xl text-white mb-2 tracking-tight">Granular Analytics</h4>
-                  <p className="text-zinc-400 font-medium text-sm leading-relaxed">Track every rep and milestone. View progression with dynamic charting.</p>
-                </div>
-              </motion.div>
-
-              {/* Feature 3 */}
-              <motion.div 
-                 variants={itemReveal}
-                 className="group relative bg-zinc-900 rounded-3xl overflow-hidden border border-zinc-800 hover:border-zinc-700 transition-colors flex flex-col min-h-[400px]"
-              >
-                <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/90 via-zinc-950/60 to-zinc-950/20 z-10" />
-                <img src="https://images.unsplash.com/photo-1507398941214-572c25f4b1dc?auto=format&fit=crop&w=800&q=80" alt="Scheduling" className="absolute inset-0 w-full h-full object-cover opacity-40 group-hover:scale-105 transition-transform duration-700 grayscale group-hover:grayscale-0" />
-                <div className="relative z-20 p-8 md:p-10 h-full flex flex-col justify-end">
-                  <div className="w-12 h-12 rounded-2xl bg-orange-500/10 flex items-center justify-center mb-6 border border-orange-500/20">
-                    <Calendar className="w-6 h-6 text-orange-500" />
-                  </div>
-                  <h4 className="font-[family-name:var(--font-barlow)] font-extrabold uppercase text-2xl text-white mb-2 tracking-tight">Session Scheduling</h4>
-                  <p className="text-zinc-400 font-medium text-sm leading-relaxed">Never miss a workout. We log daily scheduled sessions to your calendar.</p>
-                </div>
-              </motion.div>
-
-              {/* Feature 4 */}
-              <motion.div 
-                 variants={itemReveal}
-                 className="md:col-span-2 group relative bg-zinc-900 rounded-3xl overflow-hidden border border-zinc-800 hover:border-zinc-700 transition-colors min-h-[400px]"
-              >
-                <div className="absolute inset-0 bg-gradient-to-l from-zinc-950/90 via-zinc-950/60 to-zinc-950/20 z-10" />
-                <img src="https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?auto=format&fit=crop&w=1200&q=80" alt="Nutrition" className="absolute inset-0 w-full h-full object-cover opacity-40 group-hover:scale-105 transition-transform duration-700 grayscale group-hover:grayscale-0" />
-                <div className="relative z-20 p-8 md:p-10 h-full flex flex-col justify-end items-end text-right">
-                  <div className="w-12 h-12 rounded-2xl bg-orange-500/10 flex items-center justify-center mb-6 border border-orange-500/20">
-                    <Utensils className="w-6 h-6 text-orange-500" />
-                  </div>
-                  <h4 className="font-[family-name:var(--font-barlow)] font-extrabold uppercase text-3xl md:text-4xl text-white mb-3 tracking-tight">Nutrition & Fueling</h4>
-                  <p className="text-zinc-400 font-medium max-w-sm">Receive macro breakdowns and daily caloric targets designed for your objective.</p>
-                </div>
-              </motion.div>
+                </motion.div>
+              ))}
             </motion.div>
           </div>
         </section>
@@ -429,23 +459,19 @@ export default function LandingClient({ testimonials, config, fonts }: LandingCl
                viewport={{ once: true }}
                className="grid grid-cols-1 md:grid-cols-3 gap-8"
             >
-              {[
-                { title: "Complete Transformation", img: "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?auto=format&fit=crop&w=800&q=80", desc: "Full protocol encompassing precision training, macros, and extreme accountability." },
-                { title: "Elite Athleticism", img: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=800&q=80", desc: "Focus on explosive power, reactive agility, and raw strength for competitive athletes." },
-                { title: "Nutrition Only Hub", img: "https://images.unsplash.com/photo-1490645935967-10de6ba17061?auto=format&fit=crop&w=800&q=80", desc: "A strictly nutritional track for individuals who already have their training dialed in." }
-              ].map((srv, idx) => (
+              {servicesItems.map((srv, idx: number) => (
                 <motion.div 
                   key={idx} 
                   variants={itemReveal}
                   className="group relative bg-zinc-900 rounded-[2rem] overflow-hidden shadow-2xl flex flex-col h-full border border-zinc-800"
                 >
                   <div className="aspect-[4/3] relative overflow-hidden">
-                     <img src={srv.img} alt={srv.title} className="w-full h-full object-cover opacity-60 grayscale group-hover:grayscale-0 group-hover:scale-110 transition-all duration-700" />
+                     <img src={srv.image || "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?auto=format&fit=crop&w=800&q=80"} alt={srv.title} className="w-full h-full object-cover opacity-60 grayscale group-hover:grayscale-0 group-hover:scale-110 transition-all duration-700" />
                      <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/20 to-transparent" />
                   </div>
                   <div className="relative -mt-10 p-8 flex flex-col flex-grow bg-zinc-950/90 backdrop-blur-xl rounded-t-[2rem] border-t border-zinc-800 z-20">
                     <h4 className="font-[family-name:var(--font-barlow)] font-extrabold uppercase text-3xl text-white mb-3 leading-[0.9]">{srv.title}</h4>
-                    <p className="text-zinc-400 font-medium text-sm leading-relaxed mb-8 flex-grow">{srv.desc}</p>
+                    <p className="text-zinc-400 font-medium text-sm leading-relaxed mb-8 flex-grow">{srv.description}</p>
                     <Link href="/register" className="mt-auto inline-flex items-center justify-between w-full text-zinc-300 font-bold hover:text-orange-500 transition-colors uppercase tracking-widest text-xs group-hover:text-orange-500">
                       Learn More <ArrowRight className="w-4 h-4 transform group-hover:translate-x-1 transition-transform" />
                     </Link>
@@ -632,12 +658,12 @@ export default function LandingClient({ testimonials, config, fonts }: LandingCl
         </section>
 
         {/* 9. TESTIMONIALS */}
-        {testimonials && testimonials.length > 0 && (
+        {((config?.testimonials && config.testimonials.length > 0) || (testimonials && testimonials.length > 0)) && (
           <section className="py-24 bg-[#0D0D0F] border-t border-zinc-900">
             <div className="max-w-7xl mx-auto px-6 lg:px-10">
               <motion.div {...fadeInScale} className="text-center mb-16 max-w-3xl mx-auto">
                 <h2 className="font-[family-name:var(--font-barlow)] font-extrabold uppercase leading-tight text-white mb-4" style={{ fontSize: "clamp(32px, 4vw, 54px)" }}>
-                  Don&apos;t Just Take Our Word For It
+                  {config?.testimonials_title || "Don't Just Take Our Word For It"}
                 </h2>
               </motion.div>
 
@@ -647,25 +673,25 @@ export default function LandingClient({ testimonials, config, fonts }: LandingCl
                  whileInView="whileInView"
                  className="grid grid-cols-1 md:grid-cols-3 gap-8"
               >
-                {testimonials.map((test, i) => (
+                {(config?.testimonials || testimonials).map((test, i: number) => (
                   <motion.div 
-                    key={test.id} 
+                    key={test.id || i} 
                     variants={itemReveal}
                     className="bg-zinc-900/50 rounded-3xl p-8 border border-zinc-800 shadow-xl relative"
                   >
-                    <MessageSquare className="absolute top-8 right-8 w-12 h-12 text-zinc-800 opacity-50" />
+                    <Quote className="absolute top-8 right-8 w-12 h-12 text-zinc-800 opacity-30" />
                     <div className="flex items-center gap-1 mb-6">
-                      {[...Array(test.rating)].map((_, index) => (
-                        <Star key={index} className="w-5 h-5 fill-orange-500 text-orange-500" />
+                      {[...Array(test.rating || 5)].map((_, index) => (
+                        <Star key={index} className="w-4 h-4 fill-orange-500 text-orange-500" />
                       ))}
                     </div>
-                    <p className="text-zinc-300 font-medium italic leading-relaxed mb-8 relative z-10">
+                    <p className="text-zinc-300 font-medium italic leading-relaxed mb-8 relative z-10 text-sm">
                       &quot;{test.quote}&quot;
                     </p>
                     <div>
-                      <p className="font-bold text-white">{test.name}</p>
-                      <p className="text-xs text-orange-500 font-bold uppercase tracking-widest mt-1">
-                        {test.location} | {test.result_label}
+                      <p className="font-bold text-white text-sm">{test.name}</p>
+                      <p className="text-[10px] text-orange-500 font-black uppercase tracking-widest mt-1">
+                        {test.location || test.role} {test.result_label ? `| ${test.result_label}` : ""}
                       </p>
                     </div>
                   </motion.div>

@@ -2,14 +2,14 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/router";
 import { useAuth } from "@/contexts/AuthContext";
 import { Menu, X, User, LogOut, LayoutDashboard, Flame, ChevronRight } from "lucide-react";
 
 export default function Navbar() {
   const { user, logout } = useAuth();
-  const pathname = usePathname();
   const router = useRouter();
+  const pathname = router.pathname;
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 

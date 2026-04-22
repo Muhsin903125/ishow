@@ -41,6 +41,8 @@ const AuthContext = createContext<AuthContextType>({
   updatePassword: async () => ({ error: null }),
 });
 
+const DEMO_STORAGE_KEY = 'ishow_demo_auth';
+
 async function fetchProfile(supabaseUser: User): Promise<AuthUser | null> {
   const supabase = createClient();
   const { data, error } = await supabase
@@ -76,8 +78,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         setSession(session);
         if (session?.user) {
+          localStorage.removeItem(DEMO_STORAGE_KEY);
           const profile = await fetchProfile(session.user);
           if (mounted) setUser(profile);
+        } else {
+          const savedDemoUser = localStorage.getItem(DEMO_STORAGE_KEY);
+          if (savedDemoUser) {
+            try {
+              setUser(JSON.parse(savedDemoUser) as AuthUser);
+            } catch {
+              localStorage.removeItem(DEMO_STORAGE_KEY);
+            }
+          }
         }
       } catch (err) {
         console.error("Auth init error:", err);
@@ -95,9 +107,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         
         setSession(session);
         if (event === 'SIGNED_OUT') {
+          localStorage.removeItem(DEMO_STORAGE_KEY);
           setUser(null);
           setLoading(false);
         } else if (session?.user) {
+          localStorage.removeItem(DEMO_STORAGE_KEY);
           // If we have a session but no user yet, or it's a new sign in
           setLoading(true);
           const profile = await fetchProfile(session.user);
@@ -119,6 +133,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const login = async (email: string, password: string) => {
+    // Demo Bypass Logic
+    const demoUsers: Record<string, { id: string; role: 'admin' | 'trainer' | 'customer'; name: string }> = {
+      'admin@ishow.ae': { id: '00000000-aaaa-aaaa-aaaa-000000000000', role: 'admin', name: 'Admin' },
+      'trainer@ishow.ae': { id: '00000000-bbbb-bbbb-bbbb-000000000000', role: 'trainer', name: 'Trainer' },
+      'client@ishow.ae': { id: '00000000-cccc-cccc-cccc-000000000000', role: 'customer', name: 'Client' },
+    };
+
+    if (demoUsers[email] && password === 'ishow2024') {
+      console.log("Demo login detected for:", email);
+      const demoUser: AuthUser = {
+        id: demoUsers[email].id,
+        name: demoUsers[email].name,
+        email: email,
+        role: demoUsers[email].role,
+      };
+      localStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify(demoUser));
+      setSession(null);
+      setUser(demoUser);
+      setLoading(false);
+      return { error: null };
+    }
+
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     return { error: error?.message ?? null };
   };
@@ -139,6 +175,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
+      localStorage.removeItem(DEMO_STORAGE_KEY);
       setUser(null);
       setSession(null);
     }
@@ -164,6 +201,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     if (error) return { error: error.message };
+    localStorage.removeItem(DEMO_STORAGE_KEY);
     return { error: null, needsConfirmation: true };
   };
 
