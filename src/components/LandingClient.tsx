@@ -22,15 +22,36 @@ interface Testimonial {
 
 interface LandingClientProps {
   testimonials: Testimonial[];
+  config?: any;
   fonts: {
     dm: string;
     barlow: string;
   };
 }
 
-export default function LandingClient({ testimonials, fonts }: LandingClientProps) {
+export default function LandingClient({ testimonials, config, fonts }: LandingClientProps) {
   const containerRef = useRef(null);
   
+  // Hero values
+  const heroTitle = config?.hero?.title || "The System For True Momentum.";
+  const heroSubtitle = config?.hero?.subtitle || "Real coaching. Real results. Based in Dubai, working with clients across the UAE — online and in person.";
+  const ctaPrimary = config?.hero?.cta_primary || "Launch Your Plan";
+  const ctaSecondary = config?.hero?.cta_secondary || "See Inside";
+
+  // Methodology values
+  const methodTitle = config?.methodology?.title || "Start With A Clear Plan. Not Guesswork.";
+  const methodSteps = config?.methodology?.steps || [
+    { title: "Assessment", description: "Start with your real baseline before the plan begins." },
+    { title: "Plan Mapped", description: "Trainer-led programming shaped around your lifestyle." },
+    { title: "Coach Follow-Up", description: "Clear weekly direction and direct accountability." }
+  ];
+
+  // Coach values
+  const coachName = config?.coach?.name || "Mohammed Sufiyan";
+  const coachQuote = config?.coach?.quote || "I started iShow because I was tired of seeing people waste months on plans that weren't built for them.";
+  const coachExperience = config?.coach?.experience || "10+ Years";
+  const coachSpecialty = config?.coach?.specialty || "Elite Transformation";
+
   // Hero Parallax
   const { scrollYProgress } = useScroll({
     target: containerRef,
@@ -124,10 +145,12 @@ export default function LandingClient({ testimonials, fonts }: LandingClientProp
                 className="font-[family-name:var(--font-barlow)] font-extrabold uppercase leading-[0.85] tracking-tight text-white mb-6" 
                 style={{ fontSize: "clamp(55px, 9vw, 130px)" }}
               >
-                The System For <br className="hidden md:block" />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-orange-400">
-                  True Momentum.
-                </span>
+                {heroTitle.split('<br/>').map((line: string, i: number) => (
+                  <span key={i}>
+                    {line}
+                    {i === 0 && <br className="hidden md:block" />}
+                  </span>
+                ))}
               </motion.h1>
               
               <motion.p 
@@ -136,7 +159,7 @@ export default function LandingClient({ testimonials, fonts }: LandingClientProp
                 transition={{ duration: 1, delay: 0.4 }}
                 className="text-zinc-400 text-lg md:text-xl leading-relaxed max-w-xl mb-10 font-medium"
               >
-                Real coaching. Real results. Based in Dubai, working with clients across the UAE — online and in person.
+                {heroSubtitle}
               </motion.p>
 
               <motion.div 
@@ -149,13 +172,13 @@ export default function LandingClient({ testimonials, fonts }: LandingClientProp
                   href="/register"
                   className="inline-flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-600 text-white font-bold px-8 py-5 rounded-xl transition-all shadow-xl shadow-orange-500/20 hover:-translate-y-1 text-sm uppercase tracking-wider w-full sm:w-auto"
                 >
-                  Launch Your Plan <ArrowRight className="w-4 h-4 ml-1" />
+                  {ctaPrimary} <ArrowRight className="w-4 h-4 ml-1" />
                 </Link>
                 <a
                   href="#how-it-works"
                   className="inline-flex items-center justify-center gap-2 bg-zinc-900 hover:bg-zinc-800 text-white border border-zinc-800 font-bold px-8 py-5 rounded-xl transition-all text-sm uppercase tracking-wider w-full sm:w-auto hover:bg-zinc-800/80"
                 >
-                  See Inside
+                  {ctaSecondary}
                 </a>
               </motion.div>
             </div>
@@ -187,14 +210,12 @@ export default function LandingClient({ testimonials, fonts }: LandingClientProp
               </p>
               
               <h2 className="font-[family-name:var(--font-barlow)] font-extrabold uppercase leading-[0.85] tracking-tight mb-6 flex flex-col" style={{ fontSize: "clamp(48px, 8vw, 100px)" }}>
-                <span className="text-white drop-shadow-lg">Start With</span>
-                <span className="text-white drop-shadow-lg mt-1">A Clear Plan.</span>
-                <span className="text-zinc-700/60 mt-1">Not Guesswork.</span>
+                {methodTitle.split('.').map((part: string, i: number) => (
+                  <span key={i} className={`drop-shadow-lg ${i === 2 ? "text-zinc-700/60 mt-1" : "text-white " + (i === 1 ? "mt-1" : "")}`}>
+                    {part}{part && "."}
+                  </span>
+                ))}
               </h2>
-              
-              <p className="text-zinc-400 text-base md:text-lg leading-relaxed max-w-md mb-10 font-medium">
-                Tell Mohammed your goal. He&apos;ll assess where you are and build a plan that fits your life — not a template.
-              </p>
             </motion.div>
 
             {/* Right Content - Stages overlay */}
@@ -206,20 +227,16 @@ export default function LandingClient({ testimonials, fonts }: LandingClientProp
                className="flex-1 w-full max-w-lg lg:max-w-none flex flex-col z-20"
             >
               <div className="border border-zinc-800/60 bg-zinc-950/40 backdrop-blur-md rounded-sm overflow-hidden divide-y divide-zinc-800/60">
-                {[
-                  { id: "01.", title: "Assessment", text: "Start with your real baseline before the plan begins." },
-                  { id: "02.", title: "Plan Mapped", text: "Trainer-led programming shaped around your lifestyle." },
-                  { id: "03.", title: "Coach Follow-Up", text: "Clear weekly direction and direct accountability." }
-                ].map((stage, i) => (
+                {methodSteps.map((stage: any, i: number) => (
                   <motion.div 
                     key={i}
                     variants={itemReveal}
                     className="flex items-start gap-5 p-6 md:p-8 hover:bg-zinc-900/40 transition-colors group"
                   >
-                    <span className="font-[family-name:var(--font-barlow)] font-black text-3xl text-zinc-700 group-hover:text-orange-500 transition-colors leading-none">{stage.id}</span>
+                    <span className="font-[family-name:var(--font-barlow)] font-black text-3xl text-zinc-700 group-hover:text-orange-500 transition-colors leading-none">0{i+1}.</span>
                     <div>
                       <h3 className="text-white font-black uppercase tracking-widest mb-2 text-sm">{stage.title}</h3>
-                      <p className="text-zinc-500 text-sm font-medium">{stage.text}</p>
+                      <p className="text-zinc-500 text-sm font-medium">{stage.description}</p>
                     </div>
                   </motion.div>
                 ))}
@@ -227,6 +244,76 @@ export default function LandingClient({ testimonials, fonts }: LandingClientProp
             </motion.div>
           </div>
         </section>
+
+        {/* ... existing sections ... */}
+
+        {/* 6. COACH SPOTLIGHT */}
+        <section id="coach" className="py-24 lg:py-32 bg-zinc-950 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-orange-600/10 rounded-full blur-[150px] pointer-events-none" />
+          <div className="max-w-7xl mx-auto px-6 lg:px-10 relative z-10">
+            <div className="flex flex-col lg:flex-row gap-16 items-center">
+              <motion.div 
+                {...fadeInScale}
+                className="w-full max-w-md lg:w-1/2 relative"
+              >
+                <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-transparent to-transparent z-10 opacity-60" />
+                <AutoPlayVideo 
+                  src="/landing/6390155-uhd_2160_3840_25fps.mp4"
+                  className="w-full aspect-[4/5] object-cover rounded-[3rem] border border-zinc-800 shadow-2xl grayscale hover:grayscale-0 transition-all duration-700"
+                />
+                <motion.div 
+                   whileHover={{ y: -10 }}
+                   className="absolute -bottom-8 -right-8 bg-zinc-900 border border-zinc-800 p-6 rounded-3xl shadow-xl z-20 hidden md:block group"
+                >
+                  <p className="text-orange-500 font-black text-4xl leading-none font-[family-name:var(--font-barlow)]">{coachExperience.split(' ')[0]}</p>
+                  <p className="text-zinc-400 font-bold uppercase tracking-widest text-xs mt-1">{coachExperience.split(' ').slice(1).join(' ')}</p>
+                </motion.div>
+              </motion.div>
+              
+              <div className="w-full lg:w-1/2">
+                <motion.div {...fadeInScale}>
+                  <h2 className="text-xs font-bold uppercase tracking-widest text-orange-500 mb-4 block">Meet Your Head Coach</h2>
+                  <h3 className="font-[family-name:var(--font-barlow)] font-extrabold uppercase leading-none text-white mb-8 block" style={{ fontSize: "clamp(48px, 6vw, 80px)" }}>
+                    {coachName.split(' ').map((n: string, i: number) => (
+                      <span key={i}>
+                        {n} {i === 0 && <br/>}
+                      </span>
+                    ))}
+                  </h3>
+                  <p className="text-zinc-400 text-lg leading-relaxed mb-8 font-medium italic">
+                    &quot;{coachQuote}&quot;
+                  </p>
+                </motion.div>
+                
+                <motion.div 
+                  variants={staggerContainer}
+                  initial="initial"
+                  whileInView="whileInView"
+                  className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-10"
+                >
+                  <motion.div variants={itemReveal} className="bg-zinc-900/50 p-6 rounded-2xl border border-zinc-800 hover:bg-zinc-900 transition-colors">
+                    <Dumbbell className="w-6 h-6 text-orange-500 mb-4" />
+                    <p className="font-bold text-white mb-1">Elite Conditioning</p>
+                    <p className="text-sm text-zinc-500">Raw strength and athletic conditioning.</p>
+                  </motion.div>
+                  <motion.div variants={itemReveal} className="bg-zinc-900/50 p-6 rounded-2xl border border-zinc-800 hover:bg-zinc-900 transition-colors">
+                    <TrendingUp className="w-6 h-6 text-orange-500 mb-4" />
+                    <p className="font-bold text-white mb-1">{coachSpecialty}</p>
+                    <p className="text-sm text-zinc-500">Every macro and milestone tracked mathematically.</p>
+                  </motion.div>
+                </motion.div>
+                
+                <motion.div {...fadeInScale}>
+                  <Link href="/register" className="inline-flex items-center gap-2 text-white font-bold px-8 py-5 rounded-xl bg-orange-500 hover:bg-orange-600 transition-all uppercase tracking-widest text-sm shadow-xl shadow-orange-500/20">
+                    Start Working Together
+                  </Link>
+                </motion.div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ... remaining sections ... */}
 
         {/* 3. CAPABILITIES GRID */}
         <section id="capabilities" className="py-24 lg:py-32 bg-zinc-950 relative z-10 border-t border-zinc-900">

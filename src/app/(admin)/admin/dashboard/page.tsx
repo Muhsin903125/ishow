@@ -16,18 +16,20 @@ import {
   Calendar, 
   CreditCard, 
   ChevronRight, 
-  AlertCircle, 
   Clock, 
   Database, 
   MessageSquare,
   Activity,
   Zap,
   Target,
-  ArrowRight,
-  TrendingUp,
-  Mail,
   CheckCircle,
+  Mail,
 } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
@@ -48,8 +50,6 @@ export default function AdminDashboardPage() {
     if (loading) return;
     
     if (!user) {
-      // If we have no profile but we're not loading, check if we even have a session
-      // This is handled better by checking the session property from useAuth
       router.replace("/login"); 
       return; 
     }
@@ -79,14 +79,14 @@ export default function AdminDashboardPage() {
   if (loading || !dataLoaded || !user) {
     return (
       <DashboardLayout role="admin">
-        <div className="p-6 lg:p-10 max-w-full space-y-8 animate-pulse">
-           <div className="h-40 bg-zinc-900 rounded-[2.5rem]" />
+        <div className="p-6 lg:p-10 space-y-8">
+           <Skeleton className="h-48 w-full rounded-3xl" />
            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              {[1,2,3,4].map(i => <div key={i} className="h-28 bg-zinc-900 rounded-[2rem]" />)}
+              {[1,2,3,4].map(i => <Skeleton key={i} className="h-32 rounded-2xl" />)}
            </div>
            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div className="h-80 bg-zinc-900 rounded-[2.5rem]" />
-              <div className="h-80 bg-zinc-900 rounded-[2.5rem]" />
+              <Skeleton className="h-80 rounded-3xl" />
+              <Skeleton className="h-80 rounded-3xl" />
            </div>
         </div>
       </DashboardLayout>
@@ -98,10 +98,6 @@ export default function AdminDashboardPage() {
   const pendingAssessments = assessments.filter((a) => a.status === "pending");
   const todaySessions = sessions.filter((s) => s.status === "scheduled" && s.scheduledDate === today);
   const overduePayments = payments.filter((p) => p.status === "overdue");
-  const upcomingSessions = sessions
-    .filter((s) => s.status === "scheduled" && s.scheduledDate >= today)
-    .sort((a, b) => (a.scheduledDate + a.scheduledTime).localeCompare(b.scheduledDate + b.scheduledTime))
-    .slice(0, 6);
 
   const stats = [
     { 
@@ -110,7 +106,6 @@ export default function AdminDashboardPage() {
       icon: UserCog, 
       color: "text-orange-500", 
       bg: "bg-orange-500/10",
-      delay: 0.1
     },
     { 
       label: "Operational Assets", 
@@ -118,7 +113,6 @@ export default function AdminDashboardPage() {
       icon: Users, 
       color: "text-blue-500", 
       bg: "bg-blue-500/10",
-      delay: 0.2
     },
     { 
       label: "Active Missions Today", 
@@ -126,7 +120,6 @@ export default function AdminDashboardPage() {
       icon: Calendar, 
       color: "text-orange-500", 
       bg: "bg-orange-500/10",
-      delay: 0.3
     },
     {
       label: "Financial Variance", 
@@ -134,161 +127,154 @@ export default function AdminDashboardPage() {
       icon: CreditCard,
       color: overduePayments.length > 0 ? "text-rose-500" : "text-emerald-500",
       bg: overduePayments.length > 0 ? "bg-rose-500/10" : "bg-emerald-500/10",
-      delay: 0.4
     },
   ];
 
   return (
     <DashboardLayout role="admin">
-      <div className="min-h-screen bg-zinc-950 p-6 lg:p-10">
-        <div className="max-w-full space-y-10">
+      <div className="p-6 lg:p-10 space-y-10">
+        
+        {/* Header */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <Badge variant="outline" className="bg-orange-500/10 border-orange-500/20 text-orange-400 text-[10px] font-black uppercase tracking-[0.3em] mb-6 px-4 py-1.5">
+              <Shield className="w-3 h-3 fill-orange-500 mr-2" /> Administrative Access Confirmed
+          </Badge>
+          <h1 className="text-4xl lg:text-6xl font-black text-white italic uppercase tracking-tighter leading-none">
+             Command <span className="text-orange-500">Center</span>
+          </h1>
+          <p className="text-zinc-500 mt-4 font-medium max-w-xl">Global platform orchestration. Monitoring trainer performance, client logistics, and financial flow.</p>
+        </motion.div>
+
+        {/* Stats Grid */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {stats.map(({ label, value, icon: Icon, color, bg }, idx) => (
+            <motion.div 
+              key={label} 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: idx * 0.1 }}
+            >
+              <Card className="bg-zinc-900 border-zinc-800 rounded-2xl hover:border-zinc-700 transition-all group overflow-hidden">
+                <CardContent className="p-6">
+                  <div className={`w-10 h-10 rounded-xl ${bg} flex items-center justify-center mb-4 transition-transform group-hover:scale-110`}>
+                    <Icon className={`w-5 h-5 ${color}`} />
+                  </div>
+                  <p className="text-2xl font-black text-white italic truncate">{value}</p>
+                  <p className="text-[10px] text-zinc-500 font-black uppercase tracking-widest mt-1 italic group-hover:text-zinc-400 transition-colors uppercase">{label}</p>
+                </CardContent>
+              </Card>
+            </motion.div>
+          ))}
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           
-          {/* Header */}
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-10"
-          >
-            <div className="inline-flex items-center gap-2 bg-orange-500/10 border border-orange-500/20 rounded-full px-4 py-1.5 text-[10px] font-black uppercase tracking-[0.3em] text-orange-400 mb-6">
-                <Shield className="w-3 h-3 fill-orange-500" /> Administrative Access Confirmed
-            </div>
-            <h1 className="text-4xl lg:text-5xl font-black text-white italic uppercase tracking-tighter leading-none">
-               Command <span className="text-orange-500">Center</span>
-            </h1>
-            <p className="text-zinc-500 mt-4 font-medium max-w-xl">Global platform orchestration. Monitoring trainer performance, client logistics, and financial flow.</p>
-          </motion.div>
-
-          {/* Stats Grid */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            {stats.map(({ label, value, icon: Icon, color, bg, delay }) => (
-              <motion.div 
-                key={label} 
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay }}
-                className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 hover:border-zinc-700 transition-all group overflow-hidden relative"
-              >
-                <div className={`w-10 h-10 rounded-xl ${bg} flex items-center justify-center mb-4 transition-transform group-hover:scale-110`}>
-                  <Icon className={`w-5 h-5 ${color}`} />
-                </div>
-                <p className="text-2xl font-black text-white italic truncate">{value}</p>
-                <p className="text-[10px] text-zinc-600 font-black uppercase tracking-widest mt-1 italic group-hover:text-zinc-400 transition-colors uppercase">{label}</p>
-              </motion.div>
-            ))}
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Trainers Module */}
+          <Card className="rounded-[2.5rem] bg-zinc-900 border-zinc-800 overflow-hidden flex flex-col shadow-2xl">
+            <CardHeader className="px-8 py-6 border-b border-zinc-800/50 flex-row items-center justify-between space-y-0 bg-zinc-950/20">
+              <div className="flex items-center gap-3">
+                 <div className="w-1.5 h-1.5 bg-orange-500 rounded-full shadow-[0_0_10px_rgba(249,115,22,0.5)]" />
+                 <CardTitle className="font-black text-white text-[10px] uppercase tracking-widest italic">Trainer Corps</CardTitle>
+              </div>
+              <Button variant="ghost" asChild className="h-auto p-0 text-[10px] font-black text-zinc-500 hover:text-white transition-colors uppercase tracking-widest italic">
+                <Link href="/admin/trainers">Directory</Link>
+              </Button>
+            </CardHeader>
             
-            {/* Trainers Module */}
-            <motion.div 
-               initial={{ opacity: 0, x: -20 }}
-               animate={{ opacity: 1, x: 0 }}
-               transition={{ delay: 0.5 }}
-               className="rounded-[2.5rem] bg-zinc-900 border border-zinc-800 overflow-hidden flex flex-col shadow-2xl"
-            >
-              <div className="px-8 py-6 border-b border-zinc-800/50 flex items-center justify-between bg-zinc-950/20">
-                <div className="flex items-center gap-3">
-                   <div className="w-1.5 h-1.5 bg-orange-500 rounded-full shadow-[0_0_10px_rgba(249,115,22,0.5)]" />
-                   <h2 className="font-black text-white text-[10px] uppercase tracking-widest italic">Trainer Corps</h2>
+            <CardContent className="p-8 space-y-3">
+              {trainers.length === 0 ? (
+                <div className="py-20 text-center border border-dashed border-zinc-800 rounded-2xl">
+                   <UserCog className="w-10 h-10 text-zinc-800 mx-auto mb-4 opacity-20" />
+                   <p className="text-zinc-700 font-black uppercase text-[10px] tracking-[0.2em] italic">No Certified Trainers</p>
                 </div>
-                <Link href="/admin/trainers" className="text-[10px] font-black text-zinc-500 hover:text-white transition-colors uppercase tracking-widest">
-                  Directory
-                </Link>
-              </div>
-              
-              <div className="p-8 space-y-3">
-                {trainers.length === 0 ? (
-                  <div className="py-20 text-center border border-dashed border-zinc-800 rounded-2xl">
-                     <UserCog className="w-10 h-10 text-zinc-800 mx-auto mb-4 opacity-20" />
-                     <p className="text-zinc-700 font-black uppercase text-[10px] tracking-[0.2em] italic">No Certified Trainers</p>
-                  </div>
-                ) : trainers.map((trainer) => (
-                  <div key={trainer.id} className="group flex items-center justify-between p-4 bg-zinc-950/50 border border-zinc-800/50 rounded-2xl hover:border-violet-500/30 hover:bg-zinc-950 transition-all">
-                    <div className="flex items-center gap-5">
-                      <div className="w-12 h-12 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-orange-500 font-black text-sm group-hover:bg-orange-500 group-hover:text-white transition-all italic">
+              ) : trainers.map((trainer) => (
+                <div key={trainer.id} className="group flex items-center justify-between p-4 bg-zinc-950/50 border border-zinc-800/50 rounded-2xl hover:border-orange-500/30 hover:bg-zinc-950 transition-all">
+                  <div className="flex items-center gap-5">
+                    <Avatar className="h-12 w-12 rounded-xl bg-orange-500/10 border border-orange-500/20 group-hover:bg-orange-500 group-hover:text-white transition-all">
+                      <AvatarFallback className="bg-transparent text-orange-500 font-black group-hover:text-white transition-all text-sm italic">
                         {trainer.name.charAt(0)}
-                      </div>
-                      <div>
-                        <p className="font-black text-white text-sm uppercase italic tracking-tight">{trainer.name}</p>
-                        <p className="text-zinc-600 text-[10px] font-black mt-1 uppercase tracking-widest flex items-center gap-2">
-                           <Mail className="w-3 h-3" /> {trainer.email}
-                        </p>
-                      </div>
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p className="font-black text-white text-sm uppercase italic tracking-tight">{trainer.name}</p>
+                      <p className="text-zinc-600 text-[10px] font-black mt-1 uppercase tracking-widest flex items-center gap-2">
+                         <Mail className="w-3 h-3" /> {trainer.email}
+                      </p>
                     </div>
-                    <ChevronRight className="w-5 h-5 text-zinc-800 group-hover:text-white transition-colors" />
                   </div>
-                ))}
-              </div>
-            </motion.div>
-
-            {/* Pending Assessments */}
-            <motion.div 
-               initial={{ opacity: 0, x: 20 }}
-               animate={{ opacity: 1, x: 0 }}
-               transition={{ delay: 0.6 }}
-               className="rounded-[2.5rem] bg-zinc-900 border border-zinc-800 overflow-hidden flex flex-col shadow-2xl"
-            >
-              <div className="px-8 py-6 border-b border-zinc-800/50 flex items-center justify-between bg-zinc-950/20">
-                <div className="flex items-center gap-3">
-                   <div className="w-1.5 h-1.5 bg-orange-500 rounded-full shadow-[0_0_10px_rgba(249,115,22,0.5)]" />
-                   <h2 className="font-black text-white text-[10px] uppercase tracking-widest italic">Diagnostic Queue</h2>
+                  <ChevronRight className="w-5 h-5 text-zinc-800 group-hover:text-white transition-colors" />
                 </div>
-                <Link href="/admin/assessments" className="text-[10px] font-black text-zinc-500 hover:text-white transition-colors uppercase tracking-widest">
-                  Process All
-                </Link>
-              </div>
+              ))}
+            </CardContent>
+          </Card>
 
-              <div className="p-8 space-y-3">
-                {pendingAssessments.length === 0 ? (
-                  <div className="py-20 text-center border border-dashed border-zinc-800 rounded-2xl">
-                     <CheckCircle className="w-10 h-10 text-zinc-800 mx-auto mb-4 opacity-20" />
-                     <p className="text-zinc-700 font-black uppercase text-[10px] tracking-[0.2em] italic">Diagnostics Nominal</p>
-                  </div>
-                ) : pendingAssessments.slice(0, 5).map((a) => (
-                   <div key={a.id} className="group flex items-center justify-between p-4 bg-zinc-950/50 border border-zinc-800/50 rounded-2xl hover:border-orange-500/30 hover:bg-zinc-950 transition-all">
-                      <div className="flex-1 min-w-0">
-                         <p className="font-black text-white text-sm uppercase italic tracking-tight">{customerById[a.userId]?.name || "Unknown Asset"}</p>
-                         <p className="text-zinc-600 text-[10px] font-black mt-1 uppercase tracking-widest flex items-center gap-2">
-                           <Clock className="w-3 h-3" /> Submitted {formatDate(a.submittedAt)}
-                        </p>
-                      </div>
-                      <div className="bg-orange-500/5 border border-orange-500/10 px-3 py-1.5 rounded-lg">
-                        <span className="text-[9px] font-black text-orange-500 uppercase tracking-widest italic">Pending Review</span>
-                      </div>
-                   </div>
-                ))}
+          {/* Pending Assessments */}
+          <Card className="rounded-[2.5rem] bg-zinc-900 border-zinc-800 overflow-hidden flex flex-col shadow-2xl">
+            <CardHeader className="px-8 py-6 border-b border-zinc-800/50 flex-row items-center justify-between space-y-0 bg-zinc-950/20">
+              <div className="flex items-center gap-3">
+                 <div className="w-1.5 h-1.5 bg-orange-500 rounded-full shadow-[0_0_10px_rgba(249,115,22,0.5)]" />
+                 <CardTitle className="font-black text-white text-[10px] uppercase tracking-widest italic">Diagnostic Queue</CardTitle>
               </div>
-            </motion.div>
-          </div>
+              <Button variant="ghost" asChild className="h-auto p-0 text-[10px] font-black text-zinc-500 hover:text-white transition-colors uppercase tracking-widest italic">
+                <Link href="/admin/assessments">Process All</Link>
+              </Button>
+            </CardHeader>
 
-          {/* Quick Links / Grid Actions */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pb-10">
-            {[
-              { href: "/admin/trainers", label: "Trainer Bureau", desc: "Command & Control Center", icon: UserCog, color: "text-orange-400" },
-              { href: "/admin/clients", label: "Asset Directory", desc: "Operational Asset Database", icon: Users, color: "text-blue-400" },
-              { href: "/admin/testimonials", label: "Success Archive", desc: "Performance Proof Logs", icon: MessageSquare, color: "text-orange-400" },
-              { href: "/admin/master", label: "Core Database", desc: "Kinetic Master Data Sync", icon: Database, color: "text-emerald-400" },
-            ].map(({ href, label, desc, icon: Icon, color }) => (
-              <Link 
-                key={href} 
-                href={href}
-                className="group relative rounded-[2rem] bg-zinc-900 border border-zinc-800 p-8 overflow-hidden hover:border-zinc-500 transition-all hover:-translate-y-1 shadow-xl"
-              >
+            <CardContent className="p-8 space-y-3">
+              {pendingAssessments.length === 0 ? (
+                <div className="py-20 text-center border border-dashed border-zinc-800 rounded-2xl">
+                   <CheckCircle className="w-10 h-10 text-zinc-800 mx-auto mb-4 opacity-20" />
+                   <p className="text-zinc-700 font-black uppercase text-[10px] tracking-[0.2em] italic">Diagnostics Nominal</p>
+                </div>
+              ) : pendingAssessments.slice(0, 5).map((a) => (
+                 <div key={a.id} className="group flex items-center justify-between p-4 bg-zinc-950/50 border border-zinc-800/50 rounded-2xl hover:border-orange-500/30 hover:bg-zinc-950 transition-all">
+                    <div className="flex-1 min-w-0">
+                       <p className="font-black text-white text-sm uppercase italic tracking-tight">{customerById[a.userId]?.name || "Unknown Asset"}</p>
+                       <p className="text-zinc-600 text-[10px] font-black mt-1 uppercase tracking-widest flex items-center gap-2">
+                         <Clock className="w-3 h-3" /> Submitted {formatDate(a.submittedAt)}
+                      </p>
+                    </div>
+                    <Badge variant="outline" className="bg-orange-500/5 border-orange-500/10 text-orange-500 text-[9px] font-black uppercase tracking-widest italic">
+                      Pending Review
+                    </Badge>
+                 </div>
+              ))}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Quick Links / Grid Actions */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pb-10">
+          {[
+            { href: "/admin/trainers", label: "Trainer Bureau", desc: "Command & Control Center", icon: UserCog, color: "text-orange-400" },
+            { href: "/admin/clients", label: "Asset Directory", desc: "Operational Asset Database", icon: Users, color: "text-blue-400" },
+            { href: "/admin/testimonials", label: "Success Archive", desc: "Performance Proof Logs", icon: MessageSquare, color: "text-orange-400" },
+            { href: "/admin/master", label: "Core Database", desc: "Kinetic Master Data Sync", icon: Database, color: "text-emerald-400" },
+          ].map(({ href, label, desc, icon: Icon, color }) => (
+            <Link 
+              key={href} 
+              href={href}
+              className="group block"
+            >
+              <Card className="relative h-full rounded-[2rem] bg-zinc-900 border-zinc-800 p-8 overflow-hidden hover:border-zinc-500 transition-all hover:-translate-y-1 shadow-xl">
                 <div className="absolute top-0 right-0 p-8 opacity-[0.02] group-hover:opacity-10 transition-opacity">
                    <Icon className="w-20 h-20 text-white" />
                 </div>
-                <div className="relative z-10">
+                <CardContent className="p-0 relative z-10">
                   <div className={`w-12 h-12 rounded-2xl bg-zinc-950 border border-zinc-800 flex items-center justify-center mb-6 shadow-inner group-hover:scale-110 transition-transform`}>
                     <Icon className={`w-6 h-6 ${color}`} />
                   </div>
                   <h3 className="text-[10px] font-black text-white uppercase tracking-[0.3em] mb-2 italic group-hover:text-orange-500 transition-colors leading-none">{label}</h3>
                   <p className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest leading-relaxed">{desc}</p>
-                </div>
-              </Link>
-            ))}
-          </div>
-
+                </CardContent>
+              </Card>
+            </Link>
+          ))}
         </div>
+
       </div>
     </DashboardLayout>
   );

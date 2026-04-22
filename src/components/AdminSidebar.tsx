@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { useState } from "react";
 import { SignOutModal } from "./SignOutModal";
@@ -14,9 +14,22 @@ import {
   CreditCard,
   BarChart2,
   LogOut,
-  X,
   Zap,
+  Globe,
 } from "lucide-react";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarGroup,
+  SidebarGroupLabel,
+  SidebarGroupContent,
+} from "@/components/ui/sidebar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 const navItems = [
   { href: "/admin/dashboard",   icon: LayoutDashboard, label: "Dashboard" },
@@ -25,16 +38,12 @@ const navItems = [
   { href: "/admin/clients",     icon: Users,           label: "Clients" },
   { href: "/admin/payments",    icon: CreditCard,      label: "Payments" },
   { href: "/admin/reports",     icon: BarChart2,       label: "Reports" },
+  { href: "/admin/cms",         icon: Globe,           label: "Landing CMS" },
   { href: "/admin/master",      icon: Database,        label: "Master Data" },
 ];
 
-interface Props {
-  onClose?: () => void;
-}
-
-export default function AdminSidebar({ onClose }: Props) {
+export default function AdminSidebar() {
   const pathname = usePathname();
-  const router = useRouter();
   const { user, logout } = useAuth();
   const [showSignOut, setShowSignOut] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
@@ -42,7 +51,6 @@ export default function AdminSidebar({ onClose }: Props) {
   const handleSignOut = async () => {
     setSigningOut(true);
     await logout();
-    if (onClose) onClose();
     window.location.href = "/";
   };
 
@@ -55,79 +63,78 @@ export default function AdminSidebar({ onClose }: Props) {
         loading={signingOut}
       />
 
-      <div className="flex flex-col h-full bg-zinc-950 border-r border-zinc-800/60">
-        {/* Logo */}
-        <div className="flex items-center justify-between px-8 py-6 border-b border-zinc-900/50">
-          <Link href="/" className="flex items-center gap-3.5" onClick={onClose}>
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-orange-500 to-orange-700 flex items-center justify-center shadow-xl shadow-orange-500/30 ring-1 ring-white/20">
-              <Zap className="w-5 h-5 text-white fill-current" />
+      <Sidebar variant="inset" className="bg-zinc-950 border-r border-zinc-900">
+        <SidebarHeader className="h-14 flex items-center px-4 border-b border-zinc-900">
+          <Link href="/" className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-orange-500 flex items-center justify-center shadow-lg shadow-orange-500/20">
+              <Zap className="w-4 h-4 text-white fill-current" />
             </div>
-            <span className="font-black text-xl text-white tracking-tighter italic">
+            <span className="font-black text-sm text-white tracking-tight uppercase italic">
               iShow<span className="text-orange-500">Admin</span>
             </span>
           </Link>
-          {onClose && (
-            <button
-              onClick={onClose}
-              className="lg:hidden w-8 h-8 flex items-center justify-center rounded-xl text-zinc-500 hover:text-white hover:bg-zinc-800 transition-colors border border-zinc-800"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          )}
-        </div>
+        </SidebarHeader>
 
-        {/* User card */}
-        <div className="px-6 pt-6 pb-2">
-          <div className="flex items-center gap-4 px-4 py-4 rounded-2xl bg-zinc-900/50 border border-zinc-800/50 group hover:border-orange-500/30 transition-all cursor-default">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-orange-500 to-orange-700 flex items-center justify-center text-white font-black text-lg shrink-0 shadow-xl shadow-orange-500/20 group-hover:scale-105 transition-transform">
-              {user?.name?.charAt(0).toUpperCase() ?? "A"}
-            </div>
+        <SidebarContent className="px-2 py-4">
+          <SidebarGroup>
+            <SidebarGroupLabel className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-600 mb-2 px-2 italic">
+              Command Console
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {navItems.map(({ href, icon: Icon, label }) => {
+                  const isActive = pathname === href || pathname.startsWith(href + "/");
+                  return (
+                    <SidebarMenuItem key={href}>
+                      <SidebarMenuButton
+                        asChild
+                        isActive={isActive}
+                        tooltip={label}
+                        className={`h-10 px-3 rounded-lg transition-all duration-200 ${
+                          isActive 
+                            ? "bg-zinc-900 text-white font-bold" 
+                            : "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900/50"
+                        }`}
+                      >
+                        <Link href={href} className="flex items-center gap-3">
+                          <Icon className={`w-4 h-4 ${isActive ? "text-orange-500" : ""}`} />
+                          <span className="text-[11px] font-black uppercase italic tracking-wider">{label}</span>
+                          {isActive && <div className="ml-auto w-1 h-1 rounded-full bg-orange-500" />}
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  );
+                })}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        </SidebarContent>
+
+        <SidebarFooter className="p-4 border-t border-zinc-900">
+          <div className="flex items-center gap-3 px-2 py-2 rounded-xl bg-zinc-900/30 border border-zinc-800/50 mb-4">
+            <Avatar className="h-8 w-8 rounded-lg border border-zinc-800">
+              <AvatarFallback className="bg-orange-500 text-white text-[10px] font-black">
+                {user?.name?.charAt(0).toUpperCase() ?? "A"}
+              </AvatarFallback>
+            </Avatar>
             <div className="min-w-0">
-              <p className="font-black text-white text-base truncate tracking-tight">{user?.name}</p>
-              <p className="text-[10px] text-orange-500 font-black tracking-[0.2em] uppercase italic opacity-70">Overseer</p>
+              <p className="text-[11px] font-black text-white truncate uppercase italic">{user?.name}</p>
+              <p className="text-[9px] text-orange-500 font-black uppercase tracking-widest opacity-60">Overseer</p>
             </div>
           </div>
-        </div>
-
-        {/* Nav */}
-        <nav className="flex-1 px-6 py-6 space-y-1 overflow-y-auto scrollbar-hide">
-          <p className="text-[10px] font-black uppercase tracking-[0.4em] text-zinc-700 px-4 mb-4 mt-2 italic">Command Console</p>
-          {navItems.map(({ href, icon: Icon, label }) => {
-            const isActive = pathname === href || pathname.startsWith(href + "/");
-            return (
-              <Link
-                key={href}
-                href={href}
-                onClick={onClose}
-                className={`flex items-center gap-4 px-4 py-3.5 rounded-2xl text-sm font-black uppercase italic tracking-wider transition-all duration-200 group ${
-                  isActive
-                    ? "bg-white text-zinc-950 shadow-[0_0_30px_rgba(255,255,255,0.1)] scale-[1.02]"
-                    : "text-zinc-500 hover:bg-zinc-900 hover:text-white"
-                }`}
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                onClick={() => setShowSignOut(true)}
+                className="text-zinc-600 hover:text-rose-500 hover:bg-rose-500/10 h-9 rounded-lg transition-colors"
               >
-                <Icon
-                  className={`w-5 h-5 shrink-0 transition-all duration-300 ${
-                    isActive ? "text-zinc-950 scale-110" : "text-zinc-700 group-hover:text-orange-500 group-hover:scale-110"
-                  }`}
-                />
-                {label}
-                {isActive && <span className="ml-auto w-1.5 h-6 rounded-full bg-orange-500" />}
-              </Link>
-            );
-          })}
-        </nav>
-
-        {/* Sign out */}
-        <div className="px-6 pb-8 pt-4 border-t border-zinc-900">
-          <button
-            onClick={() => setShowSignOut(true)}
-            className="flex items-center gap-4 px-4 py-3.5 rounded-2xl text-xs font-black uppercase italic tracking-widest text-zinc-600 hover:bg-rose-500/10 hover:text-rose-500 transition-all duration-200 group border border-transparent hover:border-rose-500/20"
-          >
-            <LogOut className="w-5 h-5 shrink-0 group-hover:rotate-12 transition-transform" />
-            Sign Out
-          </button>
-        </div>
-      </div>
+                <LogOut className="w-4 h-4" />
+                <span className="text-[10px] font-black uppercase tracking-widest italic">Sign Out</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarFooter>
+      </Sidebar>
     </>
   );
 }

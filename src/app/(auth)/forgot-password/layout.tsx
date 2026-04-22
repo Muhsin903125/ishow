@@ -1,3 +1,4 @@
+import { ReactNode } from "react";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -6,6 +7,6 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default function ForgotPasswordLayout({ children }: { children: React.ReactNode }) {
+export default function ForgotPasswordLayout({ children }: { children: ReactNode }) {
   return children;
 }

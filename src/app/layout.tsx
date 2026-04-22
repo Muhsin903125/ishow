@@ -1,7 +1,10 @@
+import { ReactNode } from "react";
 import type { Metadata } from "next";
 import { Geist } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { Toaster } from "@/components/ui/sonner";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -45,7 +48,7 @@ export const metadata: Metadata = {
 export default function RootLayout({
   children,
 }: Readonly<{
-  children: React.ReactNode;
+  children: ReactNode;
 }>) {
   return (
     <html lang="en-AE" className={`${geistSans.variable} h-full antialiased`}>
@@ -76,7 +79,10 @@ export default function RootLayout({
       </head>
       <body className="min-h-full font-sans">
         <AuthProvider>
-          {children}
+          <TooltipProvider>
+            {children}
+            <Toaster />
+          </TooltipProvider>
         </AuthProvider>
       </body>
     </html>

@@ -21,15 +21,24 @@ const barlow = Barlow_Condensed({
 
 export default async function HomePage() {
   const supabase = await createClient();
-  const { data: testimonials } = await supabase
-    .from("testimonials")
-    .select("*")
-    .eq("is_published", true)
-    .order("created_at", { ascending: false });
+  
+  const [testimonialsResponse, landingConfigResponse] = await Promise.all([
+    supabase
+      .from("testimonials")
+      .select("*")
+      .eq("is_published", true)
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("landing_config")
+      .select("content")
+      .eq("key", "main")
+      .single()
+  ]);
 
   return (
     <LandingClient 
-      testimonials={testimonials || []} 
+      testimonials={testimonialsResponse.data || []} 
+      config={landingConfigResponse.data?.content}
       fonts={{ 
         dm: dm.variable, 
         barlow: barlow.variable 
