@@ -29,9 +29,10 @@ import {
   User,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 
 export default function CustomerDashboard() {
   const { user, loading } = useAuth();
@@ -145,12 +146,18 @@ export default function CustomerDashboard() {
                       : "Mission parameters normalized. System awaiting next scheduled execution."}
                   </p>
                   <div className="flex flex-wrap gap-4 pt-4">
-                    <Button asChild className="bg-white text-zinc-950 hover:bg-orange-500 hover:text-white rounded-xl h-12 px-8 font-black uppercase italic tracking-wider text-[11px]">
-                      <Link href="/sessions">Training Hub</Link>
-                    </Button>
-                    <Button asChild variant="outline" className="bg-zinc-800 text-white border-zinc-700 hover:bg-zinc-700 rounded-xl h-12 px-8 font-black uppercase italic tracking-wider text-[11px]">
-                      <Link href="/assessments">Assessments</Link>
-                    </Button>
+                    <Link 
+                      href="/sessions" 
+                      className={cn(buttonVariants(), "bg-white text-zinc-950 hover:bg-orange-500 hover:text-white rounded-xl h-12 px-8 font-black uppercase italic tracking-wider text-[11px]")}
+                    >
+                      Training Hub
+                    </Link>
+                    <Link 
+                      href="/assessments" 
+                      className={cn(buttonVariants({ variant: "outline" }), "bg-zinc-800 text-white border-zinc-700 hover:bg-zinc-700 rounded-xl h-12 px-8 font-black uppercase italic tracking-wider text-[11px]")}
+                    >
+                      Assessments
+                    </Link>
                   </div>
                 </div>
                 
@@ -185,9 +192,12 @@ export default function CustomerDashboard() {
                     {todaySession.scheduledTime} <span className="mx-3">•</span> {todaySession.duration} MIN DURATION
                   </p>
                 </div>
-                <Button asChild className="bg-zinc-950 text-white hover:bg-white hover:text-zinc-950 rounded-xl h-14 px-10 font-black uppercase italic tracking-wider text-[11px] w-full md:w-auto">
-                  <Link href="/sessions">Commence Op</Link>
-                </Button>
+                <Link 
+                  href="/sessions" 
+                  className={cn(buttonVariants(), "bg-zinc-950 text-white hover:bg-white hover:text-zinc-950 rounded-xl h-14 px-10 font-black uppercase italic tracking-wider text-[11px] w-full md:w-auto")}
+                >
+                  Commence Op
+                </Link>
               </CardContent>
             </Card>
           </motion.div>
@@ -307,12 +317,13 @@ export default function CustomerDashboard() {
                   )}
                 </div>
                 
-                <Button asChild variant="ghost" className="mt-12 w-full justify-between h-14 bg-zinc-950 border border-zinc-800 hover:border-orange-500/30 hover:bg-zinc-950 rounded-xl px-6 group/btn">
-                  <Link href="/sessions">
+                <Link 
+                  href="/sessions" 
+                  className={cn(buttonVariants({ variant: "ghost" }), "mt-12 w-full justify-between h-14 bg-zinc-950 border border-zinc-800 hover:border-orange-500/30 hover:bg-zinc-950 rounded-xl px-6 group/btn flex items-center")}
+                >
                     <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest italic group-hover:text-white transition-colors">Syllabus Manifest</span>
                     <ArrowRight className="w-4 h-4 text-orange-500 group-hover/btn:translate-x-1 transition-transform" />
-                  </Link>
-                </Button>
+                </Link>
               </CardContent>
             </Card>
           </motion.div>
@@ -330,9 +341,12 @@ export default function CustomerDashboard() {
                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(59,130,246,0.5)]" />
                    <CardTitle className="text-[10px] font-black text-white uppercase tracking-[0.4em] italic">Deployment Manifest</CardTitle>
                 </div>
-                <Button asChild variant="link" className="text-[10px] font-black text-orange-500 uppercase tracking-widest p-0 h-auto hover:text-white italic">
-                  <Link href="/sessions">Training Log</Link>
-                </Button>
+                <Link 
+                  href="/sessions" 
+                  className={cn(buttonVariants({ variant: "link" }), "text-[10px] font-black text-orange-500 uppercase tracking-widest p-0 h-auto hover:text-white italic")}
+                >
+                  Training Log
+                </Link>
               </CardHeader>
               <CardContent className="p-8 md:p-10 pt-4">
                 {sessions === "loading" ? (

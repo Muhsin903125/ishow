@@ -93,7 +93,7 @@ export default function TrainerSidebar() {
                   return (
                     <SidebarMenuItem key={href}>
                       <SidebarMenuButton
-                        asChild
+                        render={<Link href={href} />}
                         isActive={isActive}
                         tooltip={label}
                         className={`h-10 px-3 rounded-lg transition-all duration-200 ${
@@ -102,11 +102,11 @@ export default function TrainerSidebar() {
                             : "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900/50"
                         }`}
                       >
-                        <Link href={href} className="flex items-center gap-3">
+                        <div className="flex items-center gap-3">
                           <Icon className={`w-4 h-4 ${isActive ? "text-orange-500" : ""}`} />
                           <span className="text-[11px] font-black uppercase italic tracking-wider">{label}</span>
                           {isActive && <div className="ml-auto w-1 h-1 rounded-full bg-orange-500" />}
-                        </Link>
+                        </div>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                   );
@@ -126,7 +126,7 @@ export default function TrainerSidebar() {
                   return (
                     <SidebarMenuItem key={href}>
                       <SidebarMenuButton
-                        asChild
+                        render={<Link href={href} />}
                         isActive={isActive}
                         tooltip={label}
                         className={`h-9 px-3 rounded-lg transition-all duration-200 ${
@@ -135,10 +135,10 @@ export default function TrainerSidebar() {
                             : "text-zinc-600 hover:text-zinc-400 hover:bg-zinc-900/30"
                         }`}
                       >
-                        <Link href={href} className="flex items-center gap-3">
+                        <div className="flex items-center gap-3">
                           <Icon className={`w-3.5 h-3.5 ${isActive ? "text-orange-500" : ""}`} />
                           <span className="text-[10px] font-black uppercase italic tracking-widest">{label}</span>
-                        </Link>
+                        </div>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                   );

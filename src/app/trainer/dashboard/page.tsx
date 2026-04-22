@@ -25,9 +25,10 @@ import {
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { cn } from "@/lib/utils";
 
 export default function TrainerDashboard() {
   const { user, loading } = useAuth();
@@ -154,14 +155,20 @@ export default function TrainerDashboard() {
                    Syncing operational data for <span className="text-white font-bold">{clients.length} Elite Clients</span>. 
                    Review pending manifests and coordinate upcoming training deployments.
                  </p>
-                 <div className="flex gap-4 mt-8">
-                    <Button asChild className="bg-white text-zinc-950 hover:bg-orange-500 hover:text-white rounded-xl px-8 h-12 text-[10px] font-black uppercase tracking-widest italic">
-                      <Link href="/trainer/clients">Deploy Program</Link>
-                    </Button>
-                    <Button asChild variant="outline" className="bg-zinc-800 border-zinc-700 text-white hover:bg-zinc-700 rounded-xl px-8 h-12 text-[10px] font-black uppercase tracking-widest italic">
-                      <Link href="/trainer/sessions">Sync Calendar</Link>
-                    </Button>
-                 </div>
+                  <div className="flex gap-4 mt-8">
+                    <Link 
+                      href="/trainer/clients" 
+                      className={cn(buttonVariants(), "bg-white text-zinc-950 hover:bg-orange-500 hover:text-white rounded-xl px-8 h-12 text-[10px] font-black uppercase tracking-widest italic")}
+                    >
+                      Deploy Program
+                    </Link>
+                    <Link 
+                      href="/trainer/sessions" 
+                      className={cn(buttonVariants({ variant: "outline" }), "bg-zinc-800 border-zinc-700 text-white hover:bg-zinc-700 rounded-xl px-8 h-12 text-[10px] font-black uppercase tracking-widest italic")}
+                    >
+                      Sync Calendar
+                    </Link>
+                  </div>
               </div>
 
               <div className="hidden lg:flex w-32 h-32 rounded-[2.5rem] bg-zinc-950 border border-zinc-800 items-center justify-center relative overflow-hidden group">
@@ -207,13 +214,16 @@ export default function TrainerDashboard() {
                  <CardTitle className="text-[10px] font-black text-white uppercase tracking-widest italic">Review Required</CardTitle>
               </div>
               {pendingAssessments !== "loading" && pendingAssessments.length > 0 && (
-                <Button variant="ghost" asChild className="h-auto p-0 text-[10px] font-black text-zinc-500 hover:text-white transition-colors uppercase tracking-widest italic">
-                  <Link href="/trainer/clients">Process All</Link>
-                </Button>
+                <Link 
+                  href="/trainer/clients" 
+                  className={cn(buttonVariants({ variant: "ghost" }), "h-auto p-0 text-[10px] font-black text-zinc-500 hover:text-white transition-colors uppercase tracking-widest italic")}
+                >
+                  View Manifest <ChevronRight className="w-3 h-3 ml-1" />
+                </Link>
               )}
             </CardHeader>
             <CardContent className="p-8 flex-1 space-y-3">
-              {pendingAssessments.length > 0 ? (
+              {pendingAssessments !== "loading" && pendingAssessments.length > 0 ? (
                 pendingAssessments.map((assessment) => (
                   <Link
                     key={assessment.id}
@@ -252,9 +262,12 @@ export default function TrainerDashboard() {
                  <div className="w-1.5 h-1.5 bg-orange-500 rounded-full shadow-[0_0_10px_rgba(249,115,22,0.5)]" />
                  <CardTitle className="text-[10px] font-black text-white uppercase tracking-widest italic">Today's Lineup</CardTitle>
               </div>
-              <Button variant="ghost" asChild className="h-auto p-0 text-[10px] font-black text-zinc-500 hover:text-white transition-colors uppercase tracking-widest italic">
-                <Link href="/trainer/sessions">Timeline</Link>
-              </Button>
+              <Link 
+                href="/trainer/sessions" 
+                className={cn(buttonVariants({ variant: "ghost" }), "h-auto p-0 text-[10px] font-black text-zinc-500 hover:text-white transition-colors uppercase tracking-widest italic")}
+              >
+                Full Calendar <ChevronRight className="w-3 h-3 ml-1" />
+              </Link>
             </CardHeader>
             <CardContent className="p-8 flex-1 space-y-3">
               {todaySessions.length > 0 ? (
@@ -298,9 +311,12 @@ export default function TrainerDashboard() {
                   </div>
                   <CardTitle className="text-[10px] font-black text-white uppercase tracking-[0.2em] italic">Active Deployments (Clients)</CardTitle>
                </div>
-               <Button asChild variant="outline" className="bg-zinc-800 border-zinc-700 text-white hover:bg-zinc-700 rounded-xl px-5 text-[10px] font-black uppercase tracking-widest italic">
-                 <Link href="/trainer/clients">Force Directory</Link>
-               </Button>
+               <Link 
+                 href="/trainer/payments" 
+                 className={cn(buttonVariants({ variant: "outline" }), "bg-zinc-800 border-zinc-700 text-white hover:bg-zinc-700 rounded-xl px-5 text-[10px] font-black uppercase tracking-widest italic")}
+               >
+                 Review Ledger
+               </Link>
             </CardHeader>
 
             <CardContent className="p-8 md:p-10">

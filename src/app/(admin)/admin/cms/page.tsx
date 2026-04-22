@@ -99,11 +99,9 @@ export default function AdminCMSPage() {
             <p className="text-zinc-500 text-sm mt-1">Manage public-facing content and marketing copy.</p>
           </div>
           <div className="flex items-center gap-3">
-            <Button variant="outline" className="bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white" asChild>
-              <a href="/" target="_blank">
-                <Eye className="w-4 h-4 mr-2" />
-                Preview Site
-              </a>
+            <Button variant="outline" className="bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white" onClick={() => window.open("/", "_blank")}>
+              <Eye className="w-4 h-4 mr-2" />
+              Preview Site
             </Button>
             <Button onClick={handleSave} disabled={loading} className="bg-orange-500 hover:bg-orange-600 text-white font-bold px-6">
               {loading ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}

@@ -27,9 +27,10 @@ import {
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { cn } from "@/lib/utils";
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
@@ -179,9 +180,12 @@ export default function AdminDashboardPage() {
                  <div className="w-1.5 h-1.5 bg-orange-500 rounded-full shadow-[0_0_10px_rgba(249,115,22,0.5)]" />
                  <CardTitle className="font-black text-white text-[10px] uppercase tracking-widest italic">Trainer Corps</CardTitle>
               </div>
-              <Button variant="ghost" asChild className="h-auto p-0 text-[10px] font-black text-zinc-500 hover:text-white transition-colors uppercase tracking-widest italic">
-                <Link href="/admin/trainers">Directory</Link>
-              </Button>
+              <Link 
+                href="/admin/trainers" 
+                className={cn(buttonVariants({ variant: "ghost" }), "h-auto p-0 text-[10px] font-black text-zinc-500 hover:text-white transition-colors uppercase tracking-widest italic")}
+              >
+                Directory <ChevronRight className="w-3 h-3 ml-1" />
+              </Link>
             </CardHeader>
             
             <CardContent className="p-8 space-y-3">
@@ -218,9 +222,12 @@ export default function AdminDashboardPage() {
                  <div className="w-1.5 h-1.5 bg-orange-500 rounded-full shadow-[0_0_10px_rgba(249,115,22,0.5)]" />
                  <CardTitle className="font-black text-white text-[10px] uppercase tracking-widest italic">Diagnostic Queue</CardTitle>
               </div>
-              <Button variant="ghost" asChild className="h-auto p-0 text-[10px] font-black text-zinc-500 hover:text-white transition-colors uppercase tracking-widest italic">
-                <Link href="/admin/assessments">Process All</Link>
-              </Button>
+              <Link 
+                href="/admin/assessments" 
+                className={cn(buttonVariants({ variant: "ghost" }), "h-auto p-0 text-[10px] font-black text-zinc-500 hover:text-white transition-colors uppercase tracking-widest italic")}
+              >
+                Process All <ChevronRight className="w-3 h-3 ml-1" />
+              </Link>
             </CardHeader>
 
             <CardContent className="p-8 space-y-3">
