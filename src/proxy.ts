@@ -31,12 +31,45 @@ export async function proxy(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const { pathname } = request.nextUrl;
+  const hasDemoSession = request.cookies.get('ishow_demo_auth')?.value === '1';
+  const allowDemoSession =
+    (process.env.ENABLE_DEMO_AUTH === 'true' ||
+      process.env.NEXT_PUBLIC_ENABLE_DEMO_AUTH === 'true') &&
+    process.env.NODE_ENV !== 'production';
+  const allowPlaywrightDemoBypass =
+    process.env.PLAYWRIGHT === 'true' &&
+    allowDemoSession &&
+    request.nextUrl.searchParams.get('demo') === '1';
 
   // Public paths that don't require auth
-  const publicPaths = ['/', '/login', '/register', '/forgot-password', '/reset-password', '/privacy', '/terms', '/auth/callback'];
-  const isPublic = publicPaths.some(p => pathname === p || pathname.startsWith('/auth/'));
+  const publicPaths = [
+    '/',
+    '/about',
+    '/contact',
+    '/faq',
+    '/services',
+    '/content',
+    '/login',
+    '/register',
+    '/forgot-password',
+    '/reset-password',
+    '/privacy',
+    '/terms',
+    '/auth/callback',
+  ];
+  const isPublic = publicPaths.some(
+    (p) =>
+      pathname === p ||
+      pathname.startsWith('/auth/') ||
+      (p === '/content' && pathname.startsWith('/content/'))
+  );
 
-  if (!user && !isPublic) {
+  if (
+    !user &&
+    !(allowDemoSession && hasDemoSession) &&
+    !allowPlaywrightDemoBypass &&
+    !isPublic
+  ) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
     return NextResponse.redirect(url);

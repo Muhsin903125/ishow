@@ -1,416 +1,494 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/router";
-import { motion, AnimatePresence } from "framer-motion";
 import DashboardLayout from "@/components/DashboardLayout";
-import { useAuth } from "@/contexts/AuthContext";
-import { listPayments, type Payment } from "@/lib/db/payments";
-import { listCustomers, listTrainers, type Profile } from "@/lib/db/profiles";
-import { listSessions, type TrainingSession } from "@/lib/db/sessions";
-import { listAllPlans, type Plan } from "@/lib/db/plans";
 import {
-  BarChart2,
-  DollarSign,
-  Users,
-  CalendarCheck,
-  TrendingUp,
-  Loader2,
+  DashboardPageEmpty,
+  DashboardPageError,
+  DashboardPageLoading,
+} from "@/components/dashboard/PageState";
+import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/AuthContext";
+import {
   Activity,
-  Zap,
-  ArrowUpRight,
-  Target,
-  PieChart as PieChartIcon,
+  BarChart2,
+  CalendarCheck,
+  Download,
+  DollarSign,
+  RefreshCw,
   Shield,
-  Layers,
+  TrendingUp,
+  Users,
 } from "lucide-react";
 import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-  Legend,
   Area,
   AreaChart,
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
 } from "recharts";
 
-const formatCurrency = (amount: number) =>
-  new Intl.NumberFormat("en-AE", { 
-    style: "currency", 
-    currency: "AED", 
-    maximumFractionDigits: 0 
+type ReportRange = "30d" | "90d" | "365d" | "all";
+
+type ReportsOverview = {
+  metrics: {
+    totalRevenue: number;
+    monthRevenue: number;
+    activeClients: number;
+    totalCustomers: number;
+    retentionRate: number;
+    pendingAssessments: number;
+    overduePayments: number;
+    totalSessions: number;
+    completionRate: number;
+  };
+  revenueByMonth: Array<{ month: string; amount: number }>;
+  sessionBreakdown: Array<{ name: string; value: number }>;
+  clientsByTrainer: Array<{ trainerName: string; clientCount: number }>;
+  recentAudit: Array<{
+    id: string;
+    action: string;
+    entityType: string;
+    entityId: string;
+    createdAt: string;
+    actorName: string;
+  }>;
+  appliedRange: ReportRange;
+};
+
+const PIE_COLORS = ["#f97316", "#0f766e", "#64748b"];
+const RANGE_OPTIONS: Array<{ value: ReportRange; label: string }> = [
+  { value: "30d", label: "Last 30 days" },
+  { value: "90d", label: "Last 90 days" },
+  { value: "365d", label: "Last 12 months" },
+  { value: "all", label: "All time" },
+];
+
+function formatCurrency(amount: number) {
+  return new Intl.NumberFormat("en-AE", {
+    style: "currency",
+    currency: "AED",
+    maximumFractionDigits: 0,
   }).format(amount);
-
-function groupRevenueByMonth(payments: Payment[]): { month: string; amount: number }[] {
-  const map: Record<string, number> = {};
-  for (const p of payments) {
-    if (p.status !== "paid" || !p.paidDate) continue;
-    const key = p.paidDate.slice(0, 7);
-    map[key] = (map[key] ?? 0) + p.amount;
-  }
-  return Object.entries(map)
-    .sort(([a], [b]) => a.localeCompare(b))
-    .slice(-12)
-    .map(([key, amount]) => ({
-      month: new Date(key + "-01").toLocaleDateString("en-US", { month: "short" }),
-      amount,
-    }));
 }
 
-function computeSessionStats(sessions: TrainingSession[]) {
-  const total = sessions.length;
-  const completed = sessions.filter((s) => s.status === "completed").length;
-  const cancelled = sessions.filter((s) => s.status === "cancelled").length;
-  const scheduled = sessions.filter((s) => s.status === "scheduled").length;
-  const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
-  return { total, completed, cancelled, scheduled, completionRate };
+function prettifyAction(action: string) {
+  return action.replaceAll(".", " ");
 }
-
-function groupClientsByTrainer(plans: Plan[], trainers: Profile[]) {
-  return trainers
-    .map((trainer) => {
-      const trainerPlans = plans.filter((p) => p.trainerId === trainer.id && p.status === "active");
-      return { trainerName: trainer.name, clientCount: trainerPlans.length };
-    })
-    .sort((a, b) => b.clientCount - a.clientCount);
-}
-
-const COLORS = ["#8b5cf6", "#f59e0b", "#10b981", "#3b82f6", "#f43f5e"];
 
 export default function AdminReportsPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
-  const [payments, setPayments] = useState<Payment[]>([]);
-  const [customers, setCustomers] = useState<Profile[]>([]);
-  const [trainers, setTrainers] = useState<Profile[]>([]);
-  const [sessions, setSessions] = useState<TrainingSession[]>([]);
-  const [plans, setPlans] = useState<Plan[]>([]);
-  const [dataLoaded, setDataLoaded] = useState(false);
+  const [overview, setOverview] = useState<ReportsOverview | null>(null);
+  const [fetching, setFetching] = useState(true);
+  const [exporting, setExporting] = useState(false);
+  const [error, setError] = useState("");
+  const [range, setRange] = useState<ReportRange>("90d");
+
+  const loadOverview = async (selectedRange: ReportRange) => {
+    setFetching(true);
+    setError("");
+
+    try {
+      const response = await fetch(`/api/admin/reports/overview?range=${selectedRange}`);
+      const payload =
+        (await response.json()) as
+          | { ok: true; overview: ReportsOverview }
+          | { error: string };
+
+      if (!response.ok || !("ok" in payload)) {
+        throw new Error("error" in payload ? payload.error : "Failed to load reports");
+      }
+
+      setOverview(payload.overview);
+    } catch (fetchError) {
+      setError(
+        fetchError instanceof Error ? fetchError.message : "Failed to load reports"
+      );
+    } finally {
+      setFetching(false);
+    }
+  };
 
   useEffect(() => {
     if (loading) return;
-    if (!user) { router.replace("/login"); return; }
-    if (user.role !== "admin") { router.replace("/trainer/dashboard"); return; }
-    
-    (async () => {
-      try {
-        const [p, c, t, s, pl] = await Promise.all([
-          listPayments(),
-          listCustomers(),
-          listTrainers(),
-          listSessions(),
-          listAllPlans(),
-        ]);
-        setPayments(p);
-        setCustomers(c);
-        setTrainers(t);
-        setSessions(s);
-        setPlans(pl);
-      } catch (err) {
-        console.error("Error loading intelligence data:", err);
-      } finally {
-        setDataLoaded(true);
-      }
-    })();
-  }, [loading, user, router]);
+    if (!user) {
+      router.replace("/login");
+      return;
+    }
+    if (user.role !== "admin") {
+      router.replace("/trainer/dashboard");
+      return;
+    }
 
-  if (loading || !dataLoaded) {
+    void loadOverview(range);
+  }, [loading, range, router, user]);
+
+  const kpis = useMemo(() => {
+    if (!overview) return [];
+
+    return [
+      {
+        label: "Total Revenue",
+        value: formatCurrency(overview.metrics.totalRevenue),
+        sub: `${overview.metrics.activeClients} active clients`,
+        icon: DollarSign,
+      },
+      {
+        label: "This Month",
+        value: formatCurrency(overview.metrics.monthRevenue),
+        sub: `${overview.metrics.pendingAssessments} pending assessments`,
+        icon: TrendingUp,
+      },
+      {
+        label: "Session Completion",
+        value: `${overview.metrics.completionRate}%`,
+        sub: `${overview.metrics.totalSessions} sessions in range`,
+        icon: CalendarCheck,
+      },
+      {
+        label: "Retention",
+        value: `${overview.metrics.retentionRate}%`,
+        sub: `${overview.metrics.overduePayments} overdue payments`,
+        icon: Users,
+      },
+    ];
+  }, [overview]);
+
+  const handleExport = async () => {
+    setExporting(true);
+
+    try {
+      const response = await fetch(`/api/admin/reports/export?range=${range}`);
+      if (!response.ok) {
+        const payload = (await response.json().catch(() => ({ error: "Export failed" }))) as {
+          error?: string;
+        };
+        throw new Error(payload.error || "Export failed");
+      }
+
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = `admin-reports-${range}.csv`;
+      anchor.click();
+      URL.revokeObjectURL(url);
+    } catch (exportError) {
+      setError(
+        exportError instanceof Error ? exportError.message : "Export failed"
+      );
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  if (loading || fetching) {
     return (
       <DashboardLayout role="admin">
-        <div className="p-8 max-w-6xl mx-auto space-y-10 animate-pulse">
-          <div className="h-10 w-64 bg-zinc-900 rounded-xl" />
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-             {[1,2,3,4].map(i => <div key={i} className="h-32 bg-zinc-900 rounded-[2rem]" />)}
-          </div>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-             <div className="h-80 bg-zinc-900 rounded-[2.5rem]" />
-             <div className="h-80 bg-zinc-900 rounded-[2.5rem]" />
-          </div>
-        </div>
+        <DashboardPageLoading
+          role="admin"
+          label="Loading server-backed reporting, audit activity, and trend lines."
+        />
       </DashboardLayout>
     );
   }
 
-  const totalRevenue = payments.filter((p) => p.status === "paid").reduce((s, p) => s + p.amount, 0);
-  const thisMonth = new Date().toISOString().slice(0, 7);
-  const monthRevenue = payments
-    .filter((p) => p.status === "paid" && p.paidDate?.startsWith(thisMonth))
-    .reduce((s, p) => s + p.amount, 0);
-  const sessionStats = computeSessionStats(sessions);
-  const activeClients = customers.filter((c) => c.customerStatus === "client").length;
-  const retentionRate = customers.length > 0 ? Math.round((activeClients / customers.length) * 100) : 0;
-  const revenueByMonth = groupRevenueByMonth(payments);
-  const clientsByTrainer = groupClientsByTrainer(plans, trainers);
-
-  const sessionPieData = [
-    { name: "Completed", value: sessionStats.completed },
-    { name: "Cancelled", value: sessionStats.cancelled },
-    { name: "Scheduled", value: sessionStats.scheduled },
-  ].filter((d) => d.value > 0);
+  if (!overview || error) {
+    return (
+      <DashboardLayout role="admin">
+        <DashboardPageError
+          role="admin"
+          title="We could not load the reporting overview."
+          description={error || "Please refresh and try again."}
+          action={
+            <Button
+              onClick={() => void loadOverview(range)}
+              className="bg-slate-950 text-white hover:bg-slate-800"
+            >
+              Try again
+            </Button>
+          }
+        />
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout role="admin">
-      <div className="min-h-screen bg-zinc-950 p-6 lg:p-8">
-        <div className="max-w-6xl mx-auto space-y-12 pb-20">
-          
-          {/* ── Page Header ─────────────────────────────────── */}
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-12"
-          >
-            <div>
-              <div className="inline-flex items-center gap-2 bg-orange-500/10 border border-orange-500/20 rounded-full px-4 py-1.5 text-[10px] font-black uppercase tracking-[0.3em] text-orange-400 mb-6">
-                 <Shield className="w-3 h-3 fill-orange-500" /> Operational Intelligence
+      <div className="min-h-screen bg-[linear-gradient(180deg,#f7f3ec_0%,#fffdf9_38%,#f3f8ff_100%)] p-6 lg:p-8">
+        <div className="mx-auto max-w-7xl space-y-8">
+          <section className="rounded-[2rem] border border-slate-200/80 bg-white/92 p-8 shadow-[0_24px_80px_rgba(15,23,42,0.08)]">
+            <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+              <div>
+                <div className="inline-flex items-center gap-2 rounded-full border border-orange-200 bg-orange-50 px-4 py-1.5 text-[11px] font-black uppercase tracking-[0.24em] text-orange-600">
+                  <Shield className="h-3.5 w-3.5" />
+                  Admin reporting
+                </div>
+                <h1 className="mt-5 text-4xl font-black tracking-tight text-slate-950">
+                  Operational Visibility
+                </h1>
+                <p className="mt-3 max-w-2xl text-base leading-relaxed text-slate-600">
+                  Revenue, delivery health, and audit activity are now summarized on
+                  the server. Use the reporting window to review shorter operational
+                  periods without losing full-platform totals.
+                </p>
               </div>
-              <h1 className="text-4xl lg:text-5xl font-black text-white italic uppercase tracking-tighter leading-none">
-                Intelligence <span className="text-orange-500">Manifest</span>
-              </h1>
-              <p className="text-zinc-500 mt-4 font-medium max-w-xl italic">Aggregating cross-portal performance vectors, financial reconciliation, and logistic efficiency.</p>
-            </div>
-            <div className="flex gap-4">
-               <button className="bg-zinc-900 text-zinc-400 px-6 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest border border-zinc-800 hover:border-zinc-600 transition-all">
-                  Export Data
-               </button>
-            </div>
-          </motion.div>
 
-          {/* ── KPI Grid ────────────────────────────────────── */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            {[
-              { label: "Total Revenue Audit", value: formatCurrency(totalRevenue), icon: DollarSign, color: "text-emerald-500", bg: "bg-emerald-500/10", delay: 0.1 },
-              { label: "Cyclic Yield (Month)", value: formatCurrency(monthRevenue), icon: TrendingUp, color: "text-blue-500", bg: "bg-blue-500/10", delay: 0.2 },
-              { label: "Session Saturation", value: `${sessionStats.completionRate}%`, icon: CalendarCheck, color: "text-orange-500", bg: "bg-orange-500/10", sub: `${sessionStats.completed}/${sessionStats.total} Sessions`, delay: 0.3 },
-              { label: "Retention Index", value: `${retentionRate}%`, icon: Users, color: "text-orange-500", bg: "bg-orange-500/10", sub: `${activeClients} Active Assets`, delay: 0.4 },
-            ].map((stat, i) => (
-              <motion.div 
-                key={i}
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: stat.delay }}
-                className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 relative group overflow-hidden"
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                <label className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs font-black uppercase tracking-[0.2em] text-slate-500">
+                  Window
+                  <select
+                    value={range}
+                    onChange={(event) => setRange(event.target.value as ReportRange)}
+                    className="mt-2 block w-full bg-transparent text-sm font-semibold normal-case tracking-normal text-slate-900 outline-none"
+                  >
+                    {RANGE_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <Button
+                  variant="outline"
+                  onClick={handleExport}
+                  disabled={exporting}
+                  className="h-[54px] rounded-2xl border-slate-200 bg-white px-5 text-sm font-bold uppercase tracking-[0.18em] text-slate-700 hover:bg-slate-50"
+                >
+                  {exporting ? (
+                    <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Download className="mr-2 h-4 w-4" />
+                  )}
+                  Export CSV
+                </Button>
+              </div>
+            </div>
+          </section>
+
+          <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            {kpis.map((item) => (
+              <div
+                key={item.label}
+                className="rounded-[1.75rem] border border-slate-200/80 bg-white/88 p-6 shadow-sm"
               >
-                <div className={`w-10 h-10 rounded-xl ${stat.bg} flex items-center justify-center mb-4 transition-transform group-hover:scale-110`}>
-                  <stat.icon className={`w-5 h-5 ${stat.color}`} />
+                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-orange-50 text-orange-600">
+                  <item.icon className="h-5 w-5" />
                 </div>
-                <p className="text-2xl font-black text-white italic leading-none">{stat.value}</p>
-                <p className="text-[10px] text-zinc-600 font-black uppercase tracking-widest mt-3 italic group-hover:text-zinc-400 transition-colors uppercase">{stat.label}</p>
-                {stat.sub && <p className="text-[9px] text-zinc-700 font-bold uppercase tracking-tight mt-1">{stat.sub}</p>}
-              </motion.div>
+                <p className="mt-5 text-3xl font-black tracking-tight text-slate-950">
+                  {item.value}
+                </p>
+                <p className="mt-2 text-[11px] font-black uppercase tracking-[0.22em] text-slate-500">
+                  {item.label}
+                </p>
+                <p className="mt-3 text-sm text-slate-600">{item.sub}</p>
+              </div>
             ))}
-          </div>
+          </section>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            
-            {/* ── Revenue Volatility Chart ─────────────────────── */}
-            <motion.div 
-              initial={{ opacity: 0, x: -20 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              className="lg:col-span-2 rounded-[2.5rem] bg-zinc-900 border border-zinc-800 p-8 md:p-10 shadow-2xl relative overflow-hidden"
-            >
-              <div className="absolute top-0 right-0 p-10 opacity-[0.03] pointer-events-none">
-                 <Activity className="w-40 h-40 text-white" />
-              </div>
-              
-              <div className="flex items-center justify-between mb-10">
+          <section className="grid gap-6 xl:grid-cols-[1.35fr_0.95fr]">
+            <div className="rounded-[2rem] border border-slate-200/80 bg-white/92 p-6 shadow-sm">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-100 text-slate-700">
+                  <TrendingUp className="h-5 w-5" />
+                </div>
                 <div>
-                   <h2 className="text-[10px] font-black text-white uppercase tracking-[0.2em] italic mb-1">Financial Trajectory</h2>
-                   <p className="text-zinc-500 text-xs font-medium">Monthly revenue audit across the normalized timeline</p>
-                </div>
-                <div className="flex items-center gap-2 px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full">
-                   <Zap className="w-3 h-3 text-emerald-500 fill-emerald-500" />
-                   <span className="text-[9px] font-black text-emerald-400 uppercase tracking-widest">Real-Time</span>
+                  <h2 className="text-lg font-black text-slate-950">
+                    Revenue Trajectory
+                  </h2>
+                  <p className="text-sm text-slate-600">
+                    Paid revenue inside the selected reporting window.
+                  </p>
                 </div>
               </div>
+              <div className="mt-6 h-[320px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={overview.revenueByMonth}>
+                    <defs>
+                      <linearGradient id="revenueFill" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#f97316" stopOpacity={0.28} />
+                        <stop offset="95%" stopColor="#f97316" stopOpacity={0.02} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid stroke="#e2e8f0" vertical={false} />
+                    <XAxis
+                      dataKey="month"
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fill: "#64748b", fontSize: 12, fontWeight: 700 }}
+                    />
+                    <YAxis
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fill: "#64748b", fontSize: 12, fontWeight: 700 }}
+                    />
+                    <Tooltip
+                      formatter={(value) => [formatCurrency(Number(value)), "Revenue"]}
+                      contentStyle={{
+                        borderRadius: "16px",
+                        border: "1px solid #e2e8f0",
+                        boxShadow: "0 20px 50px rgba(15,23,42,0.08)",
+                      }}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="amount"
+                      stroke="#f97316"
+                      fill="url(#revenueFill)"
+                      strokeWidth={3}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
 
-              {revenueByMonth.length > 0 ? (
-                <div className="h-[300px] w-full">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={revenueByMonth}>
-                      <defs>
-                        <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#f97316" stopOpacity={0.3}/>
-                          <stop offset="95%" stopColor="#f97316" stopOpacity={0}/>
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" vertical={false} />
-                      <XAxis 
-                        dataKey="month" 
-                        axisLine={false} 
-                        tickLine={false} 
-                        tick={{ fontSize: 10, fill: "#4b5563", fontWeight: 800 }} 
-                        dy={10} 
-                      />
-                      <YAxis 
-                        axisLine={false} 
-                        tickLine={false} 
-                        tick={{ fontSize: 10, fill: "#4b5563", fontWeight: 800 }} 
-                      />
-                      <Tooltip 
-                        contentStyle={{ backgroundColor: "#18181b", border: "1px solid #27272a", borderRadius: "16px", padding: "12px" }}
-                        itemStyle={{ color: "#fff", fontWeight: 900, fontSize: "12px", textTransform: "uppercase" }}
-                        labelStyle={{ color: "#71717a", marginBottom: "4px", fontSize: "10px", fontWeight: 900, textTransform: "uppercase" }}
-                        formatter={(value) => [`AED ${Number(value ?? 0).toLocaleString()}`, "Revenue"]}
-                      />
-                      <Area 
-                        type="monotone" 
-                        dataKey="amount" 
-                        stroke="#f97316" 
-                        strokeWidth={4} 
-                        fillOpacity={1} 
-                        fill="url(#colorRev)" 
-                      />
-                    </AreaChart>
-                  </ResponsiveContainer>
+            <div className="grid gap-6">
+              <div className="rounded-[2rem] border border-slate-200/80 bg-white/92 p-6 shadow-sm">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-100 text-slate-700">
+                    <Activity className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-black text-slate-950">
+                      Session Mix
+                    </h2>
+                    <p className="text-sm text-slate-600">
+                      Delivery health for the selected time window.
+                    </p>
+                  </div>
                 </div>
-              ) : (
-                <div className="h-[300px] flex items-center justify-center border border-dashed border-zinc-800 rounded-3xl">
-                   <p className="text-zinc-700 font-black uppercase text-[10px] tracking-widest">Awaiting Transaction Data</p>
-                </div>
-              )}
-            </motion.div>
-
-            {/* ── Deployment Distribution ─────────────────────── */}
-            <motion.div 
-               initial={{ opacity: 0, x: 20 }}
-               whileInView={{ opacity: 1, x: 0 }}
-               viewport={{ once: true }}
-               className="rounded-[2.5rem] bg-zinc-900 border border-zinc-800 p-8 md:p-10 shadow-2xl"
-            >
-              <h2 className="text-[10px] font-black text-white uppercase tracking-[0.2em] italic mb-1">Session Saturation</h2>
-              <p className="text-zinc-500 text-xs font-medium mb-10">Cross-portal status distribution</p>
-              
-              {sessionPieData.length > 0 ? (
-                <div className="h-[250px] w-full">
+                <div className="mt-6 h-[250px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
-                        data={sessionPieData}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={60}
-                        outerRadius={90}
+                        data={overview.sessionBreakdown}
                         dataKey="value"
-                        paddingAngle={8}
-                        stroke="none"
+                        nameKey="name"
+                        innerRadius={62}
+                        outerRadius={92}
+                        paddingAngle={4}
                       >
-                        {sessionPieData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        {overview.sessionBreakdown.map((entry, index) => (
+                          <Cell
+                            key={entry.name}
+                            fill={PIE_COLORS[index % PIE_COLORS.length]}
+                          />
                         ))}
                       </Pie>
-                      <Tooltip 
-                         contentStyle={{ backgroundColor: "#18181b", border: "1px solid #27272a", borderRadius: "12px" }}
-                         itemStyle={{ color: "#fff", fontWeight: 900, fontSize: "11px" }}
-                      />
+                      <Tooltip />
                     </PieChart>
                   </ResponsiveContainer>
-                  
-                  <div className="mt-6 grid grid-cols-2 gap-3">
-                     {sessionPieData.map((entry, i) => (
-                       <div key={i} className="flex items-center gap-2">
-                          <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
-                          <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest truncate">{entry.name}</span>
-                          <span className="text-[9px] font-black text-white ml-auto">{entry.value}</span>
-                       </div>
-                     ))}
+                </div>
+              </div>
+
+              <div className="rounded-[2rem] border border-slate-200/80 bg-white/92 p-6 shadow-sm">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-100 text-slate-700">
+                    <BarChart2 className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-black text-slate-950">
+                      Trainer Load
+                    </h2>
+                    <p className="text-sm text-slate-600">
+                      Active client assignments by trainer.
+                    </p>
                   </div>
                 </div>
-              ) : (
-                <div className="h-[250px] flex items-center justify-center border border-dashed border-zinc-800 rounded-3xl">
-                   <p className="text-zinc-700 font-black uppercase text-[10px] tracking-widest">No Active Records</p>
+                <div className="mt-6 h-[250px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={overview.clientsByTrainer}>
+                      <CartesianGrid stroke="#e2e8f0" vertical={false} />
+                      <XAxis
+                        dataKey="trainerName"
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{ fill: "#64748b", fontSize: 11, fontWeight: 700 }}
+                      />
+                      <YAxis
+                        axisLine={false}
+                        tickLine={false}
+                        allowDecimals={false}
+                        tick={{ fill: "#64748b", fontSize: 12, fontWeight: 700 }}
+                      />
+                      <Tooltip />
+                      <Bar dataKey="clientCount" radius={[12, 12, 0, 0]} fill="#0f766e" />
+                    </BarChart>
+                  </ResponsiveContainer>
                 </div>
-              )}
-            </motion.div>
-          </div>
-
-          {/* ── Trainer Performance Archive ──────────────────── */}
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="rounded-[2.5rem] bg-zinc-900 border border-zinc-800 overflow-hidden shadow-2xl"
-          >
-            <div className="px-10 py-8 border-b border-zinc-800 bg-zinc-950/30 flex items-center justify-between">
-              <div>
-                <h2 className="text-sm font-black text-white uppercase tracking-[0.2em] italic">Deployment Matrix (By Trainer)</h2>
-                <p className="text-zinc-600 font-medium text-[10px] mt-1">Personnel performance and financial yield tracking</p>
               </div>
-              <Layers className="w-5 h-5 text-zinc-800" />
             </div>
-            
-            <div className="overflow-x-auto">
-              <table className="w-full text-left">
-                <thead>
-                  <tr className="border-b border-zinc-800/50 bg-zinc-950/10">
-                    <th className="px-10 py-5 text-[10px] font-black text-zinc-600 uppercase tracking-widest italic">Commander</th>
-                    <th className="px-10 py-5 text-[10px] font-black text-zinc-600 uppercase tracking-widest italic text-center">Active Units</th>
-                    <th className="px-10 py-5 text-[10px] font-black text-zinc-600 uppercase tracking-widest italic text-right">Total Aggregate</th>
-                    <th className="px-10 py-5 text-[10px] font-black text-zinc-600 uppercase tracking-widest italic text-right">Settled Yield</th>
-                    <th className="px-10 py-5 text-[10px] font-black text-zinc-600 uppercase tracking-widest italic text-right">Variance</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-zinc-800/30">
-                  {trainers.map((trainer, idx) => {
-                    const trainerClientIds = plans
-                      .filter((p) => p.trainerId === trainer.id && p.status === "active")
-                      .map((p) => p.userId);
-                    const trainerPayments = payments.filter((p) => trainerClientIds.includes(p.userId));
-                    const totalBilled = trainerPayments.reduce((s, p) => s + p.amount, 0);
-                    const totalPaid = trainerPayments.filter((p) => p.status === "paid").reduce((s, p) => s + p.amount, 0);
-                    const pending = trainerPayments.filter((p) => p.status === "pending" || p.status === "overdue").reduce((s, p) => s + p.amount, 0);
-                    
-                    return (
-                      <motion.tr 
-                        key={trainer.id}
-                        initial={{ opacity: 0 }}
-                        whileInView={{ opacity: 1 }}
-                        transition={{ delay: idx * 0.05 }}
-                        className="hover:bg-zinc-800/30 transition-colors group cursor-default"
-                      >
-                        <td className="px-10 py-6">
-                           <div className="flex items-center gap-4">
-                              <div className="w-10 h-10 rounded-xl bg-orange-600/10 border border-orange-600/20 flex items-center justify-center text-orange-500 font-black text-sm italic group-hover:bg-orange-600 group-hover:text-white transition-all">
-                                 {trainer.name.charAt(0)}
-                              </div>
-                              <span className="font-black text-white text-sm uppercase italic tracking-tight">{trainer.name}</span>
-                           </div>
-                        </td>
-                        <td className="px-10 py-6 text-center">
-                           <span className="text-zinc-400 font-black text-base italic">{trainerClientIds.length}</span>
-                        </td>
-                        <td className="px-10 py-6 text-right">
-                           <span className="text-zinc-500 font-black text-sm italic">{formatCurrency(totalBilled)}</span>
-                        </td>
-                        <td className="px-10 py-6 text-right">
-                           <span className="text-emerald-500 font-black text-sm italic">{formatCurrency(totalPaid)}</span>
-                        </td>
-                        <td className="px-10 py-6 text-right">
-                           <span className={`font-black text-sm italic ${pending > 0 ? "text-rose-500" : "text-zinc-800"}`}>
-                              {pending > 0 ? formatCurrency(pending) : "NOMINAL"}
-                           </span>
-                        </td>
-                      </motion.tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-            
-            {trainers.length === 0 && (
-               <div className="p-20 text-center">
-                  <Zap className="w-10 h-10 text-zinc-800 mx-auto mb-4 opacity-20" />
-                  <p className="text-zinc-700 font-black uppercase text-[10px] tracking-widest italic">Zero Operational Personnel Detected</p>
-               </div>
-            )}
-          </motion.div>
+          </section>
 
+          <section className="rounded-[2rem] border border-slate-200/80 bg-white/92 p-6 shadow-sm">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-100 text-slate-700">
+                <Shield className="h-5 w-5" />
+              </div>
+              <div>
+                <h2 className="text-lg font-black text-slate-950">
+                  Recent Audit Activity
+                </h2>
+                <p className="text-sm text-slate-600">
+                  Latest server-side actions inside the selected reporting window.
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-6">
+              {overview.recentAudit.length > 0 ? (
+                <div className="grid gap-3">
+                  {overview.recentAudit.map((item) => (
+                    <div
+                      key={item.id}
+                      className="grid gap-3 rounded-[1.5rem] border border-slate-200/80 bg-slate-50 px-5 py-4 md:grid-cols-[1.1fr_0.8fr_0.8fr]"
+                    >
+                      <div>
+                        <p className="text-[11px] font-black uppercase tracking-[0.2em] text-orange-600">
+                          {item.actorName}
+                        </p>
+                        <p className="mt-2 text-sm font-semibold text-slate-900 capitalize">
+                          {prettifyAction(item.action)}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-500">
+                          Entity
+                        </p>
+                        <p className="mt-2 text-sm text-slate-700">
+                          {item.entityType} · {item.entityId.slice(0, 8)}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-500">
+                          When
+                        </p>
+                        <p className="mt-2 text-sm text-slate-700">
+                          {new Date(item.createdAt).toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <DashboardPageEmpty
+                  role="admin"
+                  title="No audit records in this range yet."
+                  description="Try a wider reporting window or export the current summary for offline review."
+                />
+              )}
+            </div>
+          </section>
         </div>
       </div>
     </DashboardLayout>

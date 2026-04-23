@@ -1,3 +1,5 @@
+// Legacy localStorage helper kept only for archived `src/app_old` references.
+// Active runtime flows must use Supabase-backed reads and same-origin API routes instead.
 export function getItems<T>(key: string): T[] {
   if (typeof window === 'undefined') return [];
   try {

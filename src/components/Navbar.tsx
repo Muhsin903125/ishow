@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useAuth } from "@/contexts/AuthContext";
-import { Menu, X, User, LogOut, LayoutDashboard, Flame, ChevronRight } from "lucide-react";
+import { Menu, X, LogOut, LayoutDashboard, Flame, ChevronRight } from "lucide-react";
 
 export default function Navbar() {
   const { user, logout } = useAuth();
@@ -38,19 +38,20 @@ export default function Navbar() {
 
   const navLinks = [
     // { label: "Home", href: "/", id: null },
-    { label: "Services", href: "/#services", id: "#services" },
-    // { label: "Methodology", href: "/#how-it-works", id: "#how-it-works" },
-    { label: "Results", href: "/#results", id: "#results" },
-    { label: "Coach", href: "/#coach", id: "#coach" },
+    { label: "Services", href: "/services", id: null },
+    // { label: "Results", href: "/#results", id: "#results" },
+    // { label: "Coach", href: "/#coach", id: "#coach" },
+    { label: "About", href: "/about", id: null },
+    // { label: "FAQ", href: "/faq", id: null },
+    // { label: "Content", href: "/content", id: null },
+    { label: "Contact", href: "/contact", id: null },
   ];
-
-  const isDark = pathname === "/" || pathname.startsWith("/login") || pathname.startsWith("/register");
 
   return (
     <nav
       className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-500 ${
         scrolled
-          ? "bg-zinc-950/80 backdrop-blur-2xl border-b border-zinc-800/50 py-3"
+          ? "bg-[rgba(246,240,231,0.88)] backdrop-blur-2xl border-b border-slate-200/80 py-3 shadow-[0_20px_50px_rgba(15,23,42,0.08)]"
           : "bg-transparent py-5"
       }`}
     >
@@ -62,7 +63,7 @@ export default function Navbar() {
             <div className="w-7 h-7 bg-orange-500 rounded flex items-center justify-center group-hover:scale-110 transition-transform">
               <Flame className="w-4 h-4 text-white fill-white" />
             </div>
-            <span className="font-[family-name:var(--font-barlow)] font-black text-lg text-white tracking-widest uppercase italic">
+            <span className={`font-black text-lg tracking-widest uppercase italic transition-colors ${scrolled ? "text-slate-950" : "text-[#fffaf6]"}`}>
               iShow<span className="text-orange-500">Transformation</span>
             </span>
           </Link>
@@ -78,7 +79,9 @@ export default function Navbar() {
                   className={`text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-300 relative group/link ${
                     pathname === link.href || (link.id && pathname === "/")
                       ? "text-orange-500"
-                      : "text-zinc-500 hover:text-white"
+                      : scrolled
+                        ? "text-slate-500 hover:text-slate-950"
+                        : "text-[rgba(255,250,246,0.72)] hover:text-[#fffaf6]"
                   }`}
                 >
                   {link.label}
@@ -89,13 +92,13 @@ export default function Navbar() {
               ))}
             </div>
 
-            <div className="h-4 w-[1px] bg-zinc-800/50" />
+            <div className={`h-4 w-[1px] ${scrolled ? "bg-slate-300/80" : "bg-white/20"}`} />
 
             {!user ? (
               <div className="flex items-center gap-6">
                 <Link 
                   href="/login" 
-                  className="text-white text-[10px] font-black uppercase tracking-[0.2em] hover:text-orange-500 transition-colors"
+                  className={`text-[10px] font-black uppercase tracking-[0.2em] hover:text-orange-500 transition-colors ${scrolled ? "text-slate-950" : "text-[#fffaf6]"}`}
                 >
                   Login
                 </Link>
@@ -108,16 +111,16 @@ export default function Navbar() {
               </div>
             ) : (
               <div className="flex items-center gap-6">
-                 <Link
+                <Link
                   href={user.role === "trainer" ? "/trainer/dashboard" : "/dashboard"}
                   className="flex items-center gap-2 group"
                 >
-                  <LayoutDashboard className="w-4 h-4 text-zinc-500 group-hover:text-orange-500 transition-colors" />
-                  <span className="text-zinc-400 group-hover:text-white text-[10px] font-black uppercase tracking-[0.2em] transition-colors">Dashboard</span>
+                  <LayoutDashboard className={`w-4 h-4 transition-colors group-hover:text-orange-500 ${scrolled ? "text-slate-500" : "text-[rgba(255,250,246,0.72)]"}`} />
+                  <span className={`text-[10px] font-black uppercase tracking-[0.2em] transition-colors group-hover:text-orange-500 ${scrolled ? "text-slate-700" : "text-[#fffaf6]"}`}>Dashboard</span>
                 </Link>
                 <button
                   onClick={handleSignOut}
-                  className="p-2 text-zinc-600 hover:text-red-500 transition-colors"
+                  className={`p-2 hover:text-red-500 transition-colors ${scrolled ? "text-slate-500" : "text-[rgba(255,250,246,0.72)]"}`}
                   title="Sign Out"
                 >
                   <LogOut className="w-5 h-5" />
@@ -129,7 +132,11 @@ export default function Navbar() {
           {/* Mobile Menu Trigger */}
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
-            className="lg:hidden w-10 h-10 flex items-center justify-center bg-zinc-900 border border-zinc-800 rounded-xl text-white"
+            className={`lg:hidden w-10 h-10 flex items-center justify-center rounded-xl transition-colors ${
+              scrolled
+                ? "bg-white/90 border border-slate-200 text-slate-950"
+                : "bg-[rgba(17,24,39,0.48)] border border-white/15 text-[#fffaf6]"
+            }`}
           >
             {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
@@ -150,10 +157,12 @@ export default function Navbar() {
                 key={link.label}
                 href={link.href}
                 onClick={(e) => {
-                  link.id && handleSmoothScroll(e, link.id);
+                  if (link.id) {
+                    handleSmoothScroll(e, link.id);
+                  }
                   setMobileOpen(false);
                 }}
-                className="flex items-center justify-between text-3xl font-[family-name:var(--font-barlow)] font-extrabold uppercase text-white group"
+                className="flex items-center justify-between text-3xl font-extrabold uppercase text-white group"
               >
                 {link.label}
                 <ChevronRight className="w-6 h-6 text-orange-500 opacity-0 group-hover:opacity-100 -translate-x-4 group-hover:translate-x-0 transition-all" />

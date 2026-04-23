@@ -95,7 +95,7 @@ export function NotificationBell() {
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setOpen((o) => !o)}
-        className="relative w-9 h-9 flex items-center justify-center rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
+        className="relative w-9 h-9 flex items-center justify-center rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
         aria-label="Notifications"
       >
         <Bell className="w-[18px] h-[18px]" />
@@ -107,10 +107,10 @@ export function NotificationBell() {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-12 w-80 bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl shadow-black/50 z-50 overflow-hidden">
+        <div className="absolute right-0 top-12 w-80 bg-background border border-border rounded-2xl shadow-2xl z-50 overflow-hidden">
           <div className="h-0.5 w-full bg-gradient-to-r from-transparent via-orange-500 to-transparent" />
-          <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-800">
-            <h3 className="font-bold text-sm text-white">Notifications</h3>
+          <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+            <h3 className="font-bold text-sm text-foreground">Notifications</h3>
             {unreadCount > 0 && (
               <button
                 onClick={handleMarkAllRead}
@@ -120,9 +120,9 @@ export function NotificationBell() {
               </button>
             )}
           </div>
-          <div className="max-h-72 overflow-y-auto divide-y divide-zinc-800/60">
+          <div className="max-h-72 overflow-y-auto divide-y divide-border">
             {notifications.length === 0 && (
-              <p className="text-sm text-zinc-500 text-center py-8">
+              <p className="text-sm text-muted-foreground text-center py-8">
                 No notifications yet
               </p>
             )}
@@ -131,19 +131,19 @@ export function NotificationBell() {
                 key={n.id}
                 href={n.href ?? "#"}
                 onClick={() => setOpen(false)}
-                className={`flex gap-3 px-4 py-3 hover:bg-zinc-800/60 transition-colors ${
-                  !n.isRead ? "bg-orange-500/5" : ""
+                className={`flex gap-3 px-4 py-3 hover:bg-muted transition-colors ${
+                  !n.isRead ? "bg-orange-50" : ""
                 }`}
               >
                 {!n.isRead && (
                   <span className="w-2 h-2 rounded-full bg-orange-500 mt-1.5 flex-shrink-0" />
                 )}
                 <div className={n.isRead ? "pl-5" : ""}>
-                  <p className="text-sm font-semibold text-white">{n.title}</p>
+                  <p className="text-sm font-semibold text-foreground">{n.title}</p>
                   {n.body && (
-                    <p className="text-xs text-zinc-400 mt-0.5 line-clamp-2">{n.body}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{n.body}</p>
                   )}
-                  <p className="text-xs text-zinc-600 mt-1">
+                  <p className="text-xs text-muted-foreground/80 mt-1">
                     {new Date(n.createdAt).toLocaleDateString("en-US", {
                       month: "short",
                       day: "numeric",

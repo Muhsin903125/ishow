@@ -5,15 +5,13 @@ import { useRouter } from "next/router";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import DashboardLayout from "@/components/DashboardLayout";
-import { listSessions, createSession, updateSession, type TrainingSession } from "@/lib/db/sessions";
-import { createProgram, updateProgram, deleteProgram, listPrograms, type Program } from "@/lib/db/programs";
-import { listCustomers, type Profile } from "@/lib/db/profiles";
-import { getExercises, type Exercise } from "@/lib/db/master";
-import { notify } from "@/lib/email/notify";
+import { loadTrainerWorkspace } from "@/lib/api/workspace";
+import { createSession, updateSession, type TrainingSession } from "@/lib/db/sessions";
+import { createProgram, updateProgram, deleteProgram, type Program } from "@/lib/db/programs";
+import type { Profile } from "@/lib/db/profiles";
+import type { Exercise } from "@/lib/db/master";
 import { 
-  Calendar, 
   Loader2, 
-  Clock, 
   User, 
   Plus, 
   Pencil, 
@@ -21,19 +19,12 @@ import {
   CheckCircle,
   Activity,
   Zap,
-  ChevronRight,
-  ArrowRight,
-  AlertCircle,
-  Sparkles,
   Dumbbell,
-  Target,
   Trash2,
   ChevronDown,
   ChevronUp,
   PlusCircle,
-  Copy,
   Layers,
-  LayoutGrid,
 } from "lucide-react";
 
 const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
@@ -66,7 +57,6 @@ export default function TrainerOperationsPage() {
   const [clients, setClients] = useState<Profile[]>([]);
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [dataLoaded, setDataLoaded] = useState(false);
-  const [activeTab, setActiveTab] = useState<"execution" | "curriculum">("execution");
 
   // UI State
   const [expandedProgram, setExpandedProgram] = useState<string | null>(null);
@@ -91,33 +81,59 @@ export default function TrainerOperationsPage() {
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState("");
 
-  useEffect(() => {
-    if (!loading) {
-      if (!user) { router.replace("/login"); return; }
-      if (user.role !== "trainer") { router.replace("/dashboard"); return; }
-      loadData();
-    }
-  }, [user, loading, router]); // eslint-disable-line
-
-  const loadData = async () => {
+  async function loadData() {
     if (!user) return;
     try {
-      const [allSessions, allPrograms, allCustomers, allExercises] = await Promise.all([
-        listSessions({ trainerId: user.id }),
-        listPrograms({ trainerId: user.id }),
-        listCustomers(),
-        getExercises()
-      ]);
-      setClients(allCustomers);
-      setPrograms(allPrograms);
-      setExercises(allExercises);
-      setSessions(allSessions.sort((a, b) => a.scheduledDate.localeCompare(b.scheduledDate)));
+      const workspace = await loadTrainerWorkspace();
+      setClients(workspace.clients);
+      setPrograms(workspace.programs);
+      setExercises(workspace.exercises);
+      setSessions(
+        [...workspace.sessions].sort((a, b) =>
+          a.scheduledDate.localeCompare(b.scheduledDate)
+        )
+      );
     } catch (err) {
       console.error("Error loading operations data:", err);
     } finally {
       setDataLoaded(true);
     }
-  };
+  }
+
+  useEffect(() => {
+    if (!loading) {
+      if (!user) { router.replace("/login"); return; }
+      if (user.role !== "trainer") { router.replace("/dashboard"); return; }
+
+      let active = true;
+
+      (async () => {
+        try {
+          const workspace = await loadTrainerWorkspace();
+
+          if (!active) return;
+          setClients(workspace.clients);
+          setPrograms(workspace.programs);
+          setExercises(workspace.exercises);
+          setSessions(
+            [...workspace.sessions].sort((a, b) =>
+              a.scheduledDate.localeCompare(b.scheduledDate)
+            )
+          );
+        } catch (err) {
+          console.error("Error loading operations data:", err);
+        } finally {
+          if (active) {
+            setDataLoaded(true);
+          }
+        }
+      })();
+
+      return () => {
+        active = false;
+      };
+    }
+  }, [user, loading, router]);
 
   // --- Session Logic ---
   const handleSaveSession = async () => {
@@ -128,10 +144,6 @@ export default function TrainerOperationsPage() {
     }
     setSaving(true);
     try {
-      const client = clients.find(c => c.id === sessionForm.userId);
-      const clientName = client?.name || "Client";
-      const clientEmail = client?.email || "";
-
       if (editingSession) {
         await updateSession(editingSession.id, {
           title: sessionForm.title,
@@ -140,14 +152,6 @@ export default function TrainerOperationsPage() {
           duration: sessionForm.duration,
           notes: sessionForm.notes,
         });
-        if (clientEmail) {
-          await notify("session-rescheduled", clientEmail, {
-            clientName,
-            sessionTitle: sessionForm.title,
-            newDate: sessionForm.scheduledDate,
-            newTime: sessionForm.scheduledTime,
-          });
-        }
       } else {
         await createSession({
           userId: sessionForm.userId,
@@ -159,36 +163,31 @@ export default function TrainerOperationsPage() {
           status: "scheduled",
           notes: sessionForm.notes,
         });
-        if (clientEmail) {
-          await notify("session-scheduled", clientEmail, {
-            clientName,
-            sessionTitle: sessionForm.title,
-            sessionDate: sessionForm.scheduledDate,
-            sessionTime: sessionForm.scheduledTime,
-            duration: String(sessionForm.duration),
-            notes: sessionForm.notes || "None",
-          });
-        }
       }
       setShowSessionModal(false);
       await loadData();
-    } catch (err) {
+    } catch {
       setFormError("Terminal error during sync. Retry protocol.");
     } finally {
       setSaving(false);
     }
   };
 
-  const handleCancelSession = async (sessionId: string, sessionTitle: string, user_id: string) => {
-    if (!window.confirm("Confirm mission termination. Client will be synchronized.")) return;
-    await updateSession(sessionId, { status: "cancelled" });
-    const client = clients.find(c => c.id === user_id);
-    if (client?.email) {
-      await notify("session-cancelled", client.email, {
-        clientName: client.name || "Client",
-        sessionTitle: sessionTitle,
-      }).catch(console.error);
+  const handleCancelSession = async (sessionId: string) => {
+    const cancelReason = window.prompt(
+      "Share the cancellation reason. This will be sent to the client."
+    );
+
+    if (cancelReason === null) return;
+    if (!cancelReason.trim()) {
+      setFormError("Cancellation reason required before synchronizing the client.");
+      return;
     }
+
+    await updateSession(sessionId, {
+      status: "cancelled",
+      cancelReason: cancelReason.trim(),
+    });
     await loadData();
   };
 
@@ -282,7 +281,7 @@ export default function TrainerOperationsPage() {
       setEditingProgramId(null);
       setProgramForm(emptyProgramForm());
       await loadData();
-    } catch (e) {
+    } catch {
       setFormError("Syllabus sync failed.");
     } finally {
       setSaving(false);
@@ -424,6 +423,13 @@ export default function TrainerOperationsPage() {
                           >
                             <Pencil className="w-4 h-4" />
                           </button>
+                          <button
+                            onClick={() => handleCancelSession(s.id)}
+                            className="p-2.5 bg-rose-500/10 border border-rose-500/20 text-rose-400 hover:bg-rose-500 hover:text-white transition-all rounded-xl active:scale-90"
+                            title="Cancel"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
                         </div>
                       </motion.div>
                     ))}
@@ -451,6 +457,11 @@ export default function TrainerOperationsPage() {
                       <div className="min-w-0">
                         <p className="text-[11px] font-black text-zinc-300 uppercase truncate">{s.title}</p>
                         <p className="text-[9px] text-zinc-600 font-bold uppercase mt-0.5">{new Date(s.scheduledDate).toLocaleDateString('en-GB', {day:'numeric', month:'short'})}</p>
+                        {s.status === "cancelled" && s.cancelReason ? (
+                          <p className="mt-1 text-[9px] font-bold uppercase tracking-wide text-rose-400/80">
+                            {s.cancelReason}
+                          </p>
+                        ) : null}
                       </div>
                     </div>
                   ))}

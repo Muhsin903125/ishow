@@ -1,13 +1,12 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { useAuth } from "@/contexts/AuthContext";
-import { Mail, Lock, AlertCircle, Loader2, Zap, Eye, EyeOff, ArrowRight, Flame } from "lucide-react";
+import { isDemoAuthEnabled, useAuth } from "@/contexts/AuthContext";
+import { Mail, Lock, AlertCircle, Loader2, Zap, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardFooter } from "@/components/ui/card";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -19,12 +18,14 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [gLoading, setGLoading] = useState(false);
   const [showPw, setShowPw] = useState(false);
+  const demoEnabled = isDemoAuthEnabled();
+  const redirecting = !authLoading && !!user;
 
   useEffect(() => {
     if (!authLoading && user) {
-      if (user.role === 'admin') router.push('/admin');
-      else if (user.role === 'trainer') router.push('/trainer/dashboard');
-      else router.push('/dashboard');
+      if (user.role === 'admin') router.replace('/admin');
+      else if (user.role === 'trainer') router.replace('/trainer/dashboard');
+      else router.replace('/dashboard');
     }
   }, [authLoading, router, user]);
 
@@ -60,7 +61,19 @@ export default function LoginPage() {
     setPassword(demoCredentials[type].password);
   };
 
-  if (!authLoading && user) return null;
+  if ((!authLoading && user) || redirecting) {
+    return (
+      <div className="min-h-screen bg-muted/20 flex items-center justify-center p-6">
+        <div className="flex items-center gap-3 rounded-xl border border-border bg-background px-5 py-4 shadow-sm">
+          <Loader2 className="w-5 h-5 animate-spin text-orange-600" />
+          <div>
+            <p className="text-sm font-semibold text-foreground">Opening your dashboard</p>
+            <p className="text-xs text-muted-foreground">Finishing sign-in and loading your workspace.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-muted/20 flex flex-col items-center justify-center p-6 sm:p-8">
@@ -155,25 +168,27 @@ export default function LoginPage() {
             </Button>
           </CardContent>
 
-          <CardFooter className="flex flex-col gap-4 bg-muted/30 border-t border-border p-6 sm:p-8 rounded-b-xl">
-             <div className="flex items-center gap-2 mb-1 w-full">
-                <Zap className="w-3.5 h-3.5 text-orange-600 fill-current" />
-                <p className="text-[10px] text-foreground font-bold uppercase tracking-widest">Rapid Sandbox Access</p>
-             </div>
-             <div className="grid grid-cols-3 gap-2 w-full">
-                {(["Admin", "Trainer", "Customer"] as const).map((role) => (
-                  <Button
-                    key={role}
-                    variant="outline"
-                    size="sm"
-                    onClick={() => fillDemo(role.toLowerCase() as "admin" | "trainer" | "customer")}
-                    className="bg-background hover:bg-orange-600 hover:text-white border-border text-[10px] font-bold uppercase tracking-tight h-8 shadow-sm transition-all"
-                  >
-                    {role}
-                  </Button>
-                ))}
-             </div>
-          </CardFooter>
+          {demoEnabled ? (
+            <CardFooter className="flex flex-col gap-4 bg-muted/30 border-t border-border p-6 sm:p-8 rounded-b-xl">
+               <div className="flex items-center gap-2 mb-1 w-full">
+                  <Zap className="w-3.5 h-3.5 text-orange-600 fill-current" />
+                  <p className="text-[10px] text-foreground font-bold uppercase tracking-widest">Rapid Sandbox Access</p>
+               </div>
+               <div className="grid grid-cols-3 gap-2 w-full">
+                  {(["Admin", "Trainer", "Customer"] as const).map((role) => (
+                    <Button
+                      key={role}
+                      variant="outline"
+                      size="sm"
+                      onClick={() => fillDemo(role.toLowerCase() as "admin" | "trainer" | "customer")}
+                      className="bg-background hover:bg-orange-600 hover:text-white border-border text-[10px] font-bold uppercase tracking-tight h-8 shadow-sm transition-all"
+                    >
+                      {role}
+                    </Button>
+                  ))}
+               </div>
+            </CardFooter>
+          ) : null}
         </Card>
 
         <div className="text-center space-y-4 pt-2">

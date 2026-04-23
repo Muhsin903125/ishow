@@ -5,26 +5,17 @@ import { useRouter } from "next/router";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import DashboardLayout from "@/components/DashboardLayout";
-import { listSessions, updateSession, type TrainingSession } from "@/lib/db/sessions";
-import { listPrograms, type Program, type ProgramActivity } from "@/lib/db/programs";
-import { getActivePlan } from "@/lib/db/plans";
-import { getProfile } from "@/lib/db/profiles";
-import { notify } from "@/lib/email/notify";
+import { apiRequest } from "@/lib/api/client";
+import { loadCustomerWorkspace } from "@/lib/api/workspace";
+import { updateSession, type TrainingSession } from "@/lib/db/sessions";
+import type { Program } from "@/lib/db/programs";
 import {
-  Calendar,
   Clock,
   CheckCircle,
   XCircle,
-  AlertCircle,
   X,
   RefreshCw,
-  Loader2,
-  ArrowUpRight,
   Activity,
-  ChevronRight,
-  MapPin,
-  MessageSquare,
-  Zap,
   Dumbbell,
   Target,
   Layers,
@@ -69,7 +60,6 @@ export default function TrainingHubPage() {
   const [sessions, setSessions] = useState<TrainingSession[]>([]);
   const [programs, setPrograms] = useState<Program[]>([]);
   const [dataLoaded, setDataLoaded] = useState(false);
-  const [trainerEmail, setTrainerEmail] = useState("");
 
   // UI State
   const [expandedProgram, setExpandedProgram] = useState<string | null>(null);
@@ -85,19 +75,9 @@ export default function TrainingHubPage() {
   const loadData = async () => {
     if (!user) return;
     try {
-      const [userSessions, userPrograms, activePlan] = await Promise.all([
-        listSessions({ userId: user.id }),
-        listPrograms({ userId: user.id }),
-        getActivePlan(user.id)
-      ]);
-      
-      setSessions(userSessions);
-      setPrograms(userPrograms.sort((a, b) => b.weekNumber - a.weekNumber));
-
-      if (activePlan?.trainerId) {
-        const trainerProfile = await getProfile(activePlan.trainerId);
-        if (trainerProfile?.email) setTrainerEmail(trainerProfile.email);
-      }
+      const workspace = await loadCustomerWorkspace();
+      setSessions(workspace.sessions);
+      setPrograms([...workspace.programs].sort((a, b) => b.weekNumber - a.weekNumber));
     } catch (err) {
       console.error("Error loading hub data:", err);
     } finally {
@@ -117,13 +97,13 @@ export default function TrainingHubPage() {
     return (
       <DashboardLayout role="customer">
         <div className="p-8 max-w-full mx-auto space-y-8 animate-pulse">
-          <div className="h-10 w-64 bg-zinc-900 rounded-lg" />
+          <div className="h-10 w-64 bg-muted rounded-lg" />
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
              <div className="lg:col-span-8 space-y-4">
-                {[1,2].map(i => <div key={i} className="h-32 bg-zinc-900 rounded-2xl" />)}
+                {[1,2].map(i => <div key={i} className="h-32 bg-muted rounded-2xl" />)}
              </div>
              <div className="lg:col-span-4 space-y-4">
-                {[1,2,3].map(i => <div key={i} className="h-24 bg-zinc-900 rounded-2xl" />)}
+                {[1,2,3].map(i => <div key={i} className="h-24 bg-muted rounded-2xl" />)}
              </div>
           </div>
         </div>
@@ -153,17 +133,21 @@ export default function TrainingHubPage() {
     if (!rescheduleDate || !rescheduleSession) return;
     setRescheduleSending(true);
     try {
-      if (trainerEmail) {
-        await notify("session-rescheduled", trainerEmail, {
-          name: user?.name ?? "A client",
-          title: rescheduleSession.title,
-          date: rescheduleDate,
-          time: rescheduleSession.scheduledTime,
-          duration: String(rescheduleSession.duration),
-          oldDate: rescheduleSession.scheduledDate,
-          oldTime: rescheduleSession.scheduledTime,
-        });
-      }
+      await apiRequest<{ ok: true }>(
+        `/api/sessions/${rescheduleSession.id}/reschedule-request`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            request: {
+              preferredDate: rescheduleDate,
+              note: rescheduleNote,
+            },
+          }),
+        }
+      );
       setRescheduleSuccess(true);
       setTimeout(() => {
         setShowRescheduleModal(false);
@@ -178,23 +162,23 @@ export default function TrainingHubPage() {
 
   return (
     <DashboardLayout role="customer">
-      <div className="min-h-screen bg-zinc-950 p-6 lg:p-10">
+      <div className="min-h-screen bg-transparent p-6 lg:p-10 font-sans">
         <div className="max-w-full">
           
           {/* Header */}
-          <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-8 mb-12 border-b border-zinc-900 pb-10">
+          <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-8 mb-12 border-b border-border pb-10">
             <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
               <div className="flex items-center gap-4 mb-4">
-                <div className="w-14 h-14 rounded-2xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center shadow-[0_0_40px_rgba(249,115,22,0.1)]">
+                <div className="w-14 h-14 rounded-2xl bg-orange-50 border border-orange-100 flex items-center justify-center shadow-sm">
                   <Target className="w-7 h-7 text-orange-500" />
                 </div>
                 <div>
-                  <h1 className="text-4xl font-black text-white italic uppercase tracking-tighter">
+                  <h1 className="text-4xl font-bold text-foreground tracking-tight">
                     Training <span className="text-orange-500">Hub</span>
                   </h1>
                 </div>
               </div>
-              <p className="text-zinc-500 font-black uppercase text-[10px] tracking-[0.4em] italic flex items-center gap-2">
+              <p className="text-muted-foreground font-bold uppercase text-[10px] tracking-[0.3em] flex items-center gap-2">
                 Operational Dashboard <span className="w-1 h-1 bg-zinc-800 rounded-full" /> Live Deployment Feed
               </p>
             </motion.div>
@@ -207,7 +191,7 @@ export default function TrainingHubPage() {
               
               <section>
                 <div className="flex items-center justify-between mb-8">
-                  <h2 className="text-[10px] font-black text-white uppercase tracking-[0.4em] flex items-center gap-3 italic">
+                  <h2 className="text-[10px] font-bold text-foreground uppercase tracking-[0.3em] flex items-center gap-3">
                     <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(59,130,246,0.5)]" />
                     Incoming Operations ({upcomingSessions.length})
                   </h2>
@@ -221,23 +205,23 @@ export default function TrainingHubPage() {
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: idx * 0.05 }}
-                        className="bg-zinc-900/50 border border-zinc-800/60 rounded-[2.5rem] p-8 group hover:border-blue-500/30 transition-all relative overflow-hidden"
+                        className="bg-background border border-border rounded-[2rem] p-8 group hover:border-blue-200 transition-all relative overflow-hidden shadow-sm"
                       >
                         <div className="absolute top-0 right-0 p-8 opacity-[0.03] group-hover:opacity-10 transition-opacity">
-                          <Activity className="w-24 h-24 text-white" />
+                          <Activity className="w-24 h-24 text-foreground" />
                         </div>
                         
                         <div className="flex items-start justify-between mb-8">
-                           <div className="w-16 h-16 rounded-2xl bg-zinc-950 border border-zinc-800 flex flex-col items-center justify-center shrink-0 group-hover:bg-blue-500 group-hover:text-white transition-all shadow-inner">
-                              <p className="text-[10px] font-black uppercase opacity-40 leading-none mb-1">{new Date(s.scheduledDate).toLocaleString('en-US',{month:'short'})}</p>
-                              <p className="text-2xl font-black italic leading-none">{new Date(s.scheduledDate).getDate()}</p>
+                           <div className="w-16 h-16 rounded-2xl bg-muted border border-border flex flex-col items-center justify-center shrink-0 group-hover:bg-blue-500 group-hover:text-white transition-all shadow-inner">
+                              <p className="text-[10px] font-bold uppercase opacity-50 leading-none mb-1">{new Date(s.scheduledDate).toLocaleString('en-US',{month:'short'})}</p>
+                              <p className="text-2xl font-bold leading-none">{new Date(s.scheduledDate).getDate()}</p>
                            </div>
                            <StatusBadge status={s.status} />
                         </div>
 
                         <div className="mb-8">
-                          <p className="text-xl font-black text-white uppercase italic tracking-tight mb-2 truncate">{s.title}</p>
-                          <div className="flex items-center gap-6 text-[10px] font-black text-zinc-500 uppercase tracking-widest italic">
+                          <p className="text-xl font-bold text-foreground tracking-tight mb-2 truncate">{s.title}</p>
+                          <div className="flex items-center gap-6 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
                             <span className="flex items-center gap-2">
                               <Clock className="w-3.5 h-3.5 text-blue-500" />
                               {s.scheduledTime}
@@ -249,20 +233,20 @@ export default function TrainingHubPage() {
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-6 border-t border-zinc-800 pt-6">
+                        <div className="flex items-center gap-6 border-t border-border pt-6">
                            <button
                              onClick={() => {
                                setRescheduleSession(s);
                                setRescheduleDate("");
                                setShowRescheduleModal(true);
                              }}
-                            className="text-[10px] font-black text-blue-500 hover:text-white uppercase tracking-widest flex items-center gap-2 transition-colors"
+                            className="text-[10px] font-bold text-blue-600 hover:text-blue-700 uppercase tracking-widest flex items-center gap-2 transition-colors"
                           >
                             <RefreshCw className="w-3.5 h-3.5" /> Re-sync
                           </button>
                           <button
                             onClick={() => handleCancelSession(s.id)}
-                            className="text-[10px] font-black text-zinc-600 hover:text-rose-500 uppercase tracking-widest transition-colors"
+                            className="text-[10px] font-bold text-muted-foreground hover:text-rose-500 uppercase tracking-widest transition-colors"
                           >
                             Abort
                           </button>
@@ -271,25 +255,25 @@ export default function TrainingHubPage() {
                     ))}
                   </div>
                 ) : (
-                  <div className="bg-zinc-900/30 border border-dashed border-zinc-800 rounded-[2.5rem] py-20 text-center">
-                    <p className="text-zinc-700 font-black uppercase text-[10px] tracking-[0.3em] italic">No Pending Deployments</p>
+                  <div className="bg-background border border-dashed border-border rounded-[2rem] py-20 text-center">
+                    <p className="text-muted-foreground font-bold uppercase text-[10px] tracking-[0.3em]">No Pending Deployments</p>
                   </div>
                 )}
               </section>
 
               <section>
                  <div className="flex items-center justify-between mb-8">
-                  <h2 className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.4em] italic">Historical Output</h2>
+                  <h2 className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.3em]">Historical Output</h2>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                    {pastSessions.slice(0, 6).reverse().map((s) => (
-                     <div key={s.id} className="bg-zinc-900/40 border border-zinc-800/40 rounded-2xl p-5 flex items-center gap-4 hover:bg-zinc-900 transition-colors">
-                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border ${s.status === 'completed' ? 'bg-emerald-500/5 border-emerald-500/10 text-emerald-500' : 'bg-zinc-800 border-zinc-700/50 text-zinc-500'}`}>
+                     <div key={s.id} className="bg-background border border-border rounded-2xl p-5 flex items-center gap-4 hover:bg-muted/30 transition-colors shadow-sm">
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border ${s.status === 'completed' ? 'bg-emerald-50 border-emerald-100 text-emerald-600' : 'bg-muted border-border text-muted-foreground'}`}>
                            {s.status === 'completed' ? <CheckCircle className="w-5 h-5" /> : <XCircle className="w-5 h-5" />}
                         </div>
                         <div className="min-w-0">
-                           <p className="text-xs font-black text-zinc-300 uppercase truncate">{s.title}</p>
-                           <p className="text-[10px] text-zinc-600 font-bold uppercase mt-1">{formatDate(s.scheduledDate)}</p>
+                           <p className="text-xs font-bold text-foreground uppercase truncate">{s.title}</p>
+                           <p className="text-[10px] text-muted-foreground font-bold uppercase mt-1">{formatDate(s.scheduledDate)}</p>
                         </div>
                      </div>
                    ))}
@@ -301,7 +285,7 @@ export default function TrainingHubPage() {
             {/* RIGHT COLUMN: SYLLABUS / MODULES (PROGRAMS) */}
             <div className="lg:col-span-5 xl:col-span-4 space-y-8">
                <div className="flex items-center justify-between">
-                  <h2 className="text-[10px] font-black text-white uppercase tracking-[0.4em] flex items-center gap-3 italic">
+                  <h2 className="text-[10px] font-bold text-foreground uppercase tracking-[0.3em] flex items-center gap-3">
                     <div className="w-2 h-2 bg-orange-500 rounded-full shadow-[0_0_10px_rgba(249,115,22,0.5)]" />
                     Operational Syllabus ({programs.length})
                   </h2>
@@ -315,22 +299,22 @@ export default function TrainingHubPage() {
                         initial={{ opacity: 0, x: 20 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: pIdx * 0.05 }}
-                        className="bg-zinc-900 border border-zinc-800 rounded-[2rem] overflow-hidden group hover:border-orange-500/30 transition-all shadow-xl"
+                        className="bg-background border border-border rounded-[2rem] overflow-hidden group hover:border-orange-200 transition-all shadow-sm"
                       >
                          <div className="p-8">
                             <div className="flex items-center gap-5 mb-8">
-                               <div className="w-14 h-14 rounded-2xl bg-zinc-950 border border-zinc-800 flex items-center justify-center shrink-0 group-hover:bg-orange-500 group-hover:text-white transition-all shadow-inner">
+                               <div className="w-14 h-14 rounded-2xl bg-muted border border-border flex items-center justify-center shrink-0 group-hover:bg-orange-500 group-hover:text-white transition-all shadow-inner">
                                  <Layers className="w-6 h-6" />
                                </div>
                                <div>
-                                 <p className="text-[10px] font-black text-orange-500 uppercase tracking-widest italic mb-1">Week {prog.weekNumber}</p>
-                                 <p className="font-black text-white text-xl uppercase italic tracking-tighter truncate leading-none">{prog.title}</p>
+                                 <p className="text-[10px] font-bold text-orange-500 uppercase tracking-widest mb-1">Week {prog.weekNumber}</p>
+                                 <p className="font-bold text-foreground text-xl tracking-tight truncate leading-none">{prog.title}</p>
                                </div>
                             </div>
                             
                             <button
                                onClick={() => setExpandedProgram(expandedProgram === prog.id ? null : prog.id)}
-                               className={`w-full flex items-center justify-center gap-3 py-4 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all ${expandedProgram === prog.id ? 'bg-white text-zinc-950' : 'bg-zinc-950 text-zinc-500 hover:text-white'}`}
+                               className={`w-full flex items-center justify-center gap-3 py-4 rounded-xl text-[10px] font-bold uppercase tracking-[0.2em] transition-all ${expandedProgram === prog.id ? 'bg-orange-500 text-white' : 'bg-muted text-muted-foreground hover:text-foreground'}`}
                              >
                                {expandedProgram === prog.id ? 'Hide Modules' : 'View Modules'}
                                {expandedProgram === prog.id ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
@@ -338,23 +322,23 @@ export default function TrainingHubPage() {
 
                              <AnimatePresence>
                                 {expandedProgram === prog.id && (
-                                  <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="pt-8 mt-8 border-t border-zinc-800">
+                                  <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="pt-8 mt-8 border-t border-border">
                                      <div className="space-y-3">
                                         {DAY_ORDER.map(day => {
                                           const dayActs = prog.activities?.filter(a => a.day === day) || [];
                                           if (dayActs.length === 0) return null;
                                           return (
                                             <div key={day} className="space-y-2">
-                                              <p className="text-[10px] font-black text-zinc-700 uppercase tracking-[0.3em] italic mb-3 flex items-center gap-2">
-                                                <span className="w-1 h-1 bg-zinc-800 rounded-full" /> {day}
+                                              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.3em] mb-3 flex items-center gap-2">
+                                                <span className="w-1 h-1 bg-border rounded-full" /> {day}
                                               </p>
                                               {dayActs.map((a, i) => (
-                                                <div key={i} className="bg-zinc-950 border border-zinc-900 rounded-xl p-4 flex items-center justify-between group/item hover:border-zinc-700 transition-colors">
+                                                <div key={i} className="bg-muted/30 border border-border rounded-xl p-4 flex items-center justify-between group/item hover:border-orange-200 transition-colors">
                                                    <div className="min-w-0">
-                                                      <p className="text-[11px] font-black text-zinc-300 uppercase italic truncate">{a.exerciseName}</p>
-                                                      <p className="text-[9px] text-zinc-600 font-bold uppercase mt-1 italic">{a.sets} Sets <span className="opacity-30 mx-1">•</span> {a.reps} Reps</p>
+                                                      <p className="text-[11px] font-bold text-foreground uppercase truncate">{a.exerciseName}</p>
+                                                      <p className="text-[9px] text-muted-foreground font-bold uppercase mt-1">{a.sets} Sets <span className="opacity-30 mx-1">•</span> {a.reps} Reps</p>
                                                    </div>
-                                                   <Dumbbell className="w-4 h-4 text-zinc-800 group-hover/item:text-orange-500 transition-colors" />
+                                                   <Dumbbell className="w-4 h-4 text-muted-foreground group-hover/item:text-orange-500 transition-colors" />
                                                 </div>
                                               ))}
                                             </div>
@@ -368,9 +352,9 @@ export default function TrainingHubPage() {
                       </motion.div>
                     ))
                   ) : (
-                    <div className="bg-zinc-900/30 border border-dashed border-zinc-800 rounded-[2.5rem] py-20 text-center flex flex-col items-center">
-                       <Layers className="w-10 h-10 text-zinc-800 mb-4 opacity-20" />
-                       <p className="text-zinc-700 font-black uppercase text-[10px] tracking-widest italic">Inventory Silent</p>
+                    <div className="bg-background border border-dashed border-border rounded-[2rem] py-20 text-center flex flex-col items-center">
+                       <Layers className="w-10 h-10 text-muted-foreground mb-4 opacity-20" />
+                       <p className="text-muted-foreground font-bold uppercase text-[10px] tracking-widest">Inventory Silent</p>
                     </div>
                   )}
                 </div>

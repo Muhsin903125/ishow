@@ -5,7 +5,7 @@ import { useRouter } from "next/router";
 import { motion, AnimatePresence } from "framer-motion";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useAuth } from "@/contexts/AuthContext";
-import { getProfile, updateProfile } from "@/lib/db/profiles";
+import { loadMyProfile, saveMyProfile } from "@/lib/api/me";
 import { 
   User, 
   Lock, 
@@ -16,7 +16,6 @@ import {
   Smartphone, 
   Mail,
   Zap,
-  Activity,
   AlertCircle,
   Key,
 } from "lucide-react";
@@ -38,7 +37,7 @@ export default function TrainerSettingsPage() {
     if (!loading && !user) { router.replace("/login"); return; }
     if (!loading && user && user.role === "customer") { router.replace("/dashboard"); return; }
     if (!loading && user) {
-      getProfile(user.id).then(p => {
+      loadMyProfile().then(p => {
         setProfileForm({ name: p?.name ?? "", phone: p?.phone ?? "" });
         setDataLoaded(true);
       });
@@ -62,10 +61,10 @@ export default function TrainerSettingsPage() {
     setProfileSaving(true);
     setProfileMsg("");
     try {
-      await updateProfile(user.id, { name: profileForm.name, phone: profileForm.phone });
+      await saveMyProfile({ name: profileForm.name, phone: profileForm.phone });
       setProfileMsg("Manifest updated successfully.");
       setTimeout(() => setProfileMsg(""), 3000);
-    } catch (err) {
+    } catch {
       setProfileMsg("Sync failure. Retry protocol.");
     } finally {
       setProfileSaving(false);

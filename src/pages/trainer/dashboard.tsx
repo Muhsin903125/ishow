@@ -3,37 +3,31 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import Link from "next/link";
-import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import DashboardLayout from "@/components/DashboardLayout";
-import { listCustomers, type Profile } from "@/lib/db/profiles";
-import { listAssessments, type Assessment } from "@/lib/db/assessments";
-import { listSessions, type TrainingSession } from "@/lib/db/sessions";
-import { listPayments, type Payment } from "@/lib/db/payments";
+import type { Profile } from "@/lib/db/profiles";
+import type { Assessment } from "@/lib/db/assessments";
+import type { TrainingSession } from "@/lib/db/sessions";
+import type { Payment } from "@/lib/db/payments";
+import { loadTrainerWorkspace } from "@/lib/api/workspace";
 import { 
   Users, 
   ClipboardList, 
   Calendar, 
   DollarSign, 
-  ArrowRight, 
   Clock, 
   CheckCircle,
-  Activity,
   Zap,
   ChevronRight,
   Target,
-  Shield,
-  TrendingUp,
-  Plus,
   Settings,
   UserCog,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { cn } from "@/lib/utils";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 export default function TrainerDashboard() {
   const { user, loading } = useAuth();
@@ -55,10 +49,19 @@ export default function TrainerDashboard() {
     if (user.role === "customer") { router.push("/dashboard"); return; }
     if (user.role === "admin") { router.push("/admin"); return; }
 
-    listCustomers().then(setClients).catch(() => setClients([]));
-    listAssessments("pending").then(setPendingAssessments).catch(() => setPendingAssessments([]));
-    listSessions({ trainerId: user.id }).then(setSessions).catch(() => setSessions([]));
-    listPayments().then(setPayments).catch(() => setPayments([]));
+    loadTrainerWorkspace()
+      .then((workspace) => {
+        setClients(workspace.clients);
+        setPendingAssessments(workspace.pendingAssessments);
+        setSessions(workspace.sessions);
+        setPayments(workspace.payments);
+      })
+      .catch(() => {
+        setClients([]);
+        setPendingAssessments([]);
+        setSessions([]);
+        setPayments([]);
+      });
   }, [user, loading, router]);
 
   const today = new Date().toISOString().split("T")[0];
@@ -139,48 +142,68 @@ export default function TrainerDashboard() {
 
   return (
     <DashboardLayout role="trainer">
-      <div className="flex flex-col h-full bg-muted/20">
-        {/* Header */}
-        <div className="bg-background border-b border-border px-6 py-4 flex items-center justify-between sticky top-0 z-20">
-          <div className="flex items-center gap-3">
-             <div className="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center">
-                <Zap className="w-4 h-4 text-orange-600 fill-current" />
-             </div>
-             <div>
-                <h1 className="text-lg font-bold text-foreground leading-none">Trainer Hub</h1>
-                <p className="text-[11px] text-muted-foreground font-medium mt-1 uppercase tracking-wider">Performance Oversight</p>
-             </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" className="h-8 text-xs font-semibold">
-              <Calendar className="w-3.5 h-3.5 mr-1.5" />
-              Schedule
-            </Button>
-            <Button size="sm" className="h-8 bg-orange-600 hover:bg-orange-700 text-white text-xs font-semibold px-4">
-              <Plus className="w-3.5 h-3.5 mr-1.5" />
-              Add Client
-            </Button>
-          </div>
-        </div>
+      <div className="flex flex-col h-full bg-transparent">
+        <div className="flex-1 overflow-y-auto space-y-6 p-6 md:p-8">
+          <section className="rounded-[2rem] border border-blue-100 bg-[linear-gradient(135deg,#eff6ff_0%,#ffffff_55%,#f8fafc_100%)] p-6 shadow-[0_24px_60px_rgba(37,99,235,0.08)] md:p-8">
+            <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+              <div className="space-y-4">
+                <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-white/80 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-blue-700">
+                  <Zap className="h-3.5 w-3.5" />
+                  Trainer dashboard
+                </div>
+                <div>
+                  <h1 className="text-3xl font-bold tracking-tight text-slate-950 md:text-4xl">Trainer Hub</h1>
+                  <p className="mt-2 max-w-2xl text-sm text-slate-600 md:text-base">
+                    Review assessments, manage client momentum, and keep today&apos;s training queue moving from one place.
+                  </p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                <div className="rounded-2xl border border-white/70 bg-white/85 px-4 py-3 shadow-sm">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">Clients</p>
+                  <p className="mt-2 text-sm font-semibold text-slate-950">{clients.length}</p>
+                </div>
+                <div className="rounded-2xl border border-white/70 bg-white/85 px-4 py-3 shadow-sm">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">Reviews</p>
+                  <p className="mt-2 text-sm font-semibold text-slate-950">{pendingAssessments === "loading" ? "..." : pendingAssessments.length}</p>
+                </div>
+                <div className="col-span-2 rounded-2xl border border-white/70 bg-white/85 px-4 py-3 shadow-sm sm:col-span-1">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">Revenue</p>
+                  <p className="mt-2 text-sm font-semibold text-slate-950">AED {monthlyRevenue.toLocaleString()}</p>
+                </div>
+              </div>
+            </div>
+            <div className="mt-6 flex flex-wrap gap-3">
+              <Button asChild className="h-11 rounded-xl bg-blue-600 px-5 text-sm font-semibold text-white hover:bg-blue-700">
+                <Link href="/trainer/clients">
+                  <Users className="mr-2 h-4 w-4" />
+                  Open clients
+                </Link>
+              </Button>
+              <Button asChild variant="outline" className="h-11 rounded-xl border-border bg-white/80 px-5 text-sm font-semibold">
+                <Link href="/trainer/sessions">
+                  <Calendar className="mr-2 h-4 w-4" />
+                  View operations
+                </Link>
+              </Button>
+            </div>
+          </section>
 
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
           {/* Stats Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {stats.map(({ label, value, icon: Icon, color, bg, trend }, idx) => (
-              <Card key={label} className="shadow-sm border-border bg-background">
+            {stats.map(({ label, value, icon: Icon, color, bg, trend }) => (
+              <Card key={label} className="rounded-[1.5rem] border border-border/80 bg-white/92 shadow-sm">
                 <CardContent className="p-5">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className={`w-9 h-9 rounded-lg ${bg} flex items-center justify-center`}>
-                      <Icon className={`w-4.5 h-4.5 ${color}`} />
+                  <div className="mb-4 flex items-center justify-between">
+                    <div className={`flex h-11 w-11 items-center justify-center rounded-2xl ${bg}`}>
+                      <Icon className={`h-5 w-5 ${color}`} />
                     </div>
-                    <Badge variant="ghost" className="text-[10px] font-medium text-muted-foreground p-0">
+                    <Badge variant="outline" className="border-transparent bg-slate-100 text-[10px] font-semibold text-slate-600">
                       {trend}
                     </Badge>
                   </div>
-                  <div>
-                    <p className="text-2xl font-bold text-foreground">{value}</p>
-                    <p className="text-xs text-muted-foreground font-medium mt-0.5">{label}</p>
-                  </div>
+                  <p className="text-2xl font-bold text-slate-950">{value}</p>
+                  <p className="mt-1 text-xs font-medium text-slate-500">{label}</p>
                 </CardContent>
               </Card>
             ))}
@@ -289,12 +312,12 @@ export default function TrainerDashboard() {
               { href: "/trainer/settings", label: "Profile", desc: "Account setup", icon: Settings, color: "text-muted-foreground" },
             ].map(({ href, label, desc, icon: Icon, color }) => (
               <Link key={href} href={href} className="group">
-                <div className="p-4 rounded-xl border border-border bg-background hover:border-orange-500/30 hover:shadow-md transition-all h-full">
-                  <div className={`w-8 h-8 rounded-lg bg-muted flex items-center justify-center mb-3 group-hover:scale-110 transition-transform`}>
+                <div className="h-full rounded-[1.5rem] border border-border/80 bg-white/92 p-4 transition-all hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md">
+                  <div className={`mb-3 flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 transition-transform group-hover:scale-110`}>
                     <Icon className={`w-4 h-4 ${color}`} />
                   </div>
-                  <h3 className="text-xs font-bold text-foreground mb-0.5">{label}</h3>
-                  <p className="text-[10px] text-muted-foreground font-medium">{desc}</p>
+                  <h3 className="mb-0.5 text-xs font-bold text-slate-950">{label}</h3>
+                  <p className="text-[10px] font-medium text-slate-500">{desc}</p>
                 </div>
               </Link>
             ))}

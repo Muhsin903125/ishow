@@ -5,26 +5,21 @@ import { useRouter } from "next/router";
 import { motion, AnimatePresence } from "framer-motion";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useAuth } from "@/contexts/AuthContext";
-import { listCustomers, listTrainers, updateProfile, type Profile } from "@/lib/db/profiles";
-import { listAssessments, type Assessment } from "@/lib/db/assessments";
-import { listAllPlans, updatePlan, type Plan } from "@/lib/db/plans";
+import type { Profile } from "@/lib/db/profiles";
+import type { Assessment } from "@/lib/db/assessments";
+import type { Plan } from "@/lib/db/plans";
 import { 
   Mail, 
-  Phone, 
   CheckCircle, 
   Clock, 
   ChevronDown, 
   ChevronUp, 
   Users, 
   Target, 
-  Zap, 
   UserCog, 
   Shield, 
-  ArrowRight,
-  Loader2,
   Calendar,
   Search,
-  Filter,
   AlertCircle,
   X,
   Activity,
@@ -51,32 +46,63 @@ export default function AdminClientsPage() {
   const [searchQuery, setSearchQuery] = useState("");
 
   const handleAssignTrainer = async (customerId: string, trainerId: string) => {
-    const activePlan = plans.find(
-      (p) => p.userId === customerId && p.status === "active"
-    );
+    try {
+      const response = await fetch(`/api/admin/clients/${customerId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          client: {
+            trainerId,
+          },
+        }),
+      });
 
-    if (activePlan) {
-      await updatePlan(activePlan.id, { trainerId });
-    } else {
-      setGlobalMessage("Operational Error: Asset has no active mission plan. Deployment required first.");
+      const payload = (await response.json()) as { ok?: true; error?: string };
+      if (!response.ok) {
+        throw new Error(
+          payload.error ||
+            "Operational Error: Asset has no active mission plan. Deployment required first."
+        );
+      }
+
+      setAssigningId(null);
+      await loadData();
+    } catch (error) {
+      setGlobalMessage(
+        error instanceof Error
+          ? error.message
+          : "Operational Error: trainer assignment failed."
+      );
       setAssigningId(null);
       setTimeout(() => setGlobalMessage(""), 5000);
-      return;
     }
-
-    setAssigningId(null);
-    await loadData();
   };
 
   const loadData = async () => {
     try {
-      const [c, t, a, p] = await Promise.all([
-        listCustomers(), listTrainers(), listAssessments(), listAllPlans(),
-      ]);
-      setCustomers(c);
-      setTrainers(t);
-      setAssessments(a);
-      setPlans(p);
+      const response = await fetch("/api/admin/clients");
+      const payload = (await response.json()) as
+        | {
+            ok: true;
+            customers: Profile[];
+            trainers: Profile[];
+            assessments: Assessment[];
+            plans: Plan[];
+          }
+        | { error: string };
+
+      if (!response.ok || !("ok" in payload)) {
+        throw new Error(
+          "error" in payload ? payload.error : "Failed to load admin clients."
+        );
+      }
+
+      setCustomers(payload.customers);
+      setTrainers(payload.trainers);
+      setAssessments(payload.assessments);
+      setPlans(payload.plans);
     } catch (err) {
       console.error("Error loading admin clients:", err);
     } finally {
@@ -323,8 +349,36 @@ export default function AdminClientsPage() {
                                     {customer.customerStatus === "request" && (
                                       <button
                                         onClick={async () => {
-                                          await updateProfile(customer.id, { customerStatus: "client" });
-                                          await loadData();
+                                          try {
+                                            const response = await fetch(`/api/admin/clients/${customer.id}`, {
+                                              method: "PUT",
+                                              headers: {
+                                                "Content-Type": "application/json",
+                                              },
+                                              body: JSON.stringify({
+                                                client: {
+                                                  customerStatus: "client",
+                                                },
+                                              }),
+                                            });
+                                            const payload = (await response.json()) as {
+                                              ok?: true;
+                                              error?: string;
+                                            };
+                                            if (!response.ok) {
+                                              throw new Error(
+                                                payload.error || "Client conversion failed."
+                                              );
+                                            }
+                                            await loadData();
+                                          } catch (error) {
+                                            setGlobalMessage(
+                                              error instanceof Error
+                                                ? error.message
+                                                : "Client conversion failed."
+                                            );
+                                            setTimeout(() => setGlobalMessage(""), 5000);
+                                          }
                                         }}
                                         className="bg-emerald-500 text-white p-6 rounded-[2rem] text-[11px] font-black uppercase tracking-[0.3em] hover:bg-emerald-400 transition-all active:scale-95 flex items-center justify-center gap-4 italic shadow-xl shadow-emerald-950/20"
                                       >

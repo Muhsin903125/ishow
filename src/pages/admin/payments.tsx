@@ -5,7 +5,14 @@ import { useRouter } from "next/router";
 import { motion, AnimatePresence } from "framer-motion";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useAuth } from "@/contexts/AuthContext";
-import { listPayments, createPayment, updatePaymentStatus, deletePayment, type Payment } from "@/lib/db/payments";
+import {
+  listPayments,
+  createPayment,
+  updatePaymentStatus,
+  recordPaymentInstallment,
+  deletePayment,
+  type Payment,
+} from "@/lib/db/payments";
 import { listCustomers, type Profile } from "@/lib/db/profiles";
 import { listAllPlans, type Plan } from "@/lib/db/plans";
 import { 
@@ -18,12 +25,10 @@ import {
   X, 
   Trash2,
   TrendingUp,
+  DollarSign,
   Activity,
   Shield,
   Zap,
-  ChevronDown,
-  ArrowRight,
-  Target
 } from "lucide-react";
 
 const formatCurrency = (amount: number) =>
@@ -32,6 +37,7 @@ const formatCurrency = (amount: number) =>
 function PaymentBadge({ status }: { status: string }) {
   const map = {
     paid: { color: "emerald", icon: CheckCircle, label: "Settled" },
+    partial: { color: "orange", icon: DollarSign, label: "Partial" },
     pending: { color: "orange", icon: Clock, label: "Pending" },
     overdue: { color: "rose", icon: AlertCircle, label: "Overdue" },
   };
@@ -48,6 +54,14 @@ function PaymentBadge({ status }: { status: string }) {
       <Icon className="w-3.5 h-3.5" /> {label}
     </span>
   );
+}
+
+function getDisplayStatus(payment: Payment) {
+  if (payment.status !== "paid" && payment.paidAmount > 0 && payment.balanceAmount > 0) {
+    return "partial";
+  }
+
+  return payment.status;
 }
 
 const emptyInvoice = () => ({
@@ -68,9 +82,13 @@ export default function AdminPaymentsPage() {
   const [dataLoaded, setDataLoaded] = useState(false);
 
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showSettlementModal, setShowSettlementModal] = useState(false);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState("");
   const [invoiceForm, setInvoiceForm] = useState(emptyInvoice());
+  const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
+  const [settlementAmount, setSettlementAmount] = useState("");
+  const [settlementDate, setSettlementDate] = useState(new Date().toISOString().slice(0, 10));
 
   useEffect(() => {
     if (loading) return;
@@ -112,6 +130,7 @@ export default function AdminPaymentsPage() {
         userId: invoiceForm.userId,
         planId: invoiceForm.planId || undefined,
         amount: parseFloat(invoiceForm.amount),
+        paidAmount: 0,
         description: invoiceForm.description,
         dueDate: invoiceForm.dueDate,
         status: "pending",
@@ -128,8 +147,48 @@ export default function AdminPaymentsPage() {
 
   const handleMarkPaid = async (paymentId: string) => {
     const today = new Date().toISOString().split("T")[0];
-    await updatePaymentStatus(paymentId, "paid", today);
+    await updatePaymentStatus(paymentId, "paid", today, undefined);
     await loadData();
+  };
+
+  const openSettlementModal = (payment: Payment) => {
+    setSelectedPayment(payment);
+    setSettlementAmount(payment.balanceAmount.toString());
+    setSettlementDate(new Date().toISOString().slice(0, 10));
+    setFormError("");
+    setShowSettlementModal(true);
+  };
+
+  const handleRecordSettlement = async () => {
+    if (!selectedPayment) return;
+
+    const received = Number(settlementAmount);
+    if (Number.isNaN(received) || received <= 0) {
+      setFormError("Settlement amount must be greater than zero.");
+      return;
+    }
+
+    if (received > selectedPayment.balanceAmount) {
+      setFormError("Settlement amount cannot exceed the outstanding balance.");
+      return;
+    }
+
+    setSaving(true);
+    setFormError("");
+    try {
+      await recordPaymentInstallment(selectedPayment.id, {
+        paymentReceivedAmount: received,
+        paidDate: settlementDate,
+      });
+      setShowSettlementModal(false);
+      setSelectedPayment(null);
+      setSettlementAmount("");
+      await loadData();
+    } catch {
+      setFormError("Unable to record this settlement right now.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleDelete = async (paymentId: string) => {
@@ -156,14 +215,14 @@ export default function AdminPaymentsPage() {
   const getClientName = (userId: string) => customers.find(c => c.id === userId)?.name ?? "UNKNOWN ASSET";
   const getPlanName = (userId: string) => plans.find(p => p.userId === userId && p.status === "active")?.name ?? "N/A";
 
-  const totalRevenue = payments.filter(p => p.status === "paid").reduce((sum, p) => sum + p.amount, 0);
-  const pendingTotal = payments.filter(p => p.status === "pending").reduce((sum, p) => sum + p.amount, 0);
-  const overdueTotal = payments.filter(p => p.status === "overdue").reduce((sum, p) => sum + p.amount, 0);
+  const totalRevenue = payments.reduce((sum, p) => sum + p.paidAmount, 0);
+  const pendingTotal = payments.filter(p => p.status === "pending").reduce((sum, p) => sum + p.balanceAmount, 0);
+  const overdueTotal = payments.filter(p => p.status === "overdue").reduce((sum, p) => sum + p.balanceAmount, 0);
   
   const thisMonth = new Date().toISOString().slice(0, 7);
   const monthRevenue = payments
-    .filter(p => p.status === "paid" && p.paidDate?.startsWith(thisMonth))
-    .reduce((sum, p) => sum + p.amount, 0);
+    .filter(p => p.paidDate?.startsWith(thisMonth))
+    .reduce((sum, p) => sum + p.paidAmount, 0);
 
   return (
     <DashboardLayout role="admin">
@@ -248,7 +307,9 @@ export default function AdminPaymentsPage() {
                      <tr className="bg-zinc-950/50 text-zinc-700 font-black uppercase tracking-[0.2em] italic border-b border-zinc-800">
                        <th className="px-8 py-6">Asset Identifier</th>
                        <th className="px-8 py-6">Mission Plan</th>
-                       <th className="px-8 py-6">Magnitude</th>
+                       <th className="px-8 py-6">Invoice</th>
+                       <th className="px-8 py-6">Paid</th>
+                       <th className="px-8 py-6">Balance</th>
                        <th className="px-8 py-6">Due Timestamp</th>
                        <th className="px-8 py-6">Status</th>
                        <th className="px-8 py-6 text-right">Control</th>
@@ -266,11 +327,22 @@ export default function AdminPaymentsPage() {
                          <td className="px-8 py-6 font-black text-white italic uppercase tracking-tight">{getClientName(p.userId)}</td>
                          <td className="px-8 py-6 text-zinc-500 font-bold uppercase tracking-widest">{getPlanName(p.userId)}</td>
                          <td className="px-8 py-6 font-black text-white italic">{formatCurrency(p.amount)}</td>
+                         <td className="px-8 py-6 font-black text-emerald-400 italic">{formatCurrency(p.paidAmount)}</td>
+                         <td className="px-8 py-6 font-black text-amber-400 italic">{formatCurrency(p.balanceAmount)}</td>
                          <td className="px-8 py-6 text-zinc-500 font-bold uppercase tracking-widest">{p.dueDate || "N/A"}</td>
-                         <td className="px-8 py-6"><PaymentBadge status={p.status} /></td>
+                         <td className="px-8 py-6"><PaymentBadge status={getDisplayStatus(p)} /></td>
                          <td className="px-8 py-6 text-right">
                             <div className="flex items-center justify-end gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                               {(p.status === "pending" || p.status === "overdue") && (
+                               {p.balanceAmount > 0 && (
+                                 <button
+                                   onClick={() => openSettlementModal(p)}
+                                   className="bg-zinc-950 text-white px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest italic border border-zinc-800 hover:border-orange-500/40 hover:text-orange-400 transition-all flex items-center gap-2"
+                                 >
+                                   <DollarSign size={12} />
+                                   Record Partial
+                                 </button>
+                               )}
+                               {(p.status === "pending" || p.status === "overdue") && p.balanceAmount > 0 && (
                                  <button
                                    onClick={() => handleMarkPaid(p.id)}
                                    className="bg-orange-500 text-white px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest italic hover:bg-orange-400 transition-all flex items-center gap-2"
@@ -397,6 +469,93 @@ export default function AdminPaymentsPage() {
             </motion.div>
           </div>
         )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showSettlementModal && selectedPayment ? (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-950/90 backdrop-blur-xl p-6">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="bg-zinc-900 border border-zinc-800 rounded-[3rem] w-full max-w-lg shadow-[0_0_100px_rgba(0,0,0,0.8)] overflow-hidden relative"
+            >
+              <div className="absolute top-0 right-0 p-10 z-10">
+                <button onClick={() => setShowSettlementModal(false)} className="w-12 h-12 rounded-full bg-zinc-950 border border-zinc-800 text-zinc-600 hover:text-white flex items-center justify-center transition-all">
+                  <X size={24} />
+                </button>
+              </div>
+              <div className="p-10 md:p-14">
+                <header className="mb-12">
+                  <div className="w-16 h-16 rounded-[1.5rem] bg-orange-500 flex items-center justify-center text-white mb-8 shadow-2xl shadow-orange-900/40">
+                    <DollarSign size={32} />
+                  </div>
+                  <h2 className="text-3xl font-black italic uppercase tracking-tighter">
+                    Record <span className="text-orange-500">Settlement</span>
+                  </h2>
+                  <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest mt-2 italic">
+                    Split or partial payment against the selected invoice
+                  </p>
+                </header>
+
+                {formError ? (
+                  <div className="mb-8 p-5 bg-rose-500/10 border border-rose-500/20 text-rose-500 rounded-2xl text-[10px] font-black uppercase tracking-widest italic flex items-center gap-3">
+                    <AlertCircle size={16} /> {formError}
+                  </div>
+                ) : null}
+
+                <div className="grid gap-6">
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-4">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Invoice</p>
+                      <p className="mt-2 text-sm font-black italic text-white">{formatCurrency(selectedPayment.amount)}</p>
+                    </div>
+                    <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-4">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Paid</p>
+                      <p className="mt-2 text-sm font-black italic text-emerald-400">{formatCurrency(selectedPayment.paidAmount)}</p>
+                    </div>
+                    <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-4">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Balance</p>
+                      <p className="mt-2 text-sm font-black italic text-amber-400">{formatCurrency(selectedPayment.balanceAmount)}</p>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-4 italic">Received Amount (AED)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={settlementAmount}
+                      onChange={(e) => setSettlementAmount(e.target.value)}
+                      className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl px-6 py-5 text-xs font-black text-white uppercase tracking-widest italic outline-none focus:border-zinc-600"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-4 italic">Settlement Date</label>
+                    <input
+                      type="date"
+                      value={settlementDate}
+                      onChange={(e) => setSettlementDate(e.target.value)}
+                      className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl px-6 py-5 text-xs font-black text-white uppercase tracking-widest italic outline-none focus:border-zinc-600"
+                    />
+                  </div>
+
+                  <div className="pt-6">
+                    <button
+                      onClick={handleRecordSettlement}
+                      disabled={saving}
+                      className="w-full bg-orange-500 text-white flex items-center justify-center gap-4 py-6 rounded-[2.5rem] text-[11px] font-black uppercase tracking-[0.4em] italic hover:bg-orange-400 disabled:opacity-50 transition-all shadow-2xl shadow-orange-900/40 active:scale-95"
+                    >
+                      {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <><DollarSign size={16} /> Record Payment</>}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        ) : null}
       </AnimatePresence>
     </DashboardLayout>
   );

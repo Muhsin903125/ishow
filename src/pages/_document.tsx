@@ -4,7 +4,7 @@ export default function Document() {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://ishow.fit";
   
   return (
-    <Html lang="en-AE" className="h-full antialiased">
+    <Html lang="en-AE" className="h-full antialiased" data-scroll-behavior="smooth">
       <Head>
         <script
           type="application/ld+json"

@@ -11,9 +11,9 @@ html {
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: "Inter", var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-  --font-heading: "Inter", var(--font-geist-sans);
+  --font-sans: var(--font-manrope, "Manrope"), "Manrope", "Segoe UI", sans-serif;
+  --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  --font-heading: var(--font-manrope, "Manrope"), "Manrope", "Segoe UI", sans-serif;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -54,6 +54,65 @@ html {
 
 body {
   @apply bg-background text-foreground antialiased;
+  font-family: var(--font-manrope, "Manrope"), "Manrope", "Segoe UI", sans-serif;
+}
+
+.app-light {
+  color: hsl(var(--foreground));
+  font-family: var(--font-manrope, "Manrope"), "Manrope", "Segoe UI", sans-serif;
+}
+
+.app-light .bg-zinc-950,
+.app-light .bg-slate-950 {
+  background-color: #f6f2eb !important;
+}
+
+.app-light .bg-zinc-950\/90,
+.app-light .bg-zinc-950\/80 {
+  background-color: rgba(15, 23, 42, 0.2) !important;
+}
+
+.app-light .bg-zinc-950\/50,
+.app-light .bg-zinc-950\/20 {
+  background-color: rgba(241, 245, 249, 0.82) !important;
+}
+
+.app-light .bg-zinc-900,
+.app-light .bg-zinc-900\/50,
+.app-light .bg-zinc-900\/40,
+.app-light .bg-zinc-900\/20,
+.app-light .bg-white\/5 {
+  background-color: rgba(255, 255, 255, 0.92) !important;
+}
+
+.app-light .border-zinc-900,
+.app-light .border-zinc-800,
+.app-light .border-zinc-800\/50,
+.app-light .border-zinc-800\/30,
+.app-light .border-zinc-700,
+.app-light .border-white\/10 {
+  border-color: rgba(148, 163, 184, 0.22) !important;
+}
+
+.app-light .text-white,
+.app-light .text-white\/72,
+.app-light .text-zinc-300 {
+  color: #0f172a !important;
+}
+
+.app-light .text-zinc-400,
+.app-light .text-zinc-500,
+.app-light .text-zinc-600,
+.app-light .text-zinc-700,
+.app-light .text-blue-200\/70,
+.app-light .text-orange-300\/80 {
+  color: #64748b !important;
+}
+
+.app-light .shadow-2xl,
+.app-light .shadow-xl,
+.app-light .shadow-lg {
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.08) !important;
 }
 
 .landing-section {

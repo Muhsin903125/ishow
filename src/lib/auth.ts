@@ -1,3 +1,5 @@
+// Legacy browser-auth helper kept only for archived `src/app_old` references.
+// Active authentication is handled by Supabase in `src/contexts/AuthContext.tsx`.
 import { getItems, addItem } from './storage';
 
 export type CustomerStatus = 'request' | 'client';

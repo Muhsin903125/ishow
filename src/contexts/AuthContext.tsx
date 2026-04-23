@@ -42,6 +42,17 @@ const AuthContext = createContext<AuthContextType>({
 });
 
 const DEMO_STORAGE_KEY = 'ishow_demo_auth';
+const DEMO_COOKIE_KEY = 'ishow_demo_auth';
+const DEMO_AUTH_ENABLED =
+  process.env.NEXT_PUBLIC_ENABLE_DEMO_AUTH === 'true' &&
+  process.env.NODE_ENV !== 'production';
+
+function setDemoCookie(enabled: boolean) {
+  if (typeof document === 'undefined') return;
+  document.cookie = enabled
+    ? `${DEMO_COOKIE_KEY}=1; path=/; max-age=604800; samesite=lax`
+    : `${DEMO_COOKIE_KEY}=; path=/; max-age=0; samesite=lax`;
+}
 
 async function fetchProfile(supabaseUser: User): Promise<AuthUser | null> {
   const supabase = createClient();
@@ -79,16 +90,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSession(session);
         if (session?.user) {
           localStorage.removeItem(DEMO_STORAGE_KEY);
+          setDemoCookie(false);
           const profile = await fetchProfile(session.user);
           if (mounted) setUser(profile);
         } else {
-          const savedDemoUser = localStorage.getItem(DEMO_STORAGE_KEY);
-          if (savedDemoUser) {
+          const savedDemoUser = DEMO_AUTH_ENABLED
+            ? localStorage.getItem(DEMO_STORAGE_KEY)
+            : null;
+          if (DEMO_AUTH_ENABLED && savedDemoUser) {
             try {
+              setDemoCookie(true);
               setUser(JSON.parse(savedDemoUser) as AuthUser);
             } catch {
               localStorage.removeItem(DEMO_STORAGE_KEY);
+              setDemoCookie(false);
             }
+          } else {
+            setDemoCookie(false);
           }
         }
       } catch (err) {
@@ -108,10 +126,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSession(session);
         if (event === 'SIGNED_OUT') {
           localStorage.removeItem(DEMO_STORAGE_KEY);
+          setDemoCookie(false);
           setUser(null);
           setLoading(false);
         } else if (session?.user) {
           localStorage.removeItem(DEMO_STORAGE_KEY);
+          setDemoCookie(false);
           // If we have a session but no user yet, or it's a new sign in
           setLoading(true);
           const profile = await fetchProfile(session.user);
@@ -120,6 +140,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setLoading(false);
           }
         } else {
+          setDemoCookie(false);
           setUser(null);
           setLoading(false);
         }
@@ -133,14 +154,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const login = async (email: string, password: string) => {
-    // Demo Bypass Logic
     const demoUsers: Record<string, { id: string; role: 'admin' | 'trainer' | 'customer'; name: string }> = {
       'admin@ishow.ae': { id: '00000000-aaaa-aaaa-aaaa-000000000000', role: 'admin', name: 'Admin' },
       'trainer@ishow.ae': { id: '00000000-bbbb-bbbb-bbbb-000000000000', role: 'trainer', name: 'Trainer' },
       'client@ishow.ae': { id: '00000000-cccc-cccc-cccc-000000000000', role: 'customer', name: 'Client' },
     };
 
-    if (demoUsers[email] && password === 'ishow2024') {
+    if (DEMO_AUTH_ENABLED && demoUsers[email] && password === 'ishow2024') {
       console.log("Demo login detected for:", email);
       const demoUser: AuthUser = {
         id: demoUsers[email].id,
@@ -149,6 +169,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         role: demoUsers[email].role,
       };
       localStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify(demoUser));
+      setDemoCookie(true);
       setSession(null);
       setUser(demoUser);
       setLoading(false);
@@ -176,6 +197,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.error('Logout error:', error);
     } finally {
       localStorage.removeItem(DEMO_STORAGE_KEY);
+      setDemoCookie(false);
       setUser(null);
       setSession(null);
     }
@@ -202,6 +224,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (error) return { error: error.message };
     localStorage.removeItem(DEMO_STORAGE_KEY);
+    setDemoCookie(false);
     return { error: null, needsConfirmation: true };
   };
 
@@ -238,4 +261,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 export function useAuth() {
   return useContext(AuthContext);
+}
+
+export function isDemoAuthEnabled() {
+  return DEMO_AUTH_ENABLED;
 }

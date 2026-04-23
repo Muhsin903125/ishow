@@ -5,11 +5,15 @@ import { useRouter } from "next/router";
 import { motion, AnimatePresence } from "framer-motion";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useAuth } from "@/contexts/AuthContext";
-import { listAssessments, reviewAssessment, type Assessment } from "@/lib/db/assessments";
-import { listCustomers, listTrainers, updateProfile, type Profile } from "@/lib/db/profiles";
+import {
+  convertAssessmentToClient,
+  listAssessments,
+  reviewAssessment,
+  updateAssessment,
+  type Assessment,
+} from "@/lib/db/assessments";
+import { listCustomers, listTrainers, type Profile } from "@/lib/db/profiles";
 import { listSessions, createSession, updateSession, type TrainingSession } from "@/lib/db/sessions";
-import { createClient } from "@/lib/supabase/client";
-import { notify } from "@/lib/email/notify";
 import {
   CheckCircle, 
   Clock, 
@@ -18,15 +22,13 @@ import {
   CalendarDays, 
   MapPin,
   Mail, 
-  Phone, 
   UserCheck, 
   Calendar, 
   Pencil, 
-  X, 
-  Loader2, 
+  X,
+  Loader2,
   RefreshCw,
   Activity,
-  Target,
   Zap,
   Shield,
   ArrowRight,
@@ -36,10 +38,6 @@ import {
 function fmt(iso: string) {
   return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
-function fmtLong(date: string) {
-  return new Date(date + "T00:00:00").toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" });
-}
-
 type Filter = "all" | "pending" | "reviewed";
 
 type ScheduleForm = {
@@ -176,18 +174,8 @@ export default function AdminAssessmentsPage() {
     setSessionError("");
     try {
       const client = customerById[assessment.userId];
-      const emailData = {
-        name: client?.name ?? 'there',
-        title: scheduleForm.title,
-        date: new Date(scheduleForm.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }),
-        time: scheduleForm.time,
-        duration: scheduleForm.duration,
-        notes: scheduleForm.notes || undefined,
-        location: assessment.preferredLocation,
-      };
 
       if (rescheduleSessionId) {
-        const existing = sessions.find(s => s.id === rescheduleSessionId);
         await updateSession(rescheduleSessionId, {
           title: scheduleForm.title,
           scheduledDate: scheduleForm.date,
@@ -195,13 +183,21 @@ export default function AdminAssessmentsPage() {
           duration: parseInt(scheduleForm.duration) || 60,
           notes: scheduleForm.notes || undefined,
         });
-        if (client?.email) {
-          notify('session-rescheduled', client.email, {
-            ...emailData,
-            oldDate: existing ? new Date(existing.scheduledDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : undefined,
-            oldTime: existing?.scheduledTime,
-          });
-        }
+      } else if (
+        client?.customerStatus !== "client" ||
+        !assessment.convertedToClientAt
+      ) {
+        await convertAssessmentToClient(assessment.id, {
+          trainerNotes: assessment.trainerNotes,
+          assignedTrainerId: assignedTrainerId[assessment.id],
+          session: {
+            title: scheduleForm.title,
+            date: scheduleForm.date,
+            time: scheduleForm.time,
+            duration: parseInt(scheduleForm.duration) || 60,
+            notes: scheduleForm.notes || undefined,
+          },
+        });
       } else {
         await createSession({
           userId: assessment.userId,
@@ -213,7 +209,6 @@ export default function AdminAssessmentsPage() {
           status: "scheduled",
           notes: scheduleForm.notes || undefined,
         });
-        if (client?.email) notify('session-scheduled', client.email, emailData);
       }
       closeSchedule();
       await loadData();
@@ -226,44 +221,34 @@ export default function AdminAssessmentsPage() {
 
   async function handleSaveNotes(assessmentId: string) {
     setSavingNotes(true);
-    const supabase = createClient();
-    await supabase.from("assessments").update({ trainer_notes: notesText }).eq("id", assessmentId);
-    setSavingNotes(false);
-    setEditingNotesId(null);
-    await loadData();
+    try {
+      await updateAssessment(assessmentId, { trainerNotes: notesText });
+      setEditingNotesId(null);
+      await loadData();
+    } finally {
+      setSavingNotes(false);
+    }
   }
 
   async function handleMarkReviewed(assessmentId: string) {
     const a = assessments.find(x => x.id === assessmentId);
     const trainerId = assignedTrainerId[assessmentId];
     await reviewAssessment(assessmentId, a?.trainerNotes ?? "", "reviewed", trainerId || undefined);
-    const client = customerById[a?.userId ?? ''];
-    if (client?.email) {
-      notify('assessment-reviewed', client.email, {
-        name: client.name,
-        notes: a?.trainerNotes || undefined,
-      });
-    }
     await loadData();
   }
 
   async function handleConvert(customerId: string, assessmentId: string) {
     setConvertingId(customerId);
-    const a = assessments.find(x => x.id === assessmentId);
-    const trainerId = assignedTrainerId[assessmentId];
-    await Promise.all([
-      updateProfile(customerId, { customerStatus: "client" }),
-      reviewAssessment(assessmentId, a?.trainerNotes ?? "", "reviewed", trainerId || undefined),
-    ]);
-    const client = customerById[customerId];
-    if (client?.email) {
-      notify('assessment-reviewed', client.email, {
-        name: client.name,
-        notes: a?.trainerNotes || undefined,
+    try {
+      const a = assessments.find((item) => item.id === assessmentId);
+      await convertAssessmentToClient(assessmentId, {
+        trainerNotes: a?.trainerNotes,
+        assignedTrainerId: assignedTrainerId[assessmentId],
       });
+      await loadData();
+    } finally {
+      setConvertingId(null);
     }
-    setConvertingId(null);
-    await loadData();
   }
 
   return (

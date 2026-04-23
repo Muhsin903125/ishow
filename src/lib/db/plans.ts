@@ -44,7 +44,7 @@ export async function getActivePlan(userId: string): Promise<Plan | null> {
     .eq('status', 'active')
     .order('created_at', { ascending: false })
     .limit(1)
-    .single();
+    .maybeSingle();
   if (error || !data) return null;
   return mapPlan(data);
 }
@@ -57,7 +57,7 @@ export async function getPlan(userId: string): Promise<Plan | null> {
     .eq('user_id', userId)
     .order('created_at', { ascending: false })
     .limit(1)
-    .single();
+    .maybeSingle();
   if (error || !data) return null;
   return mapPlan(data);
 }

@@ -1,5 +1,4 @@
-import Head from "next/head";
-import Link from "next/link";
+import PublicMarketingLayout from "@/components/marketing/PublicMarketingLayout";
 
 const privacySections = [
   {
@@ -26,24 +25,15 @@ const privacySections = [
 
 export default function PrivacyPage() {
   return (
-    <>
-      <Head>
-        <title>Privacy Policy | iShowTransformation</title>
-        <meta
-          name="description"
-          content="How iShowTransformation collects, uses, and protects customer and coaching data."
-        />
-      </Head>
-      <main className="min-h-screen bg-slate-950 text-white">
-        <div className="mx-auto max-w-4xl px-4 py-20 sm:px-6 lg:px-8">
-          <Link href="/" className="text-sm font-semibold tracking-[0.2em] uppercase text-orange-300/80 hover:text-orange-200 transition-colors">
-            Back to Home
-          </Link>
-
-          <div className="mt-8 rounded-[2rem] border border-white/10 bg-white/5 p-8 sm:p-10 backdrop-blur-sm">
-            <p className="text-xs font-semibold uppercase tracking-[0.26em] text-blue-200/70 mb-4">Effective Date: April 3, 2026</p>
-            <h1 className="text-4xl sm:text-5xl font-black tracking-tight">Privacy Policy</h1>
-            <p className="mt-5 text-lg leading-relaxed text-white/72 max-w-3xl">
+    <PublicMarketingLayout
+      title="Privacy Policy | iShowTransformation"
+      description="How iShowTransformation collects, uses, and protects customer and coaching data."
+    >
+        <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-8">
+          <div className="rounded-[2rem] border border-slate-200/80 bg-white/92 p-8 sm:p-10 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur-sm">
+            <p className="mb-4 text-xs font-semibold uppercase tracking-[0.26em] text-slate-500">Effective Date: April 3, 2026</p>
+            <h1 className="text-4xl font-black tracking-tight text-slate-950 sm:text-5xl">Privacy Policy</h1>
+            <p className="mt-5 max-w-3xl text-lg leading-relaxed text-slate-600">
               This Privacy Policy explains how iShowTransformation handles information collected through its website,
               coaching workflows, assessments, and account features. By using the platform, you acknowledge the
               collection and use of information as described below.
@@ -52,14 +42,13 @@ export default function PrivacyPage() {
 
           <div className="mt-8 space-y-4">
             {privacySections.map((section) => (
-              <section key={section.title} className="rounded-[1.75rem] border border-white/10 bg-white/5 p-6 sm:p-8">
-                <h2 className="text-2xl font-black text-white mb-3">{section.title}</h2>
-                <p className="text-base leading-relaxed text-white/72">{section.body}</p>
+              <section key={section.title} className="rounded-[1.75rem] border border-slate-200/80 bg-white/92 p-6 shadow-sm sm:p-8">
+                <h2 className="mb-3 text-2xl font-black text-slate-950">{section.title}</h2>
+                <p className="text-base leading-relaxed text-slate-600">{section.body}</p>
               </section>
             ))}
           </div>
         </div>
-      </main>
-    </>
+    </PublicMarketingLayout>
   );
 }

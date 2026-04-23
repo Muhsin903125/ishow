@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import Link from "next/link";
-import { motion } from "framer-motion";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useAuth } from "@/contexts/AuthContext";
 import { listTrainers, listCustomers, type Profile } from "@/lib/db/profiles";
@@ -19,20 +18,14 @@ import {
   Clock, 
   Database, 
   MessageSquare,
-  Activity,
-  Zap,
-  Target,
-  CheckCircle,
-  Mail,
-  ArrowUpRight,
-  TrendingUp
+  TrendingUp,
+  UserRoundPlus,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { cn } from "@/lib/utils";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
@@ -142,46 +135,74 @@ export default function AdminDashboardPage() {
 
   return (
     <DashboardLayout role="admin">
-      <div className="flex flex-col h-full bg-muted/20">
-        {/* Sub Header */}
-        <div className="bg-background border-b border-border px-6 py-4 flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
-              <Shield className="w-5 h-5 text-orange-600" />
-              Overview
-            </h1>
-            <p className="text-xs text-muted-foreground font-medium mt-0.5">Welcome back, Administrator</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" className="h-8 text-xs font-semibold">
-              <Database className="w-3.5 h-3.5 mr-1.5" />
-              Export Data
-            </Button>
-            <Button size="sm" className="h-8 bg-foreground text-background hover:bg-foreground/90 text-xs font-semibold px-4">
-              <Plus className="w-3.5 h-3.5 mr-1.5" />
-              New Action
-            </Button>
-          </div>
-        </div>
+      <div className="flex flex-col h-full bg-transparent">
+        <div className="flex-1 overflow-y-auto space-y-6 p-6 md:p-8">
+          <section className="rounded-[2rem] border border-emerald-100 bg-[linear-gradient(135deg,#ecfdf5_0%,#ffffff_55%,#f8fafc_100%)] p-6 shadow-[0_24px_60px_rgba(16,185,129,0.08)] md:p-8">
+            <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+              <div className="space-y-4">
+                <div className="inline-flex items-center gap-2 rounded-full border border-emerald-100 bg-white/80 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-emerald-700">
+                  <Shield className="h-3.5 w-3.5" />
+                  Admin dashboard
+                </div>
+                <div>
+                  <h1 className="text-3xl font-bold tracking-tight text-slate-950 md:text-4xl">Operations overview</h1>
+                  <p className="mt-2 max-w-2xl text-sm text-slate-600 md:text-base">
+                    Monitor trainers, clients, sessions, and payments from a single command layer built for daily admin operations.
+                  </p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                <div className="rounded-2xl border border-white/70 bg-white/85 px-4 py-3 shadow-sm">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">Trainers</p>
+                  <p className="mt-2 text-sm font-semibold text-slate-950">{trainers.length}</p>
+                </div>
+                <div className="rounded-2xl border border-white/70 bg-white/85 px-4 py-3 shadow-sm">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">Clients</p>
+                  <p className="mt-2 text-sm font-semibold text-slate-950">{customers.length}</p>
+                </div>
+                <div className="col-span-2 rounded-2xl border border-white/70 bg-white/85 px-4 py-3 shadow-sm sm:col-span-1">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">Queue</p>
+                  <p className="mt-2 text-sm font-semibold text-slate-950">{pendingAssessments.length} pending</p>
+                </div>
+              </div>
+            </div>
+            <div className="mt-6 flex flex-wrap gap-3">
+              <Button asChild className="h-11 rounded-xl bg-emerald-600 px-5 text-sm font-semibold text-white hover:bg-emerald-700">
+                <Link href="/admin/clients">
+                  <Users className="mr-2 h-4 w-4" />
+                  Manage clients
+                </Link>
+              </Button>
+              <Button asChild variant="outline" className="h-11 rounded-xl border-border bg-white/80 px-5 text-sm font-semibold">
+                <Link href="/admin/leads">
+                  <UserRoundPlus className="mr-2 h-4 w-4" />
+                  Open leads
+                </Link>
+              </Button>
+              <Button asChild variant="outline" className="h-11 rounded-xl border-border bg-white/80 px-5 text-sm font-semibold">
+                <Link href="/admin/reports">
+                  <TrendingUp className="mr-2 h-4 w-4" />
+                  Open reports
+                </Link>
+              </Button>
+            </div>
+          </section>
 
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
           {/* Stats Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {stats.map(({ label, value, icon: Icon, color, bg, trend }, idx) => (
-              <Card key={label} className="shadow-sm border-border bg-background">
+            {stats.map(({ label, value, icon: Icon, color, bg, trend }) => (
+              <Card key={label} className="rounded-[1.5rem] border border-border/80 bg-white/92 shadow-sm">
                 <CardContent className="p-5">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className={`w-9 h-9 rounded-lg ${bg} flex items-center justify-center`}>
-                      <Icon className={`w-4.5 h-4.5 ${color}`} />
+                  <div className="mb-4 flex items-center justify-between">
+                    <div className={`flex h-11 w-11 items-center justify-center rounded-2xl ${bg}`}>
+                      <Icon className={`h-5 w-5 ${color}`} />
                     </div>
-                    <Badge variant="ghost" className="text-[10px] font-medium text-muted-foreground p-0">
+                    <Badge variant="outline" className="border-transparent bg-slate-100 text-[10px] font-semibold text-slate-600">
                       {trend}
                     </Badge>
                   </div>
-                  <div>
-                    <p className="text-2xl font-bold text-foreground">{value}</p>
-                    <p className="text-xs text-muted-foreground font-medium mt-0.5">{label}</p>
-                  </div>
+                  <p className="text-2xl font-bold text-slate-950">{value}</p>
+                  <p className="mt-1 text-xs font-medium text-slate-500">{label}</p>
                 </CardContent>
               </Card>
             ))}
@@ -291,12 +312,12 @@ export default function AdminDashboardPage() {
               { href: "/admin/master", label: "Master Data", desc: "System config", icon: Database, color: "text-emerald-600" },
             ].map(({ href, label, desc, icon: Icon, color }) => (
               <Link key={href} href={href} className="group">
-                <div className="p-4 rounded-xl border border-border bg-background hover:border-orange-500/30 hover:shadow-md transition-all h-full">
-                  <div className={`w-8 h-8 rounded-lg bg-muted flex items-center justify-center mb-3 group-hover:scale-110 transition-transform`}>
+                <div className="h-full rounded-[1.5rem] border border-border/80 bg-white/92 p-4 transition-all hover:-translate-y-0.5 hover:border-emerald-200 hover:shadow-md">
+                  <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 transition-transform group-hover:scale-110">
                     <Icon className={`w-4 h-4 ${color}`} />
                   </div>
-                  <h3 className="text-xs font-bold text-foreground mb-0.5">{label}</h3>
-                  <p className="text-[10px] text-muted-foreground font-medium">{desc}</p>
+                  <h3 className="mb-0.5 text-xs font-bold text-slate-950">{label}</h3>
+                  <p className="text-[10px] font-medium text-slate-500">{desc}</p>
                 </div>
               </Link>
             ))}
@@ -304,15 +325,6 @@ export default function AdminDashboardPage() {
         </div>
       </div>
     </DashboardLayout>
-  );
-}
-
-function Plus({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-      <line x1="12" y1="5" x2="12" y2="19" />
-      <line x1="5" y1="12" x2="19" y2="12" />
-    </svg>
   );
 }
 

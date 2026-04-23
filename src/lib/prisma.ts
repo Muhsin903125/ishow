@@ -1,3 +1,3 @@
-// This file is kept for compatibility but the app uses localStorage-based storage
-// See src/lib/storage.ts and src/lib/mockData.ts for the actual data layer
+// Legacy placeholder kept only so archived imports do not break historical code.
+// The active app does not use Prisma or the old localStorage data layer.
 export {};

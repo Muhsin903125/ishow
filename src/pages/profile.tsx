@@ -5,7 +5,7 @@ import { useRouter } from "next/router";
 import { motion, AnimatePresence } from "framer-motion";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useAuth } from "@/contexts/AuthContext";
-import { getProfile, updateProfile } from "@/lib/db/profiles";
+import { loadMyProfile, saveMyProfile } from "@/lib/api/me";
 import { 
   User, 
   Lock, 
@@ -39,7 +39,7 @@ export default function CustomerProfilePage() {
       
       (async () => {
         try {
-          const p = await getProfile(user.id);
+          const p = await loadMyProfile();
           setProfileForm({ name: p?.name ?? "", phone: p?.phone ?? "" });
         } catch (err) {
           console.error("Error loading profile:", err);
@@ -54,9 +54,9 @@ export default function CustomerProfilePage() {
     return (
       <DashboardLayout role="customer">
         <div className="p-8 max-w-full space-y-8">
-           <div className="h-10 w-48 bg-zinc-900 rounded-lg animate-pulse" />
-           <div className="h-64 bg-zinc-900 rounded-[2.5rem] animate-pulse" />
-           <div className="h-64 bg-zinc-900 rounded-[2.5rem] animate-pulse" />
+           <div className="h-10 w-48 bg-muted rounded-lg animate-pulse" />
+           <div className="h-64 bg-muted rounded-[2.5rem] animate-pulse" />
+           <div className="h-64 bg-muted rounded-[2.5rem] animate-pulse" />
         </div>
       </DashboardLayout>
     );
@@ -67,7 +67,7 @@ export default function CustomerProfilePage() {
     setProfileSaving(true);
     setProfileMsg("");
     try {
-      await updateProfile(user.id, { name: profileForm.name, phone: profileForm.phone });
+      await saveMyProfile({ name: profileForm.name, phone: profileForm.phone });
       setProfileMsg("Credential manifest updated successfully.");
       setTimeout(() => setProfileMsg(""), 3000);
     } finally {
@@ -110,7 +110,7 @@ export default function CustomerProfilePage() {
 
   return (
     <DashboardLayout role="customer">
-      <div className="min-h-screen bg-zinc-950 p-6 lg:p-10">
+      <div className="min-h-screen bg-transparent p-6 lg:p-10 font-sans">
         <div className="max-w-full">
           
           <motion.div 
@@ -118,10 +118,10 @@ export default function CustomerProfilePage() {
             animate={{ opacity: 1, y: 0 }}
             className="mb-10"
           >
-            <h1 className="text-3xl font-black text-white italic uppercase tracking-tight">
+            <h1 className="text-3xl font-bold text-foreground tracking-tight">
               Control <span className="text-orange-500">Panel</span>
             </h1>
-            <p className="text-zinc-500 mt-2 font-medium">Manage operational identity and access security protocols.</p>
+            <p className="text-muted-foreground mt-2 font-medium">Manage your personal details and account security in one place.</p>
           </motion.div>
 
           {/* Personal Information */}
@@ -129,13 +129,13 @@ export default function CustomerProfilePage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="bg-zinc-900 border border-zinc-800 rounded-[2.5rem] p-8 md:p-10 mb-8 overflow-hidden relative"
+            className="bg-background border border-border rounded-[2rem] p-8 md:p-10 mb-8 overflow-hidden relative shadow-sm"
           >
             <div className="absolute top-0 right-0 p-10 opacity-[0.02] pointer-events-none">
-               <User className="w-32 h-32 text-white" />
+               <User className="w-32 h-32 text-foreground" />
             </div>
 
-            <h2 className="text-sm font-black text-white mb-8 flex items-center gap-3 uppercase tracking-[0.2em] italic">
+            <h2 className="text-sm font-bold text-foreground mb-8 flex items-center gap-3 uppercase tracking-[0.2em]">
               <div className="p-2 bg-orange-500/10 rounded-lg">
                 <ShieldCheck className="w-4 h-4 text-orange-500" />
               </div>
@@ -145,40 +145,40 @@ export default function CustomerProfilePage() {
             <div className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-2 italic">Full Operational Name</label>
+                  <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2">Full Name</label>
                   <div className="relative">
-                     <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-700" />
+                     <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                      <input
                        value={profileForm.name}
                        onChange={e => setProfileForm(f => ({ ...f, name: e.target.value }))}
-                       className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl pl-12 pr-4 py-4 text-sm text-white font-black uppercase focus:outline-none focus:border-orange-500 transition-colors"
+                       className="w-full bg-background border border-border rounded-2xl pl-12 pr-4 py-4 text-sm text-foreground font-semibold focus:outline-none focus:border-orange-500 transition-colors"
                      />
                   </div>
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-2 italic">Contact Frequency (Phone)</label>
+                  <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2">Phone</label>
                   <div className="relative">
-                    <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-700" />
+                    <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <input
                       value={profileForm.phone}
                       onChange={e => setProfileForm(f => ({ ...f, phone: e.target.value }))}
                       type="tel"
-                      className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl pl-12 pr-4 py-4 text-sm text-white font-black uppercase focus:outline-none focus:border-orange-500 transition-colors"
+                      className="w-full bg-background border border-border rounded-2xl pl-12 pr-4 py-4 text-sm text-foreground font-semibold focus:outline-none focus:border-orange-500 transition-colors"
                     />
                   </div>
                 </div>
               </div>
 
               <div>
-                <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-2 italic">Primary Comm-Link (Email)</label>
+                <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2">Email</label>
                 <div className="relative">
-                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-800" />
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <input
                     value={user.email}
                     disabled
-                    className="w-full bg-zinc-950/50 border border-zinc-900 rounded-2xl pl-12 pr-4 py-4 text-sm text-zinc-600 font-black cursor-not-allowed"
+                    className="w-full bg-muted/50 border border-border rounded-2xl pl-12 pr-4 py-4 text-sm text-muted-foreground font-semibold cursor-not-allowed"
                   />
-                  <p className="text-[10px] text-zinc-700 mt-2 font-bold italic">Comm-link address is locked for security.</p>
+                  <p className="text-[10px] text-muted-foreground mt-2 font-medium">Email address is locked for security.</p>
                 </div>
               </div>
 
@@ -188,7 +188,7 @@ export default function CustomerProfilePage() {
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: "auto" }}
                     exit={{ opacity: 0, height: 0 }}
-                    className="flex items-center gap-2 text-emerald-500 font-black uppercase text-[10px] tracking-widest"
+                    className="flex items-center gap-2 text-emerald-600 font-bold uppercase text-[10px] tracking-widest"
                   >
                     <CheckCircle className="w-3.5 h-3.5" />
                     {profileMsg}
@@ -199,7 +199,7 @@ export default function CustomerProfilePage() {
               <button
                 onClick={handleSaveProfile}
                 disabled={profileSaving}
-                className="w-full md:w-auto bg-white hover:bg-orange-500 text-zinc-950 hover:text-white px-8 py-4 rounded-2xl text-xs font-black uppercase tracking-[0.2em] transition-all disabled:opacity-20 active:scale-95 shadow-xl flex items-center justify-center gap-3"
+                className="w-full md:w-auto bg-orange-500 hover:bg-orange-600 text-white px-8 py-4 rounded-2xl text-xs font-bold uppercase tracking-[0.2em] transition-all disabled:opacity-20 active:scale-95 shadow-sm flex items-center justify-center gap-3"
               >
                 {profileSaving ? (
                    <Loader2 className="w-4 h-4 animate-spin" />
@@ -216,13 +216,13 @@ export default function CustomerProfilePage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="bg-zinc-900 border border-zinc-800 rounded-[2.5rem] p-8 md:p-10 overflow-hidden relative"
+            className="bg-background border border-border rounded-[2rem] p-8 md:p-10 overflow-hidden relative shadow-sm"
           >
              <div className="absolute top-0 right-0 p-10 opacity-[0.02] pointer-events-none">
-               <Key className="w-32 h-32 text-white" />
+               <Key className="w-32 h-32 text-foreground" />
             </div>
 
-            <h2 className="text-sm font-black text-white mb-8 flex items-center gap-3 uppercase tracking-[0.2em] italic">
+            <h2 className="text-sm font-bold text-foreground mb-8 flex items-center gap-3 uppercase tracking-[0.2em]">
                <div className="p-2 bg-blue-500/10 rounded-lg">
                 <Lock className="w-4 h-4 text-blue-500" />
               </div>
@@ -232,23 +232,23 @@ export default function CustomerProfilePage() {
             <div className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                   <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-2 italic">New Access Cipher</label>
+                   <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2">New Password</label>
                    <input
                     type="password"
                     placeholder="MIN 8 CHARS"
                     value={passwordForm.newPass}
                     onChange={e => setPasswordForm(f => ({ ...f, newPass: e.target.value }))}
-                    className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl px-5 py-4 text-sm text-white font-black uppercase focus:outline-none focus:border-blue-500 transition-colors placeholder:text-zinc-800"
+                    className="w-full bg-background border border-border rounded-2xl px-5 py-4 text-sm text-foreground font-semibold focus:outline-none focus:border-blue-500 transition-colors placeholder:text-muted-foreground"
                   />
                 </div>
                 <div>
-                   <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-2 italic">Confirm Cipher</label>
+                   <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2">Confirm Password</label>
                    <input
                     type="password"
                     placeholder="RE-ENTER"
                     value={passwordForm.confirm}
                     onChange={e => setPasswordForm(f => ({ ...f, confirm: e.target.value }))}
-                    className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl px-5 py-4 text-sm text-white font-black uppercase focus:outline-none focus:border-blue-500 transition-colors placeholder:text-zinc-800"
+                    className="w-full bg-background border border-border rounded-2xl px-5 py-4 text-sm text-foreground font-semibold focus:outline-none focus:border-blue-500 transition-colors placeholder:text-muted-foreground"
                   />
                 </div>
               </div>
@@ -259,7 +259,7 @@ export default function CustomerProfilePage() {
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: "auto" }}
                     exit={{ opacity: 0, height: 0 }}
-                    className={`flex items-center gap-2 font-black uppercase text-[10px] tracking-widest ${passwordError ? "text-rose-500" : "text-emerald-500"}`}
+                    className={`flex items-center gap-2 font-bold uppercase text-[10px] tracking-widest ${passwordError ? "text-rose-500" : "text-emerald-600"}`}
                   >
                     {passwordError ? <AlertCircle className="w-3.5 h-3.5" /> : <CheckCircle className="w-3.5 h-3.5" />}
                     {passwordMsg}
@@ -270,7 +270,7 @@ export default function CustomerProfilePage() {
               <button
                 onClick={handleChangePassword}
                 disabled={passwordSaving}
-                className="w-full md:w-auto bg-zinc-800 hover:bg-blue-500 text-white px-8 py-4 rounded-2xl text-xs font-black uppercase tracking-[0.2em] transition-all disabled:opacity-20 active:scale-95 shadow-xl flex items-center justify-center gap-3"
+                className="w-full md:w-auto bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-2xl text-xs font-bold uppercase tracking-[0.2em] transition-all disabled:opacity-20 active:scale-95 shadow-sm flex items-center justify-center gap-3"
               >
                 {passwordSaving ? (
                   <Loader2 className="w-4 h-4 animate-spin" />

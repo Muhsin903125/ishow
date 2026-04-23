@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { motion, AnimatePresence } from "framer-motion";
 import DashboardLayout from "@/components/DashboardLayout";
@@ -9,19 +9,15 @@ import { listPayments, createPayment, updatePaymentStatus, type Payment } from "
 import { listCustomers, type Profile } from "@/lib/db/profiles";
 import { listAllPlans, type Plan } from "@/lib/db/plans";
 import { 
-  CreditCard, 
   CheckCircle, 
   Clock, 
   AlertCircle, 
   Plus, 
   Loader2, 
   X, 
-  ChevronRight,
   TrendingUp,
   DollarSign,
   Activity,
-  ArrowRight,
-  Zap,
 } from "lucide-react";
 
 const formatCurrency = (amount: number) =>
@@ -68,15 +64,7 @@ export default function TrainerPaymentsPage() {
   const [formError, setFormError] = useState("");
   const [invoiceForm, setInvoiceForm] = useState(emptyInvoice());
 
-  useEffect(() => {
-    if (!loading) {
-      if (!user) { router.replace("/login"); return; }
-      if (user.role === "customer") { router.replace("/dashboard"); return; }
-      loadData();
-    }
-  }, [loading, user, router]);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     if (!user) return;
     try {
       const [p, c, allPlans] = await Promise.all([
@@ -87,12 +75,20 @@ export default function TrainerPaymentsPage() {
       setPayments(p);
       setClients(c);
       setPlans(allPlans);
-    } catch (err) {
-      console.error("Error loading payments:", err);
+    } catch (error) {
+      console.error("Error loading payments:", error);
     } finally {
       setDataLoaded(true);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    if (!loading) {
+      if (!user) { router.replace("/login"); return; }
+      if (user.role === "customer") { router.replace("/dashboard"); return; }
+      loadData();
+    }
+  }, [loading, user, router, loadData]);
 
   const handleClientChange = (clientId: string) => {
     setInvoiceForm(f => ({ ...f, userId: clientId }));
@@ -116,6 +112,7 @@ export default function TrainerPaymentsPage() {
         userId: invoiceForm.userId,
         planId: invoiceForm.planId || undefined,
         amount: parseFloat(invoiceForm.amount),
+        paidAmount: 0,
         description: invoiceForm.description,
         dueDate: invoiceForm.dueDate,
         status: "pending",
@@ -123,7 +120,7 @@ export default function TrainerPaymentsPage() {
       setShowInvoiceModal(false);
       setInvoiceForm(emptyInvoice());
       await loadData();
-    } catch (err) {
+    } catch {
       setFormError("Data sync protocol failure.");
     } finally {
       setSaving(false);

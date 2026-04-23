@@ -1,5 +1,5 @@
-import { createClient } from '@/lib/supabase/client';
-import { createNotification } from './notifications';
+import { apiRequest } from "@/lib/api/client";
+import { createClient } from "@/lib/supabase/client";
 
 export interface BodyMeasurements {
   chest?: string;
@@ -25,7 +25,7 @@ export interface Assessment {
   age?: number;
   weight?: string;
   height?: string;
-  gender?: 'male' | 'female' | 'prefer_not_to_say';
+  gender?: "male" | "female" | "prefer_not_to_say";
   bodyMeasurements: BodyMeasurements;
   goals: string[];
   experienceLevel?: string;
@@ -37,7 +37,7 @@ export interface Assessment {
   preferredTimeSlot?: string;
   preferredLocationId?: string;
   preferredLocation?: string;
-  status: 'pending' | 'reviewed' | 'rejected';
+  status: "pending" | "reviewed" | "rejected";
   trainerNotes?: string;
   submittedAt: string;
   reviewedAt?: string;
@@ -47,48 +47,101 @@ export interface Assessment {
 function mapAssessment(row: Record<string, unknown>): Assessment {
   return {
     id: row.id as string,
-    userId: row.user_id as string,
-    assignedTrainerId: (row.assigned_trainer_id as string) ?? undefined,
+    userId: row.user_id ? (row.user_id as string) : (row.userId as string),
+    assignedTrainerId:
+      (row.assigned_trainer_id as string) ??
+      (row.assignedTrainerId as string) ??
+      undefined,
     age: (row.age as number) ?? undefined,
     weight: (row.weight as string) ?? undefined,
     height: (row.height as string) ?? undefined,
-    gender: (row.gender as Assessment['gender']) ?? undefined,
-    bodyMeasurements: (row.body_measurements as BodyMeasurements) ?? {},
+    gender:
+      ((row.gender as Assessment["gender"]) ??
+        (row.gender as Assessment["gender"])) ?? undefined,
+    bodyMeasurements:
+      (row.body_measurements as BodyMeasurements) ??
+      (row.bodyMeasurements as BodyMeasurements) ??
+      {},
     goals: (row.goals as string[]) ?? [],
-    experienceLevel: (row.experience_level as string) ?? undefined,
-    healthConditions: (row.health_conditions as string) ?? undefined,
-    medicalHistory: (row.medical_history as MedicalHistory) ?? {},
-    daysPerWeek: (row.days_per_week as number) ?? undefined,
-    preferredTimes: (row.preferred_times as string) ?? undefined,
-    preferredDate: (row.preferred_date as string) ?? undefined,
-    preferredTimeSlot: (row.preferred_time_slot as string) ?? undefined,
-    preferredLocationId: (row.preferred_location_id as string) ?? undefined,
-    preferredLocation: (row.preferred_location as string) ?? undefined,
-    status: row.status as Assessment['status'],
-    trainerNotes: (row.trainer_notes as string) ?? undefined,
-    submittedAt: row.submitted_at as string,
-    reviewedAt: (row.reviewed_at as string) ?? undefined,
-    convertedToClientAt: (row.converted_to_client_at as string) ?? undefined,
+    experienceLevel:
+      (row.experience_level as string) ??
+      (row.experienceLevel as string) ??
+      undefined,
+    healthConditions:
+      (row.health_conditions as string) ??
+      (row.healthConditions as string) ??
+      undefined,
+    medicalHistory:
+      (row.medical_history as MedicalHistory) ??
+      (row.medicalHistory as MedicalHistory) ??
+      {},
+    daysPerWeek:
+      (row.days_per_week as number) ?? (row.daysPerWeek as number) ?? undefined,
+    preferredTimes:
+      (row.preferred_times as string) ??
+      (row.preferredTimes as string) ??
+      undefined,
+    preferredDate:
+      (row.preferred_date as string) ??
+      (row.preferredDate as string) ??
+      undefined,
+    preferredTimeSlot:
+      (row.preferred_time_slot as string) ??
+      (row.preferredTimeSlot as string) ??
+      undefined,
+    preferredLocationId:
+      (row.preferred_location_id as string) ??
+      (row.preferredLocationId as string) ??
+      undefined,
+    preferredLocation:
+      (row.preferred_location as string) ??
+      (row.preferredLocation as string) ??
+      undefined,
+    status: (row.status as Assessment["status"]) ?? "pending",
+    trainerNotes:
+      (row.trainer_notes as string) ??
+      (row.trainerNotes as string) ??
+      undefined,
+    submittedAt:
+      (row.submitted_at as string) ??
+      (row.submittedAt as string) ??
+      new Date().toISOString(),
+    reviewedAt:
+      (row.reviewed_at as string) ??
+      (row.reviewedAt as string) ??
+      undefined,
+    convertedToClientAt:
+      (row.converted_to_client_at as string) ??
+      (row.convertedToClientAt as string) ??
+      undefined,
   };
 }
 
 export async function getAssessment(userId: string): Promise<Assessment | null> {
   const supabase = createClient();
   const { data, error } = await supabase
-    .from('assessments')
-    .select('*')
-    .eq('user_id', userId)
-    .order('submitted_at', { ascending: false })
+    .from("assessments")
+    .select("*")
+    .eq("user_id", userId)
+    .order("submitted_at", { ascending: false })
     .limit(1)
-    .single();
+    .maybeSingle();
+
   if (error || !data) return null;
   return mapAssessment(data);
 }
 
-export async function listAssessments(status?: Assessment['status']): Promise<Assessment[]> {
+export async function listAssessments(
+  status?: Assessment["status"]
+): Promise<Assessment[]> {
   const supabase = createClient();
-  let query = supabase.from('assessments').select('*').order('submitted_at', { ascending: false });
-  if (status) query = query.eq('status', status);
+  let query = supabase
+    .from("assessments")
+    .select("*")
+    .order("submitted_at", { ascending: false });
+
+  if (status) query = query.eq("status", status);
+
   const { data, error } = await query;
   if (error || !data) return [];
   return data.map(mapAssessment);
@@ -96,65 +149,103 @@ export async function listAssessments(status?: Assessment['status']): Promise<As
 
 export async function submitAssessment(
   userId: string,
-  payload: Omit<Assessment, 'id' | 'userId' | 'status' | 'submittedAt' | 'reviewedAt' | 'convertedToClientAt'>
+  payload: Omit<
+    Assessment,
+    | "id"
+    | "userId"
+    | "status"
+    | "submittedAt"
+    | "reviewedAt"
+    | "convertedToClientAt"
+  >
 ): Promise<Assessment | null> {
-  const supabase = createClient();
-  const { data, error } = await supabase
-    .from('assessments')
-    .insert({
-      user_id: userId,
-      age: payload.age,
-      weight: payload.weight,
-      height: payload.height,
-      gender: payload.gender,
-      body_measurements: payload.bodyMeasurements,
-      goals: payload.goals,
-      experience_level: payload.experienceLevel,
-      health_conditions: payload.healthConditions,
-      medical_history: payload.medicalHistory,
-      days_per_week: payload.daysPerWeek,
-      preferred_times: payload.preferredTimes,
-      preferred_date: payload.preferredDate,
-      preferred_time_slot: payload.preferredTimeSlot,
-      preferred_location_id: payload.preferredLocationId,
-      preferred_location: payload.preferredLocation,
-      status: 'pending',
-    })
-    .select()
-    .single();
-  if (error || !data) return null;
-  return mapAssessment(data);
+  const response = await apiRequest<{
+    ok: true;
+    assessment: Record<string, unknown>;
+  }>("/api/assessments", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      assessment: {
+        ...payload,
+        userId,
+      },
+    }),
+  });
+
+  return mapAssessment(response.assessment);
 }
 
 export async function reviewAssessment(
   assessmentId: string,
   trainerNotes: string,
-  status: 'reviewed' | 'rejected' = 'reviewed',
+  status: "reviewed" | "rejected" = "reviewed",
   assignedTrainerId?: string
 ): Promise<Assessment | null> {
-  const supabase = createClient();
-  const { data, error } = await supabase
-    .from('assessments')
-    .update({
-      status,
-      trainer_notes: trainerNotes,
-      reviewed_at: new Date().toISOString(),
-      converted_to_client_at: status === 'reviewed' ? new Date().toISOString() : null,
-      assigned_trainer_id: assignedTrainerId ?? null,
-    })
-    .eq('id', assessmentId)
-    .select()
-    .single();
-  if (error || !data) return null;
+  return updateAssessment(assessmentId, {
+    trainerNotes,
+    status,
+    assignedTrainerId,
+  });
+}
 
-  // RT2: Notification
-  await createNotification({
-    userId: data.user_id,
-    type: 'assessment_reviewed',
-    title: 'Assessment Reviewed',
-    body: 'Your fitness assessment has been reviewed. Your trainer will be in touch soon.',
-    href: '/dashboard',
+export async function updateAssessment(
+  assessmentId: string,
+  updates: Partial<{
+    trainerNotes: string;
+    status: "pending" | "reviewed" | "rejected";
+    assignedTrainerId?: string;
+  }>
+): Promise<Assessment | null> {
+  const response = await apiRequest<{
+    ok: true;
+    assessment: Record<string, unknown>;
+  }>(`/api/assessments/${assessmentId}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      assessment: updates,
+    }),
   });
 
-  return mapAssessment(data);
+  return mapAssessment(response.assessment);
+}
+
+export async function convertAssessmentToClient(
+  assessmentId: string,
+  workflow: {
+    trainerNotes?: string;
+    assignedTrainerId?: string;
+    session?: {
+      title: string;
+      date: string;
+      time: string;
+      duration?: number | string;
+      notes?: string;
+    };
+  }
+): Promise<{
+  assessment: Assessment;
+  session: Record<string, unknown> | null;
+}> {
+  const response = await apiRequest<{
+    ok: true;
+    assessment: Record<string, unknown>;
+    session: Record<string, unknown> | null;
+  }>(`/api/admin/assessments/${assessmentId}/convert`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ workflow }),
+  });
+
+  return {
+    assessment: mapAssessment(response.assessment),
+    session: response.session,
+  };
 }

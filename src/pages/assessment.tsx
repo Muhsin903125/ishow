@@ -55,7 +55,6 @@ export default function AssessmentPage() {
   const [step, setStep] = useState(0);
   const [direction, setDirection] = useState(0); // 1 for next, -1 for back
   const [submitting, setSubmitting] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
   const [checking, setChecking] = useState(true);
 
   // Master data
@@ -69,24 +68,41 @@ export default function AssessmentPage() {
   const [preferredTime, setPreferredTime] = useState("");
   const [healthConditions, setHealthConditions] = useState("");
   const [preferredLocationId, setPreferredLocationId] = useState("");
+  const [preferredLocationText, setPreferredLocationText] = useState("");
 
   useEffect(() => {
+    let active = true;
+
     if (authLoading) return;
     if (!user) { router.replace("/login"); return; }
     if (user.role === "trainer") { router.replace("/trainer/dashboard"); return; }
     if (user.role === "admin") { router.replace("/admin"); return; }
 
     (async () => {
-      const existing = await getAssessment(user.id);
+      const [existingResult, goalsResult, locationsResult] = await Promise.allSettled([
+        getAssessment(user.id),
+        getGoalTypes(),
+        getLocations(),
+      ]);
+
+      if (!active) return;
+
+      const existing =
+        existingResult.status === "fulfilled" ? existingResult.value : null;
+
       if (existing) {
         router.replace("/dashboard");
         return;
       }
-      const [goals, locs] = await Promise.all([getGoalTypes(), getLocations()]);
-      setGoalTypes(goals);
-      setLocations(locs);
+
+      setGoalTypes(goalsResult.status === "fulfilled" ? goalsResult.value : []);
+      setLocations(locationsResult.status === "fulfilled" ? locationsResult.value : []);
       setChecking(false);
     })();
+
+    return () => {
+      active = false;
+    };
   }, [authLoading, user, router]);
 
   const nextStep = () => {
@@ -112,7 +128,7 @@ export default function AssessmentPage() {
   const canProceed = () => {
     if (step === 0) return selectedGoals.length > 0;
     if (step === 1) return experienceLevel !== "" && daysPerWeek !== null;
-    if (step === 2) return preferredTime !== "";
+    if (step === 2) return preferredTime !== "" && preferredLocationText.trim() !== "";
     return false;
   };
 
@@ -127,15 +143,15 @@ export default function AssessmentPage() {
         preferredTimes: preferredTime,
         healthConditions: healthConditions.trim() || undefined,
         preferredLocationId: preferredLocationId || undefined,
-        preferredLocation: locations.find((l) => l.id === preferredLocationId)?.name,
+        preferredLocation:
+          locations.find((l) => l.id === preferredLocationId)?.name ??
+          (preferredLocationText.trim() || undefined),
         bodyMeasurements: {},
         medicalHistory: {},
       });
 
       notify("assessment-submitted", user.email, { name: user.name });
-
-      setSubmitted(true);
-      setTimeout(() => router.replace("/dashboard"), 3000);
+      router.replace("/dashboard");
     } catch {
       setSubmitting(false);
     }
@@ -149,37 +165,6 @@ export default function AssessmentPage() {
            transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
         >
           <Loader2 className="w-8 h-8 text-orange-500" />
-        </motion.div>
-      </div>
-    );
-  }
-
-  if (submitted) {
-    return (
-      <div className="min-h-screen bg-zinc-950 flex items-center justify-center px-6 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-orange-500/10 via-transparent to-zinc-950 z-0" />
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="text-center max-w-sm z-10"
-        >
-          <div className="w-20 h-20 rounded-full bg-orange-500/10 border border-orange-500/20 flex items-center justify-center mx-auto mb-6 shadow-2xl shadow-orange-500/20">
-            <CheckCircle className="w-10 h-10 text-orange-500" />
-          </div>
-          <h1 className="text-2xl font-black text-white mb-3 uppercase tracking-tight">Profile Locked In</h1>
-          <p className="text-zinc-400 text-sm leading-relaxed">
-            We&apos;re building your custom environment now. Preparing your dashboard...
-          </p>
-          <motion.div 
-            className="mt-8 h-1 bg-zinc-900 rounded-full overflow-hidden"
-          >
-            <motion.div 
-              initial={{ width: 0 }}
-              animate={{ width: "100%" }}
-              transition={{ duration: 2.5 }}
-              className="h-full bg-orange-500 shadow-[0_0_15px_rgba(249,115,22,0.5)]"
-            />
-          </motion.div>
         </motion.div>
       </div>
     );
@@ -203,7 +188,7 @@ export default function AssessmentPage() {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-950 flex flex-col items-center justify-center p-4 md:p-8 relative overflow-hidden font-[family-name:var(--font-dm)]">
+    <div className="min-h-screen bg-zinc-950 flex flex-col items-center justify-center p-4 md:p-8 relative overflow-hidden font-[family-name:var(--font-manrope)]">
       {/* Mesh Background */}
       <div className="absolute inset-0 z-0 opacity-30">
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-orange-600 rounded-full blur-[120px] animate-pulse" />
@@ -446,7 +431,10 @@ export default function AssessmentPage() {
                             {locations.map((loc) => (
                               <button
                                 key={loc.id}
-                                onClick={() => setPreferredLocationId(loc.id)}
+                                onClick={() => {
+                                  setPreferredLocationId(loc.id);
+                                  setPreferredLocationText(loc.name);
+                                }}
                                 className={`flex items-center gap-3 p-4 rounded-xl border text-sm font-black uppercase tracking-wider transition-all ${
                                   preferredLocationId === loc.id
                                     ? "bg-zinc-800 border-orange-500 text-white"
@@ -454,12 +442,34 @@ export default function AssessmentPage() {
                                 }`}
                               >
                                 <MapPin className={`w-4 h-4 ${preferredLocationId === loc.id ? "text-orange-500" : "text-zinc-700"}`} />
-                                <span className="truncate">{loc.name}</span>
+                                <span className="truncate">
+                                  {loc.name}
+                                  {loc.city ? ` - ${loc.city}` : ""}
+                                </span>
                               </button>
                             ))}
                           </div>
                         </div>
                       )}
+
+                      <div>
+                        <label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 mb-4 block">
+                          Preferred Location
+                        </label>
+                        <input
+                          type="text"
+                          value={preferredLocationText}
+                          onChange={(e) => {
+                            setPreferredLocationText(e.target.value);
+                            setPreferredLocationId("");
+                          }}
+                          placeholder={locations.length > 0 ? "Choose above or type another location" : "Enter your preferred training location"}
+                          className="w-full bg-zinc-900/40 border border-zinc-800 rounded-xl px-4 py-3 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-orange-500 transition-colors"
+                        />
+                        <p className="mt-2 text-[11px] text-zinc-500">
+                          Tell us where you prefer to train so your plan and session setup can match.
+                        </p>
+                      </div>
                     </div>
                   </div>
                 )}

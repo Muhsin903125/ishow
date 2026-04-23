@@ -2,18 +2,18 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import DashboardLayout from "@/components/DashboardLayout";
-import { listPayments, type Payment } from "@/lib/db/payments";
-import { getActivePlan, type Plan } from "@/lib/db/plans";
+import type { Payment } from "@/lib/db/payments";
+import type { Plan } from "@/lib/db/plans";
+import { loadCustomerWorkspace } from "@/lib/api/workspace";
 import {
   CreditCard,
   CheckCircle,
   Clock,
   AlertTriangle,
   DollarSign,
-  Loader2,
   Calendar,
   ArrowUpRight,
   TrendingUp,
@@ -26,6 +26,11 @@ function PaymentStatusBadge({ status }: { status: string }) {
       color: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20", 
       icon: <CheckCircle className="w-3 h-3" />,
       text: "Settled" 
+    },
+    partial: {
+      color: "bg-orange-500/10 text-orange-500 border-orange-500/20",
+      icon: <DollarSign className="w-3 h-3" />,
+      text: "Partial"
     },
     pending: { 
       color: "bg-amber-500/10 text-amber-500 border-amber-500/20", 
@@ -47,6 +52,14 @@ function PaymentStatusBadge({ status }: { status: string }) {
   );
 }
 
+function getDisplayStatus(payment: Payment) {
+  if (payment.status !== "paid" && payment.paidAmount > 0 && payment.balanceAmount > 0) {
+    return "partial";
+  }
+
+  return payment.status;
+}
+
 export default function PaymentsPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
@@ -61,12 +74,9 @@ export default function PaymentsPage() {
 
       (async () => {
         try {
-          const [userPayments, activePlan] = await Promise.all([
-            listPayments({ userId: user.id }),
-            getActivePlan(user.id)
-          ]);
-          setPayments(userPayments);
-          setPlan(activePlan);
+          const workspace = await loadCustomerWorkspace();
+          setPayments(workspace.payments);
+          setPlan(workspace.plan);
         } catch (err) {
           console.error("Error loading payments:", err);
         } finally {
@@ -92,8 +102,8 @@ export default function PaymentsPage() {
     );
   }
 
-  const totalPaidValue = payments.filter((p) => p.status === "paid").reduce((sum, p) => sum + p.amount, 0);
-  const pendingAmountValue = payments.filter((p) => p.status === "pending" || p.status === "overdue").reduce((sum, p) => sum + p.amount, 0);
+  const totalPaidValue = payments.reduce((sum, p) => sum + p.paidAmount, 0);
+  const pendingAmountValue = payments.reduce((sum, p) => sum + p.balanceAmount, 0);
   const overduePayments = payments.filter((p) => p.status === "overdue");
 
   return (
@@ -296,6 +306,17 @@ export default function PaymentsPage() {
                             <span className="opacity-40">TX_{payment.reference.slice(0, 8)}</span>
                           )}
                         </div>
+                        <div className="mt-3 flex flex-wrap gap-3 text-[10px] font-black uppercase tracking-widest">
+                          <span className="rounded-full border border-zinc-800 bg-zinc-950 px-3 py-1 text-zinc-400">
+                            Invoice AED {payment.amount.toLocaleString()}
+                          </span>
+                          <span className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-emerald-400">
+                            Paid AED {payment.paidAmount.toLocaleString()}
+                          </span>
+                          <span className="rounded-full border border-amber-500/20 bg-amber-500/10 px-3 py-1 text-amber-400">
+                            Balance AED {payment.balanceAmount.toLocaleString()}
+                          </span>
+                        </div>
                       </div>
                     </div>
                     <div className="flex items-center gap-8 ml-auto">
@@ -304,8 +325,13 @@ export default function PaymentsPage() {
                           <span className="text-[10px] text-zinc-500 mr-1">AED</span>
                           {payment.amount.toLocaleString()}
                         </p>
+                        {payment.balanceAmount > 0 ? (
+                          <p className="mt-2 text-[10px] font-black uppercase tracking-widest text-amber-400">
+                            Balance AED {payment.balanceAmount.toLocaleString()}
+                          </p>
+                        ) : null}
                       </div>
-                      <PaymentStatusBadge status={payment.status} />
+                      <PaymentStatusBadge status={getDisplayStatus(payment)} />
                     </div>
                   </motion.div>
                 ))}

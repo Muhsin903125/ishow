@@ -1,30 +1,35 @@
-import { createClient } from "@/lib/supabase/server";
-import LandingClient, {
-  type LandingClientConfig,
-  type LandingClientTestimonial,
-} from "@/components/LandingClient";
-import { DM_Sans, Barlow_Condensed } from "next/font/google";
-import { GetServerSideProps } from 'next';
-import Head from 'next/head';
+import { useEffect, useState } from "react";
+import LandingClient from "@/components/LandingClient";
+import type {
+  EditableCMSContent,
+  LandingClientTestimonial,
+} from "@/lib/cms/content";
+import { getDefaultCMSContent } from "@/lib/cms/content";
+import { loadPublicSiteContent } from "@/lib/api/site-content";
+import Head from "next/head";
 
-const dm = DM_Sans({
-  subsets: ["latin"],
-  variable: "--font-dm",
-  weight: ["400", "500", "600", "700"],
-});
+export default function HomePage() {
+  const [testimonials, setTestimonials] = useState<LandingClientTestimonial[]>([]);
+  const [config, setConfig] = useState<EditableCMSContent>(getDefaultCMSContent());
 
-const barlow = Barlow_Condensed({
-  subsets: ["latin"],
-  variable: "--font-barlow",
-  weight: ["700", "800"],
-});
+  useEffect(() => {
+    let active = true;
 
-type HomePageProps = {
-  testimonials: LandingClientTestimonial[];
-  config: LandingClientConfig | null;
-};
+    loadPublicSiteContent()
+      .then((response) => {
+        if (!active) return;
+        setTestimonials(response.testimonials);
+        setConfig(response.content);
+      })
+      .catch(() => {
+        // Keep the default content when the API is unavailable.
+      });
 
-export default function HomePage({ testimonials, config }: HomePageProps) {
+    return () => {
+      active = false;
+    };
+  }, []);
+
   return (
     <>
       <Head>
@@ -34,35 +39,7 @@ export default function HomePage({ testimonials, config }: HomePageProps) {
       <LandingClient 
         testimonials={testimonials} 
         config={config}
-        fonts={{ 
-          dm: dm.variable, 
-          barlow: barlow.variable 
-        }} 
       />
     </>
   );
 }
-
-export const getServerSideProps: GetServerSideProps = async (context) => {
-  const supabase = await createClient(context);
-  
-  const [testimonialsResponse, landingConfigResponse] = await Promise.all([
-    supabase
-      .from("testimonials")
-      .select("*")
-      .eq("is_published", true)
-      .order("created_at", { ascending: false }),
-    supabase
-      .from("landing_config")
-      .select("content")
-      .eq("key", "main")
-      .single()
-  ]);
-
-  return {
-    props: {
-      testimonials: testimonialsResponse.data || [],
-      config: landingConfigResponse.data?.content || null
-    }
-  };
-};

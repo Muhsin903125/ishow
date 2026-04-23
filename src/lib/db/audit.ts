@@ -1,3 +1,5 @@
+// Deprecated browser audit helper. Keep only for reference until fully removed.
+// Active audit writes should use server-only helpers under `src/lib/server`.
 import { createClient } from "@/lib/supabase/client";
 
 export async function logAction(input: {

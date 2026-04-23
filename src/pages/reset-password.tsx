@@ -79,35 +79,35 @@ export default function ResetPasswordPage() {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-950 flex items-center justify-center px-5">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top,#fff6e8_0%,#f8fafc_42%,#eef4ff_100%)] flex items-center justify-center px-5">
       <div className="w-full max-w-sm">
         <Link href="/" className="inline-flex items-baseline gap-0 mb-10">
-          <span className="font-black text-xl text-white tracking-tight">iShow</span>
+          <span className="font-black text-xl text-slate-950 tracking-tight">iShow</span>
           <span className="font-black text-xl text-orange-500 tracking-tight">Transformation</span>
         </Link>
 
-        <div className="rounded-2xl bg-zinc-900 border border-zinc-800 p-8">
+        <div className="rounded-[2rem] border border-slate-200 bg-white/92 p-8 shadow-[0_24px_80px_rgba(15,23,42,0.1)] backdrop-blur-sm">
           {checking ? (
             <div className="text-center py-10">
               <div className="w-8 h-8 border-2 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-              <p className="text-sm text-zinc-500">Verifying your reset link...</p>
+              <p className="text-sm text-slate-500">Verifying your reset link...</p>
             </div>
           ) : done ? (
             <div className="text-center py-4">
               <div className="w-14 h-14 rounded-2xl bg-green-500/10 border border-green-500/20 flex items-center justify-center mx-auto mb-5">
                 <CheckCircle className="w-7 h-7 text-green-400" />
               </div>
-              <h2 className="text-xl font-black text-white mb-2">Password updated!</h2>
-              <p className="text-zinc-400 text-sm mb-5">Redirecting you to sign in...</p>
-              <Link href="/login" className="inline-flex items-center gap-2 text-sm text-zinc-400 hover:text-white transition-colors font-medium">
+              <h2 className="text-xl font-black text-slate-950 mb-2">Password updated!</h2>
+              <p className="text-slate-500 text-sm mb-5">Redirecting you to sign in...</p>
+              <Link href="/login" className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-slate-950 transition-colors font-medium">
                 <ArrowLeft className="w-3.5 h-3.5" /> Back to sign in
               </Link>
             </div>
           ) : (
             <>
               <div className="mb-7">
-                <h2 className="text-2xl font-black text-white tracking-tight">Set new password</h2>
-                <p className="text-zinc-400 text-sm mt-1.5">Choose a strong password with at least 8 characters.</p>
+                <h2 className="text-2xl font-black text-slate-950 tracking-tight">Set new password</h2>
+                <p className="text-slate-500 text-sm mt-1.5">Choose a strong password with at least 8 characters.</p>
               </div>
 
               {error && (
@@ -119,9 +119,9 @@ export default function ResetPasswordPage() {
               {validSession && (
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div>
-                    <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-1.5">New password</label>
+                    <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">New password</label>
                     <div className="relative">
-                      <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+                      <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                       <input
                         type={showPassword ? "text" : "password"}
                         value={password}
@@ -129,12 +129,12 @@ export default function ResetPasswordPage() {
                         placeholder="Min. 8 characters"
                         required
                         minLength={8}
-                        className="w-full rounded-xl bg-zinc-800/60 border border-zinc-700 pl-10 pr-10 py-3 text-sm text-white placeholder-zinc-600 outline-none focus:border-orange-500/70 focus:ring-2 focus:ring-orange-500/15 transition"
+                        className="w-full rounded-xl bg-slate-50 border border-slate-200 pl-10 pr-10 py-3 text-sm text-slate-950 placeholder:text-slate-400 outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-500/15 transition"
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors"
+                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 transition-colors"
                       >
                         {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
@@ -142,16 +142,16 @@ export default function ResetPasswordPage() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-1.5">Confirm password</label>
+                    <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">Confirm password</label>
                     <div className="relative">
-                      <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+                      <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                       <input
                         type={showPassword ? "text" : "password"}
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
                         placeholder="Repeat password"
                         required
-                        className="w-full rounded-xl bg-zinc-800/60 border border-zinc-700 pl-10 pr-4 py-3 text-sm text-white placeholder-zinc-600 outline-none focus:border-orange-500/70 focus:ring-2 focus:ring-orange-500/15 transition"
+                        className="w-full rounded-xl bg-slate-50 border border-slate-200 pl-10 pr-4 py-3 text-sm text-slate-950 placeholder:text-slate-400 outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-500/15 transition"
                       />
                     </div>
                     {confirmPassword && password !== confirmPassword && (
@@ -170,7 +170,7 @@ export default function ResetPasswordPage() {
               )}
 
               <div className="mt-6 text-center">
-                <Link href="/login" className="inline-flex items-center gap-1.5 text-sm text-zinc-500 hover:text-zinc-200 transition-colors font-medium">
+                <Link href="/login" className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-950 transition-colors font-medium">
                   <ArrowLeft className="w-3.5 h-3.5" /> Back to sign in
                 </Link>
               </div>

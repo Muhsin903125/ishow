@@ -58,26 +58,26 @@ export default function AuthCallbackPage() {
   }, [router, router.isReady, router.query.code, router.query.next]);
 
   return (
-    <div className="min-h-screen bg-zinc-950 flex items-center justify-center px-5">
-      <div className="w-full max-w-sm rounded-2xl bg-zinc-900 border border-zinc-800 p-8 text-center">
+    <div className="min-h-screen bg-muted/20 flex items-center justify-center px-5 font-sans">
+      <div className="w-full max-w-sm rounded-2xl bg-background border border-border p-8 text-center shadow-sm">
         {error ? (
           <>
-            <div className="w-14 h-14 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center mx-auto mb-5">
+            <div className="w-14 h-14 rounded-2xl bg-red-50 border border-red-100 flex items-center justify-center mx-auto mb-5">
               <AlertCircle className="w-7 h-7 text-red-400" />
             </div>
-            <h1 className="text-xl font-black text-white mb-2">Sign-in failed</h1>
-            <p className="text-zinc-400 text-sm leading-relaxed mb-5">{error}</p>
+            <h1 className="text-xl font-bold text-foreground mb-2">Sign-in failed</h1>
+            <p className="text-muted-foreground text-sm leading-relaxed mb-5">{error}</p>
             <Link href="/login" className="text-sm text-orange-400 hover:text-orange-300 font-semibold">
               Return to sign in
             </Link>
           </>
         ) : (
           <>
-            <div className="w-14 h-14 rounded-2xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center mx-auto mb-5">
+            <div className="w-14 h-14 rounded-2xl bg-orange-50 border border-orange-100 flex items-center justify-center mx-auto mb-5">
               <Loader2 className="w-7 h-7 text-orange-400 animate-spin" />
             </div>
-            <h1 className="text-xl font-black text-white mb-2">Completing sign-in</h1>
-            <p className="text-zinc-400 text-sm leading-relaxed">We&apos;re finishing your authentication and sending you to the right dashboard.</p>
+            <h1 className="text-xl font-bold text-foreground mb-2">Completing sign-in</h1>
+            <p className="text-muted-foreground text-sm leading-relaxed">We&apos;re finishing your authentication and sending you to the right dashboard.</p>
           </>
         )}
       </div>

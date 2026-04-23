@@ -3,77 +3,84 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import Link from "next/link";
-import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import DashboardLayout from "@/components/DashboardLayout";
-import { getAssessment, type Assessment } from "@/lib/db/assessments";
-import { getActivePlan, type Plan } from "@/lib/db/plans";
-import { listSessions, type TrainingSession } from "@/lib/db/sessions";
-import { listPayments, type Payment } from "@/lib/db/payments";
+import type { Assessment } from "@/lib/db/assessments";
+import type { Plan } from "@/lib/db/plans";
+import type { TrainingSession } from "@/lib/db/sessions";
+import type { Payment } from "@/lib/db/payments";
+import { loadCustomerWorkspace } from "@/lib/api/workspace";
 import {
   Calendar,
-  Dumbbell,
   CreditCard,
   ArrowRight,
-  Clock,
-  TrendingUp,
   Target,
   Flame,
   CheckCircle2,
   AlertCircle,
   Activity,
-  Zap,
   ChevronRight,
   Sparkles,
-  Layers,
-  User,
-  Plus,
-  Shield
+  MapPin,
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { cn } from "@/lib/utils";
 
 export default function CustomerDashboard() {
   const { user, loading } = useAuth();
   const router = useRouter();
 
-  const [assessment, setAssessment] = useState<Assessment | null | "loading">("loading");
+  const [assessment, setAssessment] = useState<Assessment | null>(null);
   const [plan, setPlan] = useState<Plan | null | "loading">("loading");
   const [sessions, setSessions] = useState<TrainingSession[] | "loading">("loading");
   const [payments, setPayments] = useState<Payment[] | "loading">("loading");
+  const [bootState, setBootState] = useState<"loading" | "ready" | "redirecting">("loading");
 
   useEffect(() => {
+    let active = true;
+
     if (loading) return;
     
     if (!user) {
-      router.push("/login"); 
-      return; 
+      router.replace("/login");
+      return;
     }
     
-    if (user.role === "trainer") { router.push("/trainer/dashboard"); return; }
-    if (user.role === "admin") { router.push("/admin"); return; }
+    if (user.role === "trainer") {
+      router.replace("/trainer/dashboard");
+      return;
+    }
 
-    getAssessment(user.id)
-      .then((a) => {
-        if (!a) { router.replace("/assessment"); return; }
-        setAssessment(a);
-      })
-      .catch(() => setAssessment(null));
+    if (user.role === "admin") {
+      router.replace("/admin");
+      return;
+    }
+    (async () => {
+      const workspaceResult = await Promise.allSettled([loadCustomerWorkspace()]);
 
-    getActivePlan(user.id)
-      .then(setPlan)
-      .catch(() => setPlan(null));
+      if (!active) return;
 
-    listSessions({ userId: user.id })
-      .then(setSessions)
-      .catch(() => setSessions([]));
+      const workspace =
+        workspaceResult[0].status === "fulfilled" ? workspaceResult[0].value : null;
+      const resolvedAssessment = workspace?.assessment ?? null;
 
-    listPayments({ userId: user.id })
-      .then(setPayments)
-      .catch(() => setPayments([]));
+      if (!resolvedAssessment) {
+        router.replace("/assessment");
+        return;
+      }
+
+      setAssessment(resolvedAssessment);
+      setPlan(workspace?.plan ?? null);
+      setSessions(workspace?.sessions ?? []);
+      setPayments(workspace?.payments ?? []);
+      setBootState("ready");
+    })();
+
+    return () => {
+      active = false;
+    };
   }, [user, loading, router]);
 
   const today = new Date().toISOString().split("T")[0];
@@ -100,7 +107,7 @@ export default function CustomerDashboard() {
       day: "numeric",
     });
 
-  if (loading || assessment === "loading") {
+  if (loading || bootState !== "ready") {
     return (
       <DashboardLayout role="customer">
         <div className="p-6 space-y-6 bg-muted/20 min-h-screen">
@@ -154,47 +161,68 @@ export default function CustomerDashboard() {
 
   return (
     <DashboardLayout role="customer">
-      <div className="flex flex-col h-full bg-muted/20">
-        {/* Header */}
-        <div className="bg-background border-b border-border px-6 py-4 flex items-center justify-between sticky top-0 z-20">
-          <div className="flex items-center gap-3">
-             <div className="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center">
-                <Flame className="w-4 h-4 text-orange-600 fill-current" />
-             </div>
-             <div>
-                <h1 className="text-lg font-bold text-foreground leading-none">Welcome, {user?.name?.split(" ")[0]}</h1>
-                <p className="text-[11px] text-muted-foreground font-medium mt-1 uppercase tracking-wider">Your Transformation Journey</p>
-             </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" className="h-8 text-xs font-semibold">
-              <Calendar className="w-3.5 h-3.5 mr-1.5" />
-              Schedule
-            </Button>
-            <Button size="sm" className="h-8 bg-foreground text-background hover:bg-foreground/90 text-xs font-semibold px-4">
-              <Plus className="w-3.5 h-3.5 mr-1.5" />
-              New Goal
-            </Button>
-          </div>
-        </div>
-
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
-          {/* Today's Alert */}
-          {todaySession && (
-            <Card className="bg-orange-600 border-none shadow-md overflow-hidden rounded-xl">
-              <CardContent className="p-5 flex items-center gap-6 relative">
-                <div className="w-12 h-12 rounded-lg bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center shrink-0">
-                  <Activity className="w-6 h-6 text-white" />
+      <div className="flex flex-col h-full bg-transparent">
+        <div className="flex-1 overflow-y-auto space-y-6 p-6 md:p-8">
+          <section className="rounded-[2rem] border border-orange-100 bg-[linear-gradient(135deg,#fff7ed_0%,#ffffff_55%,#eff6ff_100%)] p-6 shadow-[0_24px_60px_rgba(249,115,22,0.08)] md:p-8">
+            <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+              <div className="space-y-4">
+                <div className="inline-flex items-center gap-2 rounded-full border border-orange-100 bg-white/80 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-orange-700">
+                  <Flame className="h-3.5 w-3.5" />
+                  Customer dashboard
                 </div>
-                <div className="flex-1">
-                  <Badge className="bg-white/20 text-orange-100 border-none mb-1 text-[9px] font-bold uppercase tracking-wider">Next Session</Badge>
-                  <p className="text-lg font-bold text-white leading-none">{todaySession.title}</p>
-                  <p className="text-orange-100 text-[10px] font-medium mt-1 uppercase tracking-widest opacity-80">
-                    Starts at {todaySession.scheduledTime} • {todaySession.duration} min
+                <div>
+                  <h1 className="text-3xl font-bold tracking-tight text-slate-950 md:text-4xl">Welcome back, {user?.name?.split(" ")[0]}</h1>
+                  <p className="mt-2 max-w-2xl text-sm text-slate-600 md:text-base">
+                    Your plan, assessment, upcoming sessions, and billing status are all organized in one clean workspace.
                   </p>
                 </div>
-                <Button asChild size="sm" className="bg-white text-orange-600 hover:bg-orange-50 font-bold px-6">
-                  <Link href="/sessions">Start Now</Link>
+              </div>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                <div className="rounded-2xl border border-white/70 bg-white/85 px-4 py-3 shadow-sm">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">Plan</p>
+                  <p className="mt-2 text-sm font-semibold text-slate-950">{plan === "loading" ? "Loading" : plan?.name ?? "Pending"}</p>
+                </div>
+                <div className="rounded-2xl border border-white/70 bg-white/85 px-4 py-3 shadow-sm">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">Sessions</p>
+                  <p className="mt-2 text-sm font-semibold text-slate-950">{upcomingSessions.length} upcoming</p>
+                </div>
+                <div className="col-span-2 rounded-2xl border border-white/70 bg-white/85 px-4 py-3 shadow-sm sm:col-span-1">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">Location</p>
+                  <p className="mt-2 text-sm font-semibold text-slate-950">{assessment?.preferredLocation ?? "Flexible"}</p>
+                </div>
+              </div>
+            </div>
+            <div className="mt-6 flex flex-wrap gap-3">
+              <Button asChild className="h-11 rounded-xl bg-orange-500 px-5 text-sm font-semibold text-white hover:bg-orange-600">
+                <Link href="/sessions">
+                  <Calendar className="mr-2 h-4 w-4" />
+                  View schedule
+                </Link>
+              </Button>
+              <Button asChild variant="outline" className="h-11 rounded-xl border-border bg-white/80 px-5 text-sm font-semibold">
+                <Link href="/my-plan">
+                  <Target className="mr-2 h-4 w-4" />
+                  Review plan
+                </Link>
+              </Button>
+            </div>
+          </section>
+          {/* Today's Alert */}
+          {todaySession && (
+            <Card className="overflow-hidden rounded-[1.75rem] border border-orange-100 bg-white/92 shadow-sm">
+              <CardContent className="flex flex-col gap-4 p-5 md:flex-row md:items-center md:justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-orange-100">
+                    <Activity className="h-5 w-5 text-orange-600" />
+                  </div>
+                  <div>
+                    <Badge className="mb-2 border-none bg-orange-100 text-orange-700">Next session</Badge>
+                    <p className="text-lg font-semibold text-slate-950">{todaySession.title}</p>
+                    <p className="text-sm text-slate-600">Starts at {todaySession.scheduledTime} • {todaySession.duration} min</p>
+                  </div>
+                </div>
+                <Button asChild className="h-11 rounded-xl bg-slate-950 px-5 text-sm font-semibold text-white hover:bg-slate-800">
+                  <Link href="/sessions">Open sessions</Link>
                 </Button>
               </CardContent>
             </Card>
@@ -202,21 +230,19 @@ export default function CustomerDashboard() {
 
           {/* Stats Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {stats.map(({ label, value, icon: Icon, color, bg, trend }, idx) => (
-              <Card key={label} className="shadow-sm border-border bg-background">
+            {stats.map(({ label, value, icon: Icon, color, bg, trend }) => (
+              <Card key={label} className="rounded-[1.5rem] border border-border/80 bg-white/92 shadow-sm">
                 <CardContent className="p-5">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className={`w-9 h-9 rounded-lg ${bg} flex items-center justify-center`}>
-                      <Icon className={`w-4.5 h-4.5 ${color}`} />
+                  <div className="mb-4 flex items-center justify-between">
+                    <div className={`flex h-11 w-11 items-center justify-center rounded-2xl ${bg}`}>
+                      <Icon className={`h-5 w-5 ${color}`} />
                     </div>
-                    <Badge variant="ghost" className="text-[10px] font-medium text-muted-foreground p-0">
+                    <Badge variant="outline" className="border-transparent bg-slate-100 text-[10px] font-semibold text-slate-600">
                       {trend}
                     </Badge>
                   </div>
-                  <div>
-                    <p className="text-2xl font-bold text-foreground truncate">{value ?? "..."}</p>
-                    <p className="text-xs text-muted-foreground font-medium mt-0.5">{label}</p>
-                  </div>
+                  <p className="truncate text-2xl font-bold text-slate-950">{value ?? "..."}</p>
+                  <p className="mt-1 text-xs font-medium text-slate-500">{label}</p>
                 </CardContent>
               </Card>
             ))}
@@ -306,6 +332,86 @@ export default function CustomerDashboard() {
                       <p className="text-xs font-medium text-muted-foreground">No upcoming sessions</p>
                     </div>
                   )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <Card className="lg:col-span-7 shadow-sm border-border bg-background">
+              <CardHeader className="py-4 border-b border-border">
+                <CardTitle className="text-sm font-bold">Assessment Snapshot</CardTitle>
+              </CardHeader>
+              <CardContent className="p-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="rounded-xl border border-border bg-muted/20 p-4">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Target className="w-4 h-4 text-orange-600" />
+                      <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Goals</p>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {assessment?.goals?.length ? (
+                        assessment.goals.map((goal) => (
+                          <Badge key={goal} variant="outline" className="text-[10px] font-semibold uppercase bg-orange-50 text-orange-700 border-orange-200">
+                            {goal.replace(/_/g, " ")}
+                          </Badge>
+                        ))
+                      ) : (
+                        <span className="text-xs text-muted-foreground">No goals saved</span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="rounded-xl border border-border bg-muted/20 p-4">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Activity className="w-4 h-4 text-blue-600" />
+                      <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Experience</p>
+                    </div>
+                    <p className="text-sm font-bold text-foreground uppercase">
+                      {assessment?.experienceLevel?.replace(/_/g, " ") ?? "Not set"}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground mt-2">
+                      {assessment?.daysPerWeek ? `${assessment.daysPerWeek} training days/week` : "Training frequency pending"}
+                    </p>
+                  </div>
+
+                  <div className="rounded-xl border border-border bg-muted/20 p-4">
+                    <div className="flex items-center gap-2 mb-3">
+                      <MapPin className="w-4 h-4 text-emerald-600" />
+                      <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Location</p>
+                    </div>
+                    <p className="text-sm font-bold text-foreground uppercase">
+                      {assessment?.preferredLocation ?? "Online / flexible"}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground mt-2">
+                      {assessment?.preferredTimes?.replace(/_/g, " ") ?? "Preferred time pending"}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="lg:col-span-5 shadow-sm border-border bg-background">
+              <CardHeader className="py-4 border-b border-border">
+                <CardTitle className="text-sm font-bold">Assessment Status</CardTitle>
+              </CardHeader>
+              <CardContent className="p-6 space-y-4">
+                <div className="flex items-start gap-3">
+                  <div className="w-9 h-9 rounded-lg bg-emerald-100 flex items-center justify-center shrink-0">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-foreground">Assessment completed</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Submitted {assessment ? new Date(assessment.submittedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "recently"}.
+                    </p>
+                  </div>
+                </div>
+                <div className="rounded-xl border border-dashed border-border bg-muted/20 p-4">
+                  <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-2">One-time onboarding</p>
+                  <p className="text-xs text-muted-foreground">
+                    Your assessment is locked in and used as the base for your dashboard, plan setup, and trainer review workflow.
+                  </p>
                 </div>
               </CardContent>
             </Card>

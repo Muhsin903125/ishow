@@ -1,3 +1,5 @@
+// Legacy mock dataset kept only for archived `src/app_old` references.
+// Active runtime flows must not depend on this module.
 import { getItems, setItems } from './storage';
 import type { AuthUser, User } from './auth';
 

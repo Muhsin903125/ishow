@@ -2,20 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import DashboardLayout from "@/components/DashboardLayout";
-import { listPrograms, type Program, type ProgramActivity } from "@/lib/db/programs";
+import type { Program, ProgramActivity } from "@/lib/db/programs";
+import { loadCustomerWorkspace } from "@/lib/api/workspace";
 import { 
   Dumbbell, 
   Calendar, 
-  Activity, 
-  Loader2, 
-  ChevronRight, 
-  Layout, 
   Layers,
-  ArrowRight,
-  TrendingUp,
 } from "lucide-react";
 
 const DAY_ORDER = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
@@ -33,8 +28,10 @@ export default function ProgramsPage() {
 
       (async () => {
         try {
-          const userPrograms = await listPrograms({ userId: user.id });
-          setPrograms(userPrograms.sort((a, b) => b.weekNumber - a.weekNumber));
+          const workspace = await loadCustomerWorkspace();
+          setPrograms(
+            [...workspace.programs].sort((a, b) => b.weekNumber - a.weekNumber)
+          );
         } catch (err) {
           console.error("Error loading programs:", err);
         } finally {
